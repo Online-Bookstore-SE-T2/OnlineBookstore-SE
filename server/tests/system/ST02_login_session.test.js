@@ -159,19 +159,27 @@ describe('ST02 login and session', () => {
 });
 
 describe('ST02 authentication rate limit (TC-NFR-SEC-16)', () => {
-  test('10 requests per minute per IP are processed, the 11th is refused with 429, and the window resets', async () => {
-    const limitedApp = createApp({ authRateLimit: { limit: 10, windowMs: 1500 } });
+  test('10 requests per minute per IP are processed and the 11th is refused with 429', async () => {
+    const limitedApp = createApp(); // default limiter: 10 requests per 60 seconds
     const attempt = (i) => login(limitedApp, `nobody${i}@testmail.example`, PASSWORD);
     for (let i = 0; i < 10; i += 1) expect((await attempt(i)).status).toBe(401);
     const eleventh = await attempt(10);
     expect(eleventh.status).toBe(429);
     expect(eleventh.body.error.message).toMatch(/Too many requests/);
 
-    // Register and logout share the same limiter as login.
+    // Register and logout share the same limiter as login; the session check does not.
     expect((await request(limitedApp).post('/api/auth/register').send({})).status).toBe(429);
+    expect((await request(limitedApp).post('/api/auth/logout')).status).toBe(429);
+    expect((await request(limitedApp).get('/api/auth/session')).status).toBe(401);
+  });
 
-    await new Promise((resolve) => setTimeout(resolve, 1600));
-    expect((await attempt(11)).status).toBe(401);
+  test('requests are processed again once the window has passed', async () => {
+    const limitedApp = createApp({ authRateLimit: { limit: 1, windowMs: 1000 } });
+    const attempt = () => login(limitedApp, 'nobody@testmail.example', PASSWORD);
+    expect((await attempt()).status).toBe(401);
+    expect((await attempt()).status).toBe(429);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect((await attempt()).status).toBe(401);
   });
 
   test('the default limiter is configured for 10 requests per 60 seconds', () => {

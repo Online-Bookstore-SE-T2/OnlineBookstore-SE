@@ -13,6 +13,8 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
     css: false,
+    // Interaction tests type character by character; coverage instrumentation slows them down.
+    testTimeout: 30000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{js,jsx}'],
