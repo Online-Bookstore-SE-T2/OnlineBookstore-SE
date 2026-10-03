@@ -11,6 +11,11 @@ module.exports = {
     httpsRequired: 'This service is only available over HTTPS.',
     tooManyRequests: 'Too many requests. Please wait a minute and try again.',
   },
+  auth: {
+    // REQ-1: exact wording required by the SRS
+    emailTaken: 'e-mail already registered',
+    registered: 'Your account has been created. You can now log in.',
+  },
   fields: {
     required: (label) => `${label} is required.`,
     tooLong: (label, max) => `${label} must be at most ${max} characters.`,

@@ -162,6 +162,25 @@ class FieldValidator {
     });
   }
 
+  // A delivery address (REQ-3): line, city, state and a 6-digit postal code.
+  // When `required` is false the whole address may be omitted, but a partly filled one is
+  // rejected. Returns the cleaned address, null when omitted, or undefined when invalid.
+  address(value, { prefix = '', required = true } = {}) {
+    const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const parts = ['line', 'city', 'state', 'postalCode'];
+    const provided = parts.some((part) => typeof input[part] === 'string' && input[part].trim() !== '');
+    if (!required && !provided) return null;
+
+    const errorsBefore = Object.keys(this.errors).length;
+    const address = {
+      line: this.text(`${prefix}line`, input.line, { label: strings.labels.addressLine, required: true, max: LIMITS.addressLine }),
+      city: this.text(`${prefix}city`, input.city, { label: strings.labels.city, required: true, max: LIMITS.city }),
+      state: this.text(`${prefix}state`, input.state, { label: strings.labels.state, required: true, max: LIMITS.state }),
+      postalCode: this.postalCode(`${prefix}postalCode`, input.postalCode, { required: true }),
+    };
+    return Object.keys(this.errors).length === errorsBefore ? address : undefined;
+  }
+
   oneOf(field, value, allowed, { label, required = true }) {
     if (isAbsent(value) || value === '') {
       if (required) this.addError(field, strings.fields.required(label));

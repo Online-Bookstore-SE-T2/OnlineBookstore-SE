@@ -6,9 +6,10 @@ const { sanitizeRequest } = require('./middleware/sanitize');
 const { requestLogger } = require('./middleware/requestLogger');
 const { enforceHttps } = require('./middleware/https');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { createAuthRouter } = require('./routes/authRoutes');
 
-// Builds the Express application.
-function createApp({ logRequests = config.env !== 'test' } = {}) {
+// Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
+function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
   const app = express();
   app.disable('x-powered-by');
 
@@ -25,6 +26,7 @@ function createApp({ logRequests = config.env !== 'test' } = {}) {
   if (logRequests) app.use(requestLogger);
 
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+  app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
 
   app.use(notFound);
   app.use(errorHandler);
