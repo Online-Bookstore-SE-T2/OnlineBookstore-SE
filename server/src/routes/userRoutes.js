@@ -19,6 +19,8 @@ function createUserRouter() {
   router.delete('/me/addresses/:addressId', requireWriteAccess, asyncHandler(userController.deleteAddress));
   router.patch('/me/addresses/:addressId/default', requireWriteAccess, asyncHandler(userController.setDefaultAddress));
 
+  router.post('/me/seller-request', requireWriteAccess, asyncHandler(userController.requestSellerStatus));
+
   return router;
 }
 

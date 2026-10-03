@@ -8,6 +8,7 @@ const { enforceHttps } = require('./middleware/https');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
+const { createAdminRouter } = require('./routes/adminRoutes');
 
 // Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
 function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
@@ -29,6 +30,7 @@ function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) 
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
   app.use('/api/users', createUserRouter());
+  app.use('/api/admin', createAdminRouter());
 
   app.use(notFound);
   app.use(errorHandler);

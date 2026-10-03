@@ -66,6 +66,13 @@ export default function AccountMenu() {
               {strings.account.profile}
             </Link>
           </li>
+          {user.role === 'Administrator' && (
+            <li>
+              <Link to="/admin" onClick={() => setOpen(false)}>
+                {strings.account.administration}
+              </Link>
+            </li>
+          )}
           <li>
             <button type="button" onClick={onLogout}>
               {strings.account.logout}

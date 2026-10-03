@@ -45,6 +45,11 @@ function isValidIsbn13(value) {
   return (10 - (sum % 10)) % 10 === digits[12];
 }
 
+// Monetary values are INR with at most two decimal places (SRS 6.5).
+function isMoney(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && Math.abs(value * 100 - Math.round(value * 100)) < 1e-9;
+}
+
 function isAbsent(value) {
   return value === undefined || value === null;
 }
@@ -198,6 +203,7 @@ module.exports = {
   FieldValidator,
   sanitizeText,
   isValidIsbn13,
+  isMoney,
   characterCount,
   LIMITS,
   EMAIL_PATTERN,

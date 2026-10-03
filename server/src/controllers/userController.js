@@ -47,7 +47,14 @@ async function setDefaultAddress(req, res) {
   res.json({ message: strings.profile.defaultChanged, addresses: req.user.toJSON().addresses });
 }
 
+// POST /api/users/me/seller-request (REQ-4 seller onboarding)
+async function requestSellerStatus(req, res) {
+  const user = await userService.requestSellerStatus(req.user, req.body);
+  res.status(201).json({ message: strings.sellerRequest.submitted, user: user.toJSON() });
+}
+
 module.exports = {
+  requestSellerStatus,
   getProfile,
   updateProfile,
   changePassword,

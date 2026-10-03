@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { ACCOUNT_STATUS } = require('../constants');
+const { ACCOUNT_STATUS, ROLES } = require('../constants');
 const strings = require('../resources/strings');
 const { AppError } = require('../utils/errors');
 const { asyncHandler } = require('../utils/asyncHandler');
@@ -33,6 +33,18 @@ function requireRole(...roles) {
   };
 }
 
+// REQ-4: administration routes answer HTTP 403 to every non-administrator request,
+// including requests with a missing, expired or invalid token.
+const requireAdministrator = asyncHandler(async (req, _res, next) => {
+  try {
+    await resolveSession(req);
+  } catch {
+    throw new AppError(403, strings.auth.forbidden);
+  }
+  if (req.user.role !== ROLES.ADMINISTRATOR) throw new AppError(403, strings.auth.forbidden);
+  next();
+});
+
 // A suspended account is read-only: it can browse but every change is refused.
 function requireWriteAccess(req, _res, next) {
   if (req.user && req.user.status === ACCOUNT_STATUS.SUSPENDED) {
@@ -41,4 +53,4 @@ function requireWriteAccess(req, _res, next) {
   return next();
 }
 
-module.exports = { authenticate, requireRole, requireWriteAccess, resolveSession };
+module.exports = { authenticate, requireRole, requireAdministrator, requireWriteAccess, resolveSession };

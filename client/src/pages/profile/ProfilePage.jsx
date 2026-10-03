@@ -6,6 +6,7 @@ import { formatDate } from '../../utils/format.js';
 import AddressBook from './AddressBook.jsx';
 import PasswordForm from './PasswordForm.jsx';
 import ProfileDetailsForm from './ProfileDetailsForm.jsx';
+import SellerRequestCard from './SellerRequestCard.jsx';
 
 // REQ-3 (FR03): profile details, password and delivery addresses of the logged-in user.
 export default function ProfilePage() {
@@ -32,6 +33,7 @@ export default function ProfilePage() {
         <PasswordForm readOnly={readOnly} />
       </div>
       <AddressBook addresses={user.addresses || []} readOnly={readOnly} onChange={setAddresses} />
+      {user.role === 'Buyer' && <SellerRequestCard user={user} readOnly={readOnly} onSaved={setUser} />}
     </section>
   );
 }

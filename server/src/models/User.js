@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
-const { ROLES, ACCOUNT_STATUS, REJECT_REASON_CODES } = require('../constants');
+const { ROLES, ACCOUNT_STATUS, REJECT_REASON_CODES, SELLER_REQUEST_STATUS } = require('../constants');
 const { LIMITS, EMAIL_PATTERN, PHONE_PATTERN, POSTAL_CODE_PATTERN } = require('../validation/validators');
 const { config } = require('../config/env');
 const { toJSONPlugin } = require('./plugins/toJSON');
+const { softDeletePlugin } = require('./plugins/softDelete');
 
 // One delivery address (REQ-3). Postal code is a 6-digit numeric code (Appendix B).
 const addressSchema = new mongoose.Schema(
@@ -49,6 +50,20 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     rejectReasonCode: { type: String, enum: REJECT_REASON_CODES, maxlength: 4 },
+    // A Buyer's request to become a Seller, decided by an administrator.
+    sellerRequest: {
+      status: {
+        type: String,
+        enum: Object.values(SELLER_REQUEST_STATUS),
+        default: SELLER_REQUEST_STATUS.NONE,
+      },
+      note: { type: String, trim: true, maxlength: LIMITS.sellerRequestNote },
+      requestedAt: Date,
+      decidedAt: Date,
+      decidedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    },
+    // Status to return to when a soft-deleted account is restored.
+    statusBeforeDelete: { type: String, enum: [ACCOUNT_STATUS.ACTIVE, ACCOUNT_STATUS.SUSPENDED], select: false },
     // REQ-2 lockout state: consecutive failed logins and the time the lock ends.
     failedLoginAttempts: { type: Number, default: 0, min: 0, select: false },
     lockUntil: { type: Date, select: false },
@@ -58,6 +73,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true, optimisticConcurrency: true },
 );
 
-userSchema.plugin(toJSONPlugin, { hide: ['passwordHash', 'failedLoginAttempts', 'lockUntil'] });
+userSchema.plugin(softDeletePlugin);
+userSchema.plugin(toJSONPlugin, { hide: ['passwordHash', 'failedLoginAttempts', 'lockUntil', 'statusBeforeDelete'] });
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

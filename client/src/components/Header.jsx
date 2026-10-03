@@ -39,7 +39,7 @@ export default function Header({ cartCount = 0 }) {
         <Link to="/" className="logo" aria-label={strings.header.homeLabel}>
           {strings.appName}
         </Link>
-        <form className="header-search" role="search" onSubmit={onSearch}>
+        <form className="header-search" role="search" aria-label={strings.header.searchLandmark} onSubmit={onSearch}>
           <label htmlFor="global-search" className="visually-hidden">
             {strings.header.searchLabel}
           </label>

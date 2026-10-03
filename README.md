@@ -19,7 +19,10 @@ Requires Node.js 20 LTS and a reachable MongoDB instance.
 ```bash
 npm install
 cp server/.env.example server/.env   # then fill in real values
+npm run seed:admin -w server         # creates the first Administrator from ADMIN_* in server/.env
 ```
+
+Registration never creates an administrator. Further administrators are promoted from the administration console.
 
 ## Running
 

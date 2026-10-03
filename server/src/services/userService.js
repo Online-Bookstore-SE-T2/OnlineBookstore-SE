@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const { config } = require('../config/env');
+const { ROLES, SELLER_REQUEST_STATUS } = require('../constants');
 const strings = require('../resources/strings');
 const { AppError, ValidationError } = require('../utils/errors');
 const { FieldValidator, LIMITS } = require('../validation/validators');
@@ -104,4 +105,25 @@ async function setDefaultAddress(user, addressId) {
   await user.save();
 }
 
-module.exports = { updateProfile, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress };
+// A Buyer asks to become a Seller, with an optional note of up to 200 characters.
+// An administrator approves or rejects the request (REQ-4).
+async function requestSellerStatus(user, body = {}) {
+  if (user.role !== ROLES.BUYER) throw new AppError(409, strings.sellerRequest.alreadySeller);
+  if (user.sellerRequest?.status === SELLER_REQUEST_STATUS.PENDING) throw new AppError(409, strings.sellerRequest.alreadyPending);
+  const v = new FieldValidator();
+  const note = v.text('note', body.note, { label: strings.labels.note, max: LIMITS.sellerRequestNote });
+  v.throwIfInvalid();
+
+  user.sellerRequest = { status: SELLER_REQUEST_STATUS.PENDING, note: note || undefined, requestedAt: new Date() };
+  return user.save();
+}
+
+module.exports = {
+  updateProfile,
+  changePassword,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+  requestSellerStatus,
+};

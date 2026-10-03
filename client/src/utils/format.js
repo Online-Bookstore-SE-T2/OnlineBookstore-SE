@@ -4,6 +4,12 @@ export function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+// Monetary values are INR to two decimal places (SRS 2.5, 6.5).
+export function formatINR(amount) {
+  if (typeof amount !== 'number') return '';
+  return `₹${amount.toFixed(2)}`;
+}
+
 export function formatDateTime(iso) {
   if (!iso) return '';
   return `${new Date(iso).toLocaleString('en-IN', {

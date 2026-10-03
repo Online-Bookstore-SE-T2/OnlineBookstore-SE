@@ -6,6 +6,7 @@ import strings from './resources/strings.js';
 import { ComingSoonPage, HelpPage, NotFoundPage, PrivacyPage } from './pages/InfoPages.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
+import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 
 export default function App() {
@@ -23,6 +24,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <RequireAuth roles={['Administrator']}>
+                <AdminConsolePage />
               </RequireAuth>
             }
           />
