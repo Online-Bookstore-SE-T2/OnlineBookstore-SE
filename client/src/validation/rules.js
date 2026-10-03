@@ -10,6 +10,7 @@ export const LIMITS = {
   state: 100,
   sellerRequestNote: 200,
   categoryName: 100,
+  maxAddresses: 5,
 };
 
 const EMAIL_PATTERN = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]+$/;
@@ -67,6 +68,21 @@ export function address(values, { optional = false, prefix = '' } = {}) {
 // Drops undefined entries so an empty object means "valid".
 export function compact(errors) {
   return Object.fromEntries(Object.entries(errors).filter(([, message]) => message));
+}
+
+export function validateProfile(values) {
+  return compact({
+    name: requiredText(values.name, strings.fields.name, LIMITS.name),
+    email: email(values.email),
+    phone: phone(values.phone),
+  });
+}
+
+export function validatePasswordChange(values) {
+  return compact({
+    currentPassword: password(values.currentPassword, strings.fields.currentPassword),
+    newPassword: password(values.newPassword, strings.fields.newPassword),
+  });
 }
 
 export function validateRegistration(values) {

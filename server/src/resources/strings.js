@@ -10,6 +10,18 @@ module.exports = {
     serverError: 'Something went wrong. Please try again later.',
     httpsRequired: 'This service is only available over HTTPS.',
     tooManyRequests: 'Too many requests. Please wait a minute and try again.',
+    concurrentChange: 'This record was changed by another request. Please reload and try again.',
+  },
+  profile: {
+    updated: 'Your profile has been updated.',
+    passwordChanged: 'Your password has been changed.',
+    currentPasswordWrong: 'Current password is incorrect.',
+    addressAdded: 'Address added.',
+    addressUpdated: 'Address updated.',
+    addressDeleted: 'Address deleted.',
+    defaultChanged: 'Default address changed.',
+    addressNotFound: 'Address not found.',
+    addressLimit: 'You can save up to five delivery addresses. Delete one before adding another.',
   },
   auth: {
     // REQ-1: exact wording required by the SRS

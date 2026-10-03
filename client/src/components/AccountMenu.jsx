@@ -62,6 +62,11 @@ export default function AccountMenu() {
       {open && (
         <ul id={menuId} className="account-menu-list">
           <li>
+            <Link to="/profile" onClick={() => setOpen(false)}>
+              {strings.account.profile}
+            </Link>
+          </li>
+          <li>
             <button type="button" onClick={onLogout}>
               {strings.account.logout}
             </button>

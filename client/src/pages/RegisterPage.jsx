@@ -4,7 +4,7 @@ import { apiRequest } from '../api/http.js';
 import Alert from '../components/Alert.jsx';
 import FormField from '../components/FormField.jsx';
 import strings from '../resources/strings.js';
-import { focusFirstError } from '../utils/forms.js';
+import { focusFirstError, showApiError } from '../utils/forms.js';
 import { validateRegistration } from '../validation/rules.js';
 
 const FIELD_ORDER = ['name', 'email', 'password', 'phone', 'address.line', 'address.city', 'address.state', 'address.postalCode'];
@@ -53,10 +53,7 @@ export default function RegisterPage() {
       });
       setCreated(true);
     } catch (err) {
-      const fieldErrors = err.fields || {};
-      const hasFieldErrors = Object.keys(fieldErrors).length > 0;
-      if (hasFieldErrors) showErrors(fieldErrors);
-      setFormError(hasFieldErrors ? strings.errors.fixFields : err.message);
+      showApiError(err, { setErrors, setFormError, fieldOrder: FIELD_ORDER, idFor });
     } finally {
       setSubmitting(false);
     }

@@ -53,7 +53,9 @@ const userSchema = new mongoose.Schema(
     failedLoginAttempts: { type: Number, default: 0, min: 0, select: false },
     lockUntil: { type: Date, select: false },
   },
-  { timestamps: true },
+  // Optimistic concurrency: two simultaneous saves of the same user cannot both succeed,
+  // so the five-address limit cannot be exceeded by parallel requests.
+  { timestamps: true, optimisticConcurrency: true },
 );
 
 userSchema.plugin(toJSONPlugin, { hide: ['passwordHash', 'failedLoginAttempts', 'lockUntil'] });

@@ -31,6 +31,9 @@ function errorHandler(err, _req, res, _next) {
   if (err instanceof mongoose.Error.CastError) {
     return res.status(404).json({ error: { message: strings.common.notFound } });
   }
+  if (err instanceof mongoose.Error.VersionError) {
+    return res.status(409).json({ error: { message: strings.common.concurrentChange } });
+  }
 
   // Only the error name and stack frames are logged; the message may contain submitted data (SRS 6.3).
   const frames = (err.stack || '').split('\n').slice(1, 4).join('\n');
