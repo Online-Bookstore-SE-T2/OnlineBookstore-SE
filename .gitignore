@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment configuration (secrets must never be committed - SRS 6.3)
+.env
+.env.*
+!.env.example
+
+# Build and test output
+dist/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

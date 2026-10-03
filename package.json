@@ -1,0 +1,27 @@
+{
+  "name": "online-bookstore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Online Bookstore Review and Catalog - Group G2, PES University",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "test": "npm test -w server && npm test -w client",
+    "test:coverage": "npm run test:coverage -w server && npm run test:coverage -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0"
+  }
+}
