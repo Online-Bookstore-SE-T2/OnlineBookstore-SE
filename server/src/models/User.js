@@ -49,10 +49,13 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     rejectReasonCode: { type: String, enum: REJECT_REASON_CODES, maxlength: 4 },
+    // REQ-2 lockout state: consecutive failed logins and the time the lock ends.
+    failedLoginAttempts: { type: Number, default: 0, min: 0, select: false },
+    lockUntil: { type: Date, select: false },
   },
   { timestamps: true },
 );
 
-userSchema.plugin(toJSONPlugin, { hide: ['passwordHash'] });
+userSchema.plugin(toJSONPlugin, { hide: ['passwordHash', 'failedLoginAttempts', 'lockUntil'] });
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

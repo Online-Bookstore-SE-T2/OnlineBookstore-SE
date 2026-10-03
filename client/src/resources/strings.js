@@ -32,6 +32,16 @@ const strings = {
     invalidPhone: 'Phone number must be exactly 10 digits.',
     invalidPostalCode: 'Postal code must be exactly 6 digits.',
   },
+  login: {
+    title: 'Log in',
+    submit: 'Log in',
+    submitting: 'Logging in...',
+    noAccount: 'New to the bookstore?',
+    register: 'Create an account',
+  },
+  account: {
+    logout: 'Log out',
+  },
   register: {
     title: 'Create an account',
     intro: 'Register to buy books, write reviews and track your orders.',

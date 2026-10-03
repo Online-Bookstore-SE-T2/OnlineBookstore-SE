@@ -15,6 +15,13 @@ module.exports = {
     // REQ-1: exact wording required by the SRS
     emailTaken: 'e-mail already registered',
     registered: 'Your account has been created. You can now log in.',
+    invalidCredentials: 'Incorrect e-mail address or password.',
+    locked: 'This account is locked for 15 minutes after five failed log-in attempts. Please try again later.',
+    loggedOut: 'You have been logged out.',
+    loginRequired: 'Please log in to continue.',
+    sessionInvalid: 'Your session has expired or is no longer valid. Please log in again.',
+    forbidden: 'You do not have permission to do that.',
+    suspended: 'Your account is suspended. You can browse, but you cannot make changes.',
   },
   fields: {
     required: (label) => `${label} is required.`,
