@@ -4,6 +4,7 @@ import RequireAuth from './auth/RequireAuth.jsx';
 import Layout from './components/Layout.jsx';
 import strings from './resources/strings.js';
 import { ComingSoonPage, HelpPage, NotFoundPage, PrivacyPage } from './pages/InfoPages.jsx';
+import { SearchPage } from './pages/SearchPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
 import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
@@ -15,7 +16,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<ComingSoonPage name={strings.pages.catalog} />} />
-          <Route path="search" element={<ComingSoonPage name={strings.pages.search} />} />
+          <Route path="search" element={<SearchPage />} />
           <Route path="cart" element={<ComingSoonPage name={strings.pages.cart} />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
