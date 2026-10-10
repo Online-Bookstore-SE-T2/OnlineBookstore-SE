@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 
 export function SearchPage() {
@@ -19,27 +21,19 @@ export function SearchPage() {
       try {
         const params = new URLSearchParams();
 
-        if (submittedQuery) {
-          params.set('q', submittedQuery);
-        }
-
+        if (submittedQuery) params.set('q', submittedQuery);
         params.set('page', String(page));
 
-        const searchPath = '/books/search?' + params.toString();
-        const data = await apiRequest(searchPath);
+        const data = await apiRequest(`/books/search?${params.toString()}`);
 
-        if (!cancelled) {
-          setResults(data);
-        }
+        if (!cancelled) setResults(data);
       } catch (err) {
         if (!cancelled) {
           setError(err.message);
           setResults(null);
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -86,11 +80,7 @@ export function SearchPage() {
 
           <div>
             <button type="submit">Search</button>{' '}
-            <button
-              type="button"
-              className="link-button"
-              onClick={handleClear}
-            >
+            <button type="button" className="link-button" onClick={handleClear}>
               Clear
             </button>
           </div>
@@ -113,34 +103,23 @@ export function SearchPage() {
             </h2>
 
             {results.items.length === 0 ? (
-              <div className="card">
-                <p>No books found.</p>
-              </div>
+              <div className="card"><p>No books found.</p></div>
             ) : (
               results.items.map((book) => (
-                <article className="card" key={book._id}>
+                <article className="card stack" key={book._id}>
                   <h3>{book.title}</h3>
+                  <p><strong>Author:</strong> {book.author}</p>
+                  <p><strong>ISBN:</strong> {book.isbn}</p>
 
-                  <p>
-                    <strong>Author:</strong> {book.author}
-                  </p>
-
-                  <p>
-                    <strong>ISBN:</strong> {book.isbn}
-                  </p>
-
-                  {book.category && book.category.name && (
-                    <p>
-                      <strong>Category:</strong> {book.category.name}
-                    </p>
+                  {book.category?.name && (
+                    <p><strong>Category:</strong> {book.category.name}</p>
                   )}
 
-                  {book.price !== undefined && book.price !== null && (
-                    <p>
-                      <strong>Price:</strong> ₹
-                      {Number(book.price).toFixed(2)}
-                    </p>
+                  {book.price != null && (
+                    <p><strong>Price:</strong> ₹{Number(book.price).toFixed(2)}</p>
                   )}
+
+                  <Link to={`/books/${book._id}`}>View Details</Link>
                 </article>
               ))
             )}
@@ -156,9 +135,7 @@ export function SearchPage() {
                 Previous
               </button>{' '}
 
-              <span>
-                Page {results.page} of {results.totalPages}
-              </span>{' '}
+              <span>Page {results.page} of {results.totalPages}</span>{' '}
 
               <button
                 type="button"

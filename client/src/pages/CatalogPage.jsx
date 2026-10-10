@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 
 const DEFAULT_FILTERS = {
@@ -34,21 +35,15 @@ export default function CatalogPage() {
     setPage(1);
   }
 
-  // Load available categories for the dropdown.
   useEffect(() => {
     let cancelled = false;
 
     async function loadCategories() {
       try {
         const data = await apiRequest('/books/categories');
-
-        if (!cancelled) {
-          setCategories(data.items || []);
-        }
+        if (!cancelled) setCategories(data.items || []);
       } catch {
-        if (!cancelled) {
-          setCategories([]);
-        }
+        if (!cancelled) setCategories([]);
       }
     }
 
@@ -59,7 +54,6 @@ export default function CatalogPage() {
     };
   }, []);
 
-  // Load books whenever the page or filters change.
   useEffect(() => {
     let cancelled = false;
 
@@ -72,29 +66,13 @@ export default function CatalogPage() {
         params.set('page', String(page));
         params.set('sort', filters.sort);
 
-        if (filters.category) {
-          params.set('category', filters.category);
-        }
+        if (filters.category) params.set('category', filters.category);
+        if (filters.minPrice !== '') params.set('minPrice', filters.minPrice);
+        if (filters.maxPrice !== '') params.set('maxPrice', filters.maxPrice);
+        if (filters.minRating !== '') params.set('minRating', filters.minRating);
+        if (filters.availability !== '') params.set('available', filters.availability);
 
-        if (filters.minPrice !== '') {
-          params.set('minPrice', filters.minPrice);
-        }
-
-        if (filters.maxPrice !== '') {
-          params.set('maxPrice', filters.maxPrice);
-        }
-
-        if (filters.minRating !== '') {
-          params.set('minRating', filters.minRating);
-        }
-
-        if (filters.availability !== '') {
-          params.set('available', filters.availability);
-        }
-
-        const data = await apiRequest(
-          `/books?${params.toString()}`
-        );
+        const data = await apiRequest(`/books?${params.toString()}`);
 
         if (!cancelled) {
           setBooks(data.items || []);
@@ -106,14 +84,10 @@ export default function CatalogPage() {
           setBooks([]);
           setTotal(0);
           setTotalPages(0);
-          setError(
-            err?.message || 'Unable to load the book catalog.'
-          );
+          setError(err?.message || 'Unable to load the book catalog.');
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -145,13 +119,10 @@ export default function CatalogPage() {
         }}
       >
         <label>
-          Category
-          <br />
+          Category<br />
           <select
             value={filters.category}
-            onChange={(event) =>
-              updateFilter('category', event.target.value)
-            }
+            onChange={(event) => updateFilter('category', event.target.value)}
           >
             <option value="">All categories</option>
             {categories.map((category) => (
@@ -163,41 +134,32 @@ export default function CatalogPage() {
         </label>
 
         <label>
-          Minimum price
-          <br />
+          Minimum price<br />
           <input
             type="number"
             min="0"
             placeholder="₹ Min"
             value={filters.minPrice}
-            onChange={(event) =>
-              updateFilter('minPrice', event.target.value)
-            }
+            onChange={(event) => updateFilter('minPrice', event.target.value)}
           />
         </label>
 
         <label>
-          Maximum price
-          <br />
+          Maximum price<br />
           <input
             type="number"
             min="0"
             placeholder="₹ Max"
             value={filters.maxPrice}
-            onChange={(event) =>
-              updateFilter('maxPrice', event.target.value)
-            }
+            onChange={(event) => updateFilter('maxPrice', event.target.value)}
           />
         </label>
 
         <label>
-          Minimum rating
-          <br />
+          Minimum rating<br />
           <select
             value={filters.minRating}
-            onChange={(event) =>
-              updateFilter('minRating', event.target.value)
-            }
+            onChange={(event) => updateFilter('minRating', event.target.value)}
           >
             <option value="">Any rating</option>
             <option value="1">1+ stars</option>
@@ -209,13 +171,10 @@ export default function CatalogPage() {
         </label>
 
         <label>
-          Availability
-          <br />
+          Availability<br />
           <select
             value={filters.availability}
-            onChange={(event) =>
-              updateFilter('availability', event.target.value)
-            }
+            onChange={(event) => updateFilter('availability', event.target.value)}
           >
             <option value="">All books</option>
             <option value="true">Available</option>
@@ -224,13 +183,10 @@ export default function CatalogPage() {
         </label>
 
         <label>
-          Sort by
-          <br />
+          Sort by<br />
           <select
             value={filters.sort}
-            onChange={(event) =>
-              updateFilter('sort', event.target.value)
-            }
+            onChange={(event) => updateFilter('sort', event.target.value)}
           >
             <option value="title_asc">Title: A–Z</option>
             <option value="title_desc">Title: Z–A</option>
@@ -248,16 +204,10 @@ export default function CatalogPage() {
 
       <section aria-label="Book results">
         <p>
-          {loading
-            ? 'Loading books...'
-            : `${total} book${total === 1 ? '' : 's'} found`}
+          {loading ? 'Loading books...' : `${total} book${total === 1 ? '' : 's'} found`}
         </p>
 
-        {error && (
-          <p role="alert" style={{ color: 'crimson' }}>
-            {error}
-          </p>
-        )}
+        {error && <p role="alert" style={{ color: 'crimson' }}>{error}</p>}
 
         {!loading && !error && books.length === 0 && (
           <p>No books found. Try changing your filters.</p>
@@ -294,51 +244,29 @@ export default function CatalogPage() {
                 />
               )}
 
-              <h2 style={{ fontSize: '1.1rem' }}>
-                {book.title}
-              </h2>
-
-              <p>
-                <strong>Author:</strong> {book.author || 'Unknown'}
-              </p>
-
-              {book.isbn && (
-                <p>
-                  <strong>ISBN:</strong> {book.isbn}
-                </p>
-              )}
-
-              <p>
-                <strong>Category:</strong>{' '}
-                {book.category?.name || 'Uncategorised'}
-              </p>
-
-              {book.description && (
-                <p>{book.description}</p>
-              )}
+              <h2 style={{ fontSize: '1.1rem' }}>{book.title}</h2>
+              <p><strong>Author:</strong> {book.author || 'Unknown'}</p>
+              {book.isbn && <p><strong>ISBN:</strong> {book.isbn}</p>}
+              <p><strong>Category:</strong> {book.category?.name || 'Uncategorised'}</p>
+              {book.description && <p>{book.description}</p>}
 
               <p>
                 <strong>Price:</strong>{' '}
-                {book.price != null
-                  ? `₹${Number(book.price).toFixed(2)}`
-                  : 'Not listed'}
+                {book.price != null ? `₹${Number(book.price).toFixed(2)}` : 'Not listed'}
               </p>
 
               <p>
                 <strong>Rating:</strong>{' '}
-                {book.averageRating != null
-                  ? `${book.averageRating} / 5`
-                  : 'No ratings yet'}
-                {book.reviewCount != null &&
-                  ` (${book.reviewCount} reviews)`}
+                {book.averageRating != null ? `${book.averageRating} / 5` : 'No ratings yet'}
+                {book.reviewCount != null && ` (${book.reviewCount} reviews)`}
               </p>
 
               <p>
                 <strong>Status:</strong>{' '}
-                {book.markedUnavailable
-                  ? 'Unavailable'
-                  : 'Check listing availability'}
+                {book.markedUnavailable ? 'Unavailable' : 'Check listing availability'}
               </p>
+
+              <Link to={`/books/${book._id}`}>View Details</Link>
             </article>
           ))}
         </div>
@@ -363,9 +291,7 @@ export default function CatalogPage() {
             Previous
           </button>
 
-          <span>
-            Page {page} of {totalPages}
-          </span>
+          <span>Page {page} of {totalPages}</span>
 
           <button
             type="button"

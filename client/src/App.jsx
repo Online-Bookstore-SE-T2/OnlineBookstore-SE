@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Route, Routes } from 'react-router-dom';
 import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
@@ -10,7 +11,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
 import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
-
+import BookDetailsPage from './pages/BookDetailsPage.jsx';
 export default function App() {
   return (
     <AuthProvider>
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="help" element={<HelpPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="*" element={<NotFoundPage />} />
+          <Route path="books/:bookId" element={<BookDetailsPage />} />
         </Route>
       </Routes>
     </AuthProvider>
