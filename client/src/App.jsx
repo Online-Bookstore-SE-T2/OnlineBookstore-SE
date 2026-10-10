@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
 import RequireAuth from './auth/RequireAuth.jsx';
 import Layout from './components/Layout.jsx';
@@ -15,7 +16,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<ComingSoonPage name={strings.pages.catalog} />} />
+          <Route index element={<CatalogPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="cart" element={<ComingSoonPage name={strings.pages.cart} />} />
           <Route path="login" element={<LoginPage />} />

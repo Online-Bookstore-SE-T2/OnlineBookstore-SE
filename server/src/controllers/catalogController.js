@@ -1,3 +1,4 @@
+
 const catalogService = require('../services/catalogService');
 
 async function listBooks(req, res) {
@@ -5,4 +6,12 @@ async function listBooks(req, res) {
   res.status(200).json(result);
 }
 
-module.exports = { listBooks };
+async function listCategories(req, res) {
+  const categories = await catalogService.getCatalogCategories();
+  res.status(200).json({ items: categories });
+}
+
+module.exports = {
+  listBooks,
+  listCategories,
+};
