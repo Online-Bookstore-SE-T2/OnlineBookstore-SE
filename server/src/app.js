@@ -1,3 +1,4 @@
+
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -11,6 +12,7 @@ const { createUserRouter } = require('./routes/userRoutes');
 const { createAdminRouter } = require('./routes/adminRoutes');
 const { createCatalogRouter } = require('./routes/catalogRoutes');
 const { createBookRouter } = require('./routes/bookRoutes');
+const { createCartRouter } = require('./routes/cartRoutes');
 
 // Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
 function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
@@ -37,8 +39,11 @@ function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) 
   // Catalog listing, filtering and sorting
   app.use('/api/books', createCatalogRouter());
 
-  // Book search
+  // Book search and details
   app.use('/api/books', createBookRouter());
+
+  // Shopping cart
+  app.use('/api/cart', createCartRouter());
 
   app.use(notFound);
   app.use(errorHandler);
@@ -46,3 +51,4 @@ function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) 
 }
 
 module.exports = { createApp };
+```
