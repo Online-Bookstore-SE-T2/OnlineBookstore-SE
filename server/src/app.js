@@ -9,32 +9,38 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createAdminRouter } = require('./routes/adminRoutes');
+const { createCartRouter } = require('./routes/cartRoutes');
+const { createCheckoutRouter } = require('./routes/checkoutRoutes');
+const { createPaymentRouter } = require('./routes/paymentRoutes');
 
 // Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
 function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
-  const app = express();
-  app.disable('x-powered-by');
+    const app = express();
+    app.disable('x-powered-by');
 
-  if (config.env === 'production') {
-    app.set('trust proxy', 1);
-    app.use(enforceHttps);
-  }
+    if (config.env === 'production') {
+        app.set('trust proxy', 1);
+        app.use(enforceHttps);
+    }
 
-  app.use(helmet());
-  // SRS 3.3: cross-origin requests are restricted to the deployed application origin.
-  app.use(cors({ origin: (origin, callback) => callback(null, origin === config.clientOrigin) }));
-  app.use(express.json({ limit: config.bodyLimit }));
-  app.use(sanitizeRequest);
-  if (logRequests) app.use(requestLogger);
+    app.use(helmet());
+    // SRS 3.3: cross-origin requests are restricted to the deployed application origin.
+    app.use(cors({ origin: (origin, callback) => callback(null, origin === config.clientOrigin) }));
+    app.use(express.json({ limit: config.bodyLimit }));
+    app.use(sanitizeRequest);
+    if (logRequests) app.use(requestLogger);
 
-  app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-  app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
-  app.use('/api/users', createUserRouter());
-  app.use('/api/admin', createAdminRouter());
+    app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+    app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
+    app.use('/api/users', createUserRouter());
+    app.use('/api/admin', createAdminRouter());
+    app.use('/api/cart', createCartRouter());
+    app.use('/api/checkout', createCheckoutRouter());
+    app.use('/api/payments', createPaymentRouter());
 
-  app.use(notFound);
-  app.use(errorHandler);
-  return app;
+    app.use(notFound);
+    app.use(errorHandler);
+    return app;
 }
 
 module.exports = { createApp };
