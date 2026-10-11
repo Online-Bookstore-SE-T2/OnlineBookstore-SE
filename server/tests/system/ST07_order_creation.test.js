@@ -1,5 +1,4 @@
-
-const request = require('supertest');
+﻿const request = require('supertest');
 const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
 const { seedMarketplace } = require('../helpers/fixtures');
@@ -56,9 +55,7 @@ describe('ST07 Order Creation', () => {
     await addCartItems([
       { listing: data.listings.L01._id, quantity: 2 },
     ]);
-
     const response = await placeOrder();
-    console.log('ORDER CREATION DEBUG:', response.status, response.body);
 
     expect(response.status).toBe(201);
     expect(response.body.order).toBeDefined();
