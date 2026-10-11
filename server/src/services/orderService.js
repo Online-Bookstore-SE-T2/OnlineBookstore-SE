@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Order, Listing } = require('../models');
 const { ORDER_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
+const notificationService = require('./notificationService');
 
 async function getBuyerOrders(userId) {
   return Order.find({
@@ -72,8 +73,7 @@ async function cancelBuyerOrder(userId, orderId) {
       }
 
       for (const item of order.items) {
-        const listing = await Listing.findById(item.listing)
-          .session(session);
+        const listing = await Listing.findById(item.listing).session(session);
 
         if (!listing) {
           throw new AppError(
@@ -91,6 +91,18 @@ async function cancelBuyerOrder(userId, orderId) {
 
       cancelledOrder = order;
     });
+
+    try {
+      await notificationService.notifyOrderStatusChanged(
+        cancelledOrder,
+        ORDER_STATUS.PLACED
+      );
+    } catch (error) {
+      console.error(
+        'Failed to create cancellation notification:',
+        error.message
+      );
+    }
 
     return cancelledOrder;
   } finally {

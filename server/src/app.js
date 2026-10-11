@@ -13,6 +13,7 @@ const { createCartRouter } = require('./routes/cartRoutes');
 const { createCheckoutRouter } = require('./routes/checkoutRoutes');
 const { createPaymentRouter } = require('./routes/paymentRoutes');
 const { createOrderRouter } = require('./routes/orderRoutes');
+const { createNotificationRouter } = require('./routes/notificationRoutes');
 
 // Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
 function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
@@ -39,6 +40,7 @@ function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) 
     app.use('/api/checkout', createCheckoutRouter());
     app.use('/api/payments', createPaymentRouter());
     app.use('/api/orders', createOrderRouter());
+    app.use('/api/notifications', createNotificationRouter());
 
     app.use(notFound);
     app.use(errorHandler);

@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const { ORDER_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const { config } = require('../config/env');
+const notificationService = require('./notificationService');
 
 async function simulatePayment(userId, orderId, outcome) {
     // Never expose simulated payment in production.
@@ -61,7 +62,16 @@ async function simulatePayment(userId, orderId, outcome) {
         };
     }
 
-    await order.save();
+        await order.save();
+
+    try {
+        await notificationService.notifyPaymentOutcome(
+            order,
+            outcome === 'success'
+        );
+    } catch (error) {
+        console.error('Failed to create payment notification:', error.message);
+    }
 
     return order;
 }

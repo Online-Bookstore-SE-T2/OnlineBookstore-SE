@@ -8,6 +8,7 @@ const Listing = require('./Listing');
 const Review = require('./Review');
 const Order = require('./Order');
 const Cart = require('./Cart');
+const Notification = require('./Notification');
 
 module.exports = {
   User,
@@ -19,4 +20,5 @@ module.exports = {
   Review,
   Order,
   Cart,
+  Notification,
 };

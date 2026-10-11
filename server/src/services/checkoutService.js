@@ -1,5 +1,6 @@
 ﻿const mongoose = require('mongoose');
 const { Cart, Listing, User, Order } = require('../models');
+const notificationService = require('./notificationService');
 const {
     LISTING_STATUS,
     ROLES,
@@ -254,7 +255,7 @@ async function createOrder(userId, addressId) {
                 $set: { items: [] },
             }, { session });
 
-            if (cartResult.matchedCount !== 1) {
+                          if (cartResult.matchedCount !== 1) {
                 throw new AppError(
                     409,
                     'The cart changed. Please try again.'
@@ -264,8 +265,16 @@ async function createOrder(userId, addressId) {
             createdOrder = order;
         });
 
-        return createdOrder;
-    } finally {
+        try {
+            await notificationService.notifyOrderPlaced(createdOrder);
+        } catch (error) {
+            console.error(
+                'Failed to create order notification:',
+                error.message
+            );
+        }
+
+        return createdOrder;  } finally {
         await session.endSession();
     }
 }
