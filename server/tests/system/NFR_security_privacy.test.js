@@ -172,7 +172,16 @@ describe('TC-NFR-SEC-21: secrets stay out of the repository', () => {
   });
 
   test('the client source never references server secrets', () => {
-    const hits = git('grep -l -E "JWT_SECRET|MONGODB_URI|ADMIN_PASSWORD" -- client || true').trim();
+    let hits = '';
+
+    try {
+      hits = git('grep -l -E "JWT_SECRET|MONGODB_URI|ADMIN_PASSWORD" -- client').trim();
+    } catch (error) {
+      if (error.status !== 1) {
+        throw error;
+      }
+    }
+
     expect(hits).toBe('');
   });
 });
