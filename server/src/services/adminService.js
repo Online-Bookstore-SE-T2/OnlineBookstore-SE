@@ -13,6 +13,7 @@ const { AppError } = require('../utils/errors');
 const { FieldValidator, LIMITS } = require('../validation/validators');
 const { isWithinRetention } = require('../models/plugins/softDelete');
 const audit = require('./auditService');
+const { recomputeBookRating } = require('./ratingService');
 
 const PAGE_SIZE = 20;
 const { trusted } = mongoose;
@@ -174,6 +175,7 @@ async function deleteRecord(admin, entity, id) {
 
   doc.deletedAt = new Date();
   await doc.save();
+  if (entity === 'reviews') await recomputeBookRating(doc.book);
   await audit.record(admin, 'delete', target(config, doc));
   return doc;
 }
@@ -190,6 +192,7 @@ async function restoreRecord(admin, entity, id) {
   }
   doc.deletedAt = null;
   await doc.save();
+  if (entity === 'reviews') await recomputeBookRating(doc.book);
   await audit.record(admin, 'restore', target(config, doc));
   return doc;
 }
