@@ -125,7 +125,7 @@ export default function CatalogPage() {
   }, [page, filters]);
 
   return (
-    <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
       <header style={{ marginBottom: '24px' }}>
         <h1>Online Bookstore</h1>
         <p>Discover books and find your next favourite read.</p>
@@ -376,6 +376,6 @@ export default function CatalogPage() {
           </button>
         </nav>
       )}
-    </main>
+    </div>
   );
 }
