@@ -9,6 +9,7 @@ import ProfilePage from './pages/profile/ProfilePage.jsx';
 import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import BookReviewsPage from './pages/BookReviewsPage.jsx';
+import BookDetailsPage from './pages/BookDetailsPage.jsx';
 import SellerListingsPage from './pages/SellerListingsPage.jsx';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="cart" element={<ComingSoonPage name={strings.pages.cart} />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="books/:bookId" element={<BookDetailsPage />} />
           <Route path="books/:bookId/reviews" element={<BookReviewsPage />} />
           <Route path="seller/listings" element={<RequireAuth roles={['Seller']}><SellerListingsPage /></RequireAuth>} />
           <Route

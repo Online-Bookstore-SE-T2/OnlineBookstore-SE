@@ -6,6 +6,7 @@ const { ROLES } = require('../constants');
 
 function createBookMarketplaceRouter() {
   const router = express.Router();
+  router.get('/:bookId', asyncHandler(controller.details));
   router.get('/:bookId/reviews', asyncHandler(controller.listReviews));
   router.get('/:bookId/reviews/mine', authenticate, requireRole(ROLES.BUYER, ROLES.SELLER), asyncHandler(controller.getMyReview));
   router.post('/:bookId/reviews', authenticate, requireWriteAccess, requireRole(ROLES.BUYER, ROLES.SELLER), asyncHandler(controller.createReview));
