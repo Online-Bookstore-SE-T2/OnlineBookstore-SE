@@ -1,4 +1,3 @@
-```javascript
 const mongoose = require('mongoose');
 const { Book, Category, Review } = require('../../src/models');
 const { getBookDetails } = require('../../src/services/bookDetailsService');
@@ -106,4 +105,3 @@ describe('UT07 - Book details service', () => {
   });
   });
 });
-```

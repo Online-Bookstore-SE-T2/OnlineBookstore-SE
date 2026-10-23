@@ -1,4 +1,3 @@
-```javascript
 const { Book, Category } = require('../../src/models');
 const {
   getCatalogBooks,
@@ -166,4 +165,3 @@ describe('UT08 - Catalog service', () => {
     expect(names).toEqual([...names].sort());
   });
 });
-```

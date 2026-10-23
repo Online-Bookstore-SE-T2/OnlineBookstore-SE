@@ -1,4 +1,3 @@
-```javascript
 jest.mock('../../src/services/searchService', () => ({
   searchBooks: jest.fn(),
 }));
@@ -124,4 +123,3 @@ describe('UT09 - Book controller', () => {
     });
   });
 });
-```
