@@ -1,3 +1,5 @@
+
+cat > client/src/App.jsx <<'EOF'
 import { Route, Routes } from 'react-router-dom';
 import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
@@ -65,3 +67,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+EOF
