@@ -23,12 +23,12 @@ async function searchBooks(query = {}) {
   };
 
   if (searchText !== '') {
-    const pattern = escapeRegex(searchText);
+    const pattern = new RegExp(escapeRegex(searchText), 'i');
 
     filter.$or = [
-      { title: { $regex: pattern, $options: 'i' } },
-      { author: { $regex: pattern, $options: 'i' } },
-      { isbn: { $regex: pattern, $options: 'i' } },
+      { title: pattern },
+      { author: pattern },
+      { isbn: pattern },
     ];
   }
 

@@ -6,6 +6,7 @@ function createBookRouter() {
   const router = express.Router();
 
   router.get('/search', asyncHandler(bookController.search));
+  router.get('/:bookId', asyncHandler(bookController.details));
 
   return router;
 }

@@ -1,3 +1,4 @@
+
 const strings = require('../resources/strings');
 
 class AppError extends Error {
@@ -5,7 +6,11 @@ class AppError extends Error {
     super(message);
     this.name = 'AppError';
     this.status = status;
-    if (fields) this.fields = fields;
+    this.statusCode = status;
+
+    if (fields) {
+      this.fields = fields;
+    }
   }
 }
 
