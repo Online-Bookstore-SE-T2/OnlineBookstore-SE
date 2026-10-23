@@ -1,4 +1,7 @@
+
+cat > client/src/pages/SearchPage.jsx <<'EOF'
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 
 export function SearchPage() {
@@ -25,8 +28,9 @@ export function SearchPage() {
 
         params.set('page', String(page));
 
-        const searchPath = '/books/search?' + params.toString();
-        const data = await apiRequest(searchPath);
+        const data = await apiRequest(
+          `/books/search?${params.toString()}`
+        );
 
         if (!cancelled) {
           setResults(data);
@@ -118,7 +122,7 @@ export function SearchPage() {
               </div>
             ) : (
               results.items.map((book) => (
-                <article className="card" key={book._id}>
+                <article className="card stack" key={book._id}>
                   <h3>{book.title}</h3>
 
                   <p>
@@ -129,18 +133,20 @@ export function SearchPage() {
                     <strong>ISBN:</strong> {book.isbn}
                   </p>
 
-                  {book.category && book.category.name && (
+                  {book.category?.name && (
                     <p>
                       <strong>Category:</strong> {book.category.name}
                     </p>
                   )}
 
-                  {book.price !== undefined && book.price !== null && (
+                  {book.price != null && (
                     <p>
                       <strong>Price:</strong> ₹
                       {Number(book.price).toFixed(2)}
                     </p>
                   )}
+
+                  <Link to={`/books/${book._id}`}>View Details</Link>
                 </article>
               ))
             )}
@@ -174,3 +180,4 @@ export function SearchPage() {
     </section>
   );
 }
+EOF

@@ -1,39 +1,45 @@
 const express = require('express');
 const cartController = require('../controllers/cartController');
-const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate, requireWriteAccess } = require('../middleware/auth');
+const { asyncHandler } = require('../utils/asyncHandler');
 
 function createCartRouter() {
   const router = express.Router();
 
-  // All cart operations require a logged-in user.
+  // All cart operations require an authenticated user.
   router.use(authenticate);
 
-  // View current cart.
+  // Retrieve the current user's cart.
   router.get('/', asyncHandler(cartController.getCart));
 
-  // Add an item to the cart.
+  // Add a listing to the cart.
   router.post(
     '/items',
     requireWriteAccess,
     asyncHandler(cartController.addItem),
   );
 
-  // Change item quantity.
+  // Support both methods for compatibility with existing clients.
+  router.put(
+    '/items/:listingId',
+    requireWriteAccess,
+    asyncHandler(cartController.updateItem),
+  );
+
   router.patch(
     '/items/:listingId',
     requireWriteAccess,
     asyncHandler(cartController.updateItem),
   );
 
-  // Remove an item.
+  // Remove one listing.
   router.delete(
     '/items/:listingId',
     requireWriteAccess,
     asyncHandler(cartController.removeItem),
   );
 
-  // Remove all items.
+  // Empty the cart.
   router.delete(
     '/',
     requireWriteAccess,

@@ -54,29 +54,32 @@ function validate(body, partial = false) {
       }
 
       values.condition = body.condition;
-    } else if (
-      body.notes === undefined ||
-      body.notes === null ||
-      body.notes === ''
-    ) {
-      values.notes = '';
-    } else {
-      if (typeof body.notes !== 'string') {
-        throw new AppError(
-          400,
-          'Notes must be text.',
-          { notes: 'Enter text.' }
-        );
-      }
+    } else if (field === 'notes') {
+      // Notes are optional. Missing, null, or empty notes become an empty string.
+      if (
+        body.notes === undefined ||
+        body.notes === null ||
+        body.notes === ''
+      ) {
+        values.notes = '';
+      } else {
+        if (typeof body.notes !== 'string') {
+          throw new AppError(
+            400,
+            'Notes must be text.',
+            { notes: 'Enter text.' }
+          );
+        }
 
-      values.notes = sanitizeText(body.notes);
+        values.notes = sanitizeText(body.notes);
 
-      if (characterCount(values.notes) > 500) {
-        throw new AppError(
-          400,
-          'Notes must be at most 500 characters.',
-          { notes: 'Notes must be at most 500 characters.' }
-        );
+        if (characterCount(values.notes) > 500) {
+          throw new AppError(
+            400,
+            'Notes must be at most 500 characters.',
+            { notes: 'Notes must be at most 500 characters.' }
+          );
+        }
       }
     }
   }
@@ -130,6 +133,7 @@ async function myListings(sellerId, page = 1) {
       .sort({ createdAt: -1 })
       .skip((safePage - 1) * 20)
       .limit(20),
+
     Listing.countDocuments(filter),
   ]);
 
