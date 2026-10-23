@@ -1,5 +1,3 @@
-
-cat > client/src/App.jsx <<'EOF'
 import { Route, Routes } from 'react-router-dom';
 import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
@@ -33,6 +31,7 @@ export default function App() {
           />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="books/:bookId" element={<BookDetailsPage />} />
           <Route path="books/:bookId/reviews" element={<BookReviewsPage />} />
           <Route
             path="seller/listings"
@@ -60,11 +59,9 @@ export default function App() {
           />
           <Route path="help" element={<HelpPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
-          <Route path="books/:bookId" element={<BookDetailsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </AuthProvider>
   );
 }
-EOF

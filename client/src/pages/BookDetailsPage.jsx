@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
@@ -27,7 +26,6 @@ export default function BookDetailsPage() {
 
       try {
         const result = await apiRequest(`/books/${bookId}`);
-
         if (!cancelled) {
           setData(result);
         }
@@ -117,7 +115,6 @@ export default function BookDetailsPage() {
           <strong>Category:</strong>{' '}
           {book.category?.name || 'Uncategorised'}
         </p>
-
         <p>
           <strong>Availability:</strong>{' '}
           {book.markedUnavailable
@@ -125,6 +122,13 @@ export default function BookDetailsPage() {
             : listings.length > 0
               ? 'Available from sellers'
               : 'Currently out of stock'}
+        </p>
+
+        <p>
+          <strong>Price:</strong>{' '}
+          {book.price != null
+            ? `₹${Number(book.price).toFixed(2)}`
+            : 'Not listed'}
         </p>
 
         <section className="stack">

@@ -1,8 +1,10 @@
 const reviews = require('../services/reviewService');
 const listings = require('../services/listingService');
+const { getBookDetails } = require('../services/bookDetailsService');
 
 function id(req) { return req.user.id || req.user._id; }
 
+async function details(req, res) { res.json(await getBookDetails(req.params.bookId)); }
 async function listReviews(req, res) { res.json(await reviews.listReviews(req.params.bookId, req.query.page)); }
 async function getMyReview(req, res) { res.json({ review: await reviews.myReview(id(req), req.params.bookId) }); }
 async function createReview(req, res) { res.status(201).json({ review: await reviews.createReview(id(req), req.params.bookId, req.body) }); }
@@ -13,4 +15,4 @@ async function listMyListings(req, res) { res.json(await listings.myListings(id(
 async function updateListing(req, res) { res.json({ listing: await listings.updateListing(id(req), req.params.listingId, req.body) }); }
 async function removeListing(req, res) { res.json({ listing: await listings.removeListing(id(req), req.params.listingId) }); }
 
-module.exports = { listReviews, getMyReview, createReview, updateReview, listPublicListings, createListing, listMyListings, updateListing, removeListing };
+module.exports = { details, listReviews, getMyReview, createReview, updateReview, listPublicListings, createListing, listMyListings, updateListing, removeListing };

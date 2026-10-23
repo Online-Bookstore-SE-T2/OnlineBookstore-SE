@@ -1,5 +1,4 @@
 
-cat > client/src/pages/SearchPage.jsx <<'EOF'
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
@@ -180,4 +179,3 @@ export function SearchPage() {
     </section>
   );
 }
-EOF
