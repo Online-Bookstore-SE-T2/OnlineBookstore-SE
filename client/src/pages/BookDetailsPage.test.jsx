@@ -2,10 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
+import { AuthProvider } from '../auth/AuthContext.jsx';
 import BookDetailsPage from './BookDetailsPage.jsx';
 
 vi.mock('../api/http.js', () => ({
   apiRequest: vi.fn(),
+  getToken: vi.fn(() => null),
+  clearToken: vi.fn(),
+  setToken: vi.fn(),
+  onUnauthorized: vi.fn(),
 }));
 
 const bookDetails = {
@@ -37,11 +42,13 @@ const bookDetails = {
 
 function renderBookDetails(bookId = 'book-1') {
   return render(
-    <MemoryRouter initialEntries={[`/books/${bookId}`]}>
-      <Routes>
-        <Route path="/books/:bookId" element={<BookDetailsPage />} />
-      </Routes>
-    </MemoryRouter>
+    <AuthProvider>
+      <MemoryRouter initialEntries={[`/books/${bookId}`]}>
+        <Routes>
+          <Route path="/books/:bookId" element={<BookDetailsPage />} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>
   );
 }
 

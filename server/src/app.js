@@ -1,53 +1,92 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+
 const { config } = require('./config/env');
 const { sanitizeRequest } = require('./middleware/sanitize');
 const { requestLogger } = require('./middleware/requestLogger');
 const { enforceHttps } = require('./middleware/https');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createAdminRouter } = require('./routes/adminRoutes');
+const { createCatalogRouter } = require('./routes/catalogRoutes');
+const { createBookRouter } = require('./routes/bookRoutes');
 const { createCartRouter } = require('./routes/cartRoutes');
 const { createCheckoutRouter } = require('./routes/checkoutRoutes');
 const { createPaymentRouter } = require('./routes/paymentRoutes');
 const { createOrderRouter } = require('./routes/orderRoutes');
 const { createNotificationRouter } = require('./routes/notificationRoutes');
-const { createBookMarketplaceRouter, createSellerListingRouter } = require('./routes/marketplaceRoutes');
 
-// Builds the Express application. `authRateLimit` lets tests tune the authentication rate limiter.
-function createApp({ authRateLimit, logRequests = config.env !== 'test' } = {}) {
-    const app = express();
-    app.disable('x-powered-by');
+const {
+  createBookMarketplaceRouter,
+  createSellerListingRouter,
+} = require('./routes/marketplaceRoutes');
 
-    if (config.env === 'production') {
-        app.set('trust proxy', 1);
-        app.use(enforceHttps);
-    }
+// Builds the Express application. Tests can configure the authentication rate limiter.
+function createApp({
+  authRateLimit,
+  logRequests = config.env !== 'test',
+} = {}) {
+  const app = express();
 
-    app.use(helmet());
-    // SRS 3.3: cross-origin requests are restricted to the deployed application origin.
-    app.use(cors({ origin: (origin, callback) => callback(null, origin === config.clientOrigin) }));
-    app.use(express.json({ limit: config.bodyLimit }));
-    app.use(sanitizeRequest);
-    if (logRequests) app.use(requestLogger);
+  app.disable('x-powered-by');
 
-    app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-    app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
-    app.use('/api/users', createUserRouter());
-    app.use('/api/admin', createAdminRouter());
-    app.use('/api/cart', createCartRouter());
-    app.use('/api/checkout', createCheckoutRouter());
-    app.use('/api/payments', createPaymentRouter());
-    app.use('/api/orders', createOrderRouter());
-    app.use('/api/notifications', createNotificationRouter());
-    app.use('/api/books', createBookMarketplaceRouter());
-    app.use('/api/listings', createSellerListingRouter());
+  if (config.env === 'production') {
+    app.set('trust proxy', 1);
+    app.use(enforceHttps);
+  }
 
-    app.use(notFound);
-    app.use(errorHandler);
-    return app;
+  app.use(helmet());
+
+  // Restrict cross-origin requests to the configured client origin.
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        callback(null, origin === config.clientOrigin);
+      },
+    })
+  );
+
+  app.use(express.json({ limit: config.bodyLimit }));
+  app.use(sanitizeRequest);
+
+  if (logRequests) {
+    app.use(requestLogger);
+  }
+
+  // Health check.
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  // Authentication, users, and administration.
+  app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));
+  app.use('/api/users', createUserRouter());
+  app.use('/api/admin', createAdminRouter());
+
+  // Catalog and search routes must be registered before marketplace routes
+  // that may handle parameterized book paths.
+  app.use('/api/books', createCatalogRouter());
+  app.use('/api/books', createBookRouter());
+  app.use('/api/books', createBookMarketplaceRouter());
+
+  // Shopping cart and checkout workflow.
+  app.use('/api/cart', createCartRouter());
+  app.use('/api/checkout', createCheckoutRouter());
+  app.use('/api/payments', createPaymentRouter());
+  app.use('/api/orders', createOrderRouter());
+
+  // Notifications and seller listings.
+  app.use('/api/notifications', createNotificationRouter());
+  app.use('/api/listings', createSellerListingRouter());
+
+  // Handle unmatched requests and application errors.
+  app.use(notFound);
+  app.use(errorHandler);
+
+  return app;
 }
 
 module.exports = { createApp };

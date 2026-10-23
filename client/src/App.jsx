@@ -1,15 +1,17 @@
 import { Route, Routes } from 'react-router-dom';
+import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
 import RequireAuth from './auth/RequireAuth.jsx';
 import Layout from './components/Layout.jsx';
-import strings from './resources/strings.js';
-import { ComingSoonPage, HelpPage, NotFoundPage, PrivacyPage } from './pages/InfoPages.jsx';
+import { HelpPage, NotFoundPage, PrivacyPage } from './pages/InfoPages.jsx';
+import { SearchPage } from './pages/SearchPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
 import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
-import BookReviewsPage from './pages/BookReviewsPage.jsx';
 import BookDetailsPage from './pages/BookDetailsPage.jsx';
+import CartPage from './pages/CartPage.jsx';
+import BookReviewsPage from './pages/BookReviewsPage.jsx';
 import SellerListingsPage from './pages/SellerListingsPage.jsx';
 
 export default function App() {
@@ -17,14 +19,28 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<ComingSoonPage name={strings.pages.catalog} />} />
-          <Route path="search" element={<ComingSoonPage name={strings.pages.search} />} />
-          <Route path="cart" element={<ComingSoonPage name={strings.pages.cart} />} />
+          <Route index element={<CatalogPage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route
+            path="cart"
+            element={
+              <RequireAuth>
+                <CartPage />
+              </RequireAuth>
+            }
+          />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="books/:bookId" element={<BookDetailsPage />} />
           <Route path="books/:bookId/reviews" element={<BookReviewsPage />} />
-          <Route path="seller/listings" element={<RequireAuth roles={['Seller']}><SellerListingsPage /></RequireAuth>} />
+          <Route
+            path="seller/listings"
+            element={
+              <RequireAuth roles={['Seller']}>
+                <SellerListingsPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="profile"
             element={

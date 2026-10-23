@@ -1,45 +1,176 @@
+
+const mongoose = require('mongoose');
 const { Cart, Listing } = require('../models');
 const { LISTING_STATUS } = require('../constants');
-const { AppError } = require('../utils/errors');
+const { AppError, ValidationError } = require('../utils/errors');
+const strings = require('../resources/strings');
 
-async function getCart(userId) {
-  let cart = await Cart.findOne({ buyer: userId });
-
-  if (!cart) {
-    cart = await Cart.create({
-      buyer: userId,
-      items: [],
-    });
-  }
-
-  return cart;
+function validateId(id) {
+  return mongoose.isValidObjectId(id);
 }
 
-async function addItem(userId, listingId, quantity) {
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    throw new AppError(400, 'Quantity must be a positive integer.');
+function validateQuantity(quantity) {
+  return Number.isInteger(quantity) && quantity >= 1;
+}
+
+async function getActiveListing(listingId) {
+  if (!validateId(listingId)) {
+    throw new AppError(404, strings.common.notFound);
   }
 
   const listing = await Listing.findOne({
     _id: listingId,
+    deletedAt: null,
     status: LISTING_STATUS.ACTIVE,
-  });
+    quantity: { $gt: 0 },
+  })
+    .populate({
+      path: 'book',
+      select: 'title author coverImageUrl markedUnavailable deletedAt',
+      match: { deletedAt: null },
+    })
+    .populate('seller', 'name')
+    .lean();
 
-  if (!listing) {
-    throw new AppError(404, 'Listing not found or unavailable.');
+  if (!listing || !listing.book || listing.book.markedUnavailable) {
+    throw new AppError(404, strings.common.notFound);
   }
 
-  let cart = await Cart.findOne({ buyer: userId });
+  return listing;
+}
+
+async function getOrCreateCart(buyerId) {
+  const existingCart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  });
+
+  if (existingCart) {
+    return existingCart;
+  }
+
+  // Restore a soft-deleted cart instead of creating a duplicate.
+  const deletedCart = await Cart.findOneAndUpdate(
+    {
+      buyer: buyerId,
+      deletedAt: { $ne: null },
+    },
+    {
+      $set: {
+        deletedAt: null,
+        items: [],
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  if (deletedCart) {
+    return deletedCart;
+  }
+
+  return Cart.create({
+    buyer: buyerId,
+    items: [],
+  });
+}
+
+async function getCart(buyerId) {
+  const cart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  }).lean();
 
   if (!cart) {
-    cart = await Cart.create({
-      buyer: userId,
+    return {
       items: [],
+      itemCount: 0,
+      subtotal: 0,
+    };
+  }
+
+  const listingIds = cart.items.map((item) => item.listing);
+
+  const listings = await Listing.find({
+    _id: { $in: listingIds },
+    deletedAt: null,
+  })
+    .populate({
+      path: 'book',
+      select: 'title author coverImageUrl markedUnavailable deletedAt',
+      match: { deletedAt: null },
+    })
+    .populate('seller', 'name')
+    .lean();
+
+  const listingMap = new Map(
+    listings.map((listing) => [String(listing._id), listing]),
+  );
+
+  const items = cart.items.map((item) => {
+    const listing = listingMap.get(String(item.listing));
+
+    const available =
+      Boolean(listing) &&
+      listing.status === LISTING_STATUS.ACTIVE &&
+      listing.quantity >= 1 &&
+      Boolean(listing.book) &&
+      !listing.book.markedUnavailable;
+
+    return {
+      listingId: String(item.listing),
+      quantity: item.quantity,
+      available,
+      listing: listing
+        ? {
+            id: String(listing._id),
+            price: listing.price,
+            stock: listing.quantity,
+            condition: listing.condition,
+            book: listing.book,
+            seller: listing.seller,
+          }
+        : null,
+      lineTotal:
+        available && listing
+          ? Number((listing.price * item.quantity).toFixed(2))
+          : 0,
+    };
+  });
+
+  const itemCount = items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
+
+  const subtotal = Number(
+    items
+      .filter((item) => item.available)
+      .reduce((total, item) => total + item.lineTotal, 0)
+      .toFixed(2),
+  );
+
+  return {
+    items,
+    itemCount,
+    subtotal,
+  };
+}
+
+async function addItem(buyerId, listingId, quantity = 1) {
+  if (!validateQuantity(quantity)) {
+    throw new ValidationError({
+      quantity: 'Quantity must be a positive whole number.',
     });
   }
 
+  const listing = await getActiveListing(listingId);
+  const cart = await getOrCreateCart(buyerId);
+
   const existingItem = cart.items.find(
-    (item) => item.listing.toString() === listingId.toString(),
+    (item) => String(item.listing) === String(listing._id),
   );
 
   const newQuantity = existingItem
@@ -47,10 +178,9 @@ async function addItem(userId, listingId, quantity) {
     : quantity;
 
   if (newQuantity > listing.quantity) {
-    throw new AppError(
-  409,
-  `Only ${listing.quantity} item(s) are available.`,
-);
+    throw new ValidationError({
+      quantity: `Only ${listing.quantity} item(s) are currently available.`,
+    });
   }
 
   if (existingItem) {
@@ -64,86 +194,99 @@ async function addItem(userId, listingId, quantity) {
 
   await cart.save();
 
-  return cart;
+  return getCart(buyerId);
 }
 
-async function updateItem(userId, listingId, quantity) {
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    throw new AppError(400, 'Quantity must be a positive integer.');
+async function updateItem(buyerId, listingId, quantity) {
+  if (!validateId(listingId)) {
+    throw new AppError(404, strings.common.notFound);
   }
 
-  const listing = await Listing.findOne({
-    _id: listingId,
-    status: LISTING_STATUS.ACTIVE,
-  });
-
-  if (!listing) {
-    throw new AppError(404, 'Listing not found or unavailable.');
+  if (!validateQuantity(quantity)) {
+    throw new ValidationError({
+      quantity: 'Quantity must be a positive whole number.',
+    });
   }
+
+  const listing = await getActiveListing(listingId);
 
   if (quantity > listing.quantity) {
-  throw new AppError(
-    409,
-    `Only ${listing.quantity} item(s) are available.`,
-  );
-}
-  const cart = await Cart.findOne({ buyer: userId });
+    throw new ValidationError({
+      quantity: `Only ${listing.quantity} item(s) are currently available.`,
+    });
+  }
+
+  const cart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  });
 
   if (!cart) {
-    throw new AppError(404, 'Cart not found.');  }
+    throw new AppError(404, strings.common.notFound);
+  }
 
   const item = cart.items.find(
-    (cartItem) => cartItem.listing.toString() === listingId.toString(),
+    (entry) => String(entry.listing) === String(listingId),
   );
 
   if (!item) {
-    throw new AppError(404, 'Item is not in the cart.');
+    throw new AppError(404, strings.common.notFound);
   }
 
   item.quantity = quantity;
 
   await cart.save();
 
-  return cart;
+  return getCart(buyerId);
 }
 
-async function removeItem(userId, listingId) {
-  const cart = await Cart.findOne({ buyer: userId });
+async function removeItem(buyerId, listingId) {
+  if (!validateId(listingId)) {
+    throw new AppError(404, strings.common.notFound);
+  }
+
+  const cart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  });
 
   if (!cart) {
-    throw new AppError(404, 'Cart not found.');
+    throw new AppError(404, strings.common.notFound);
   }
 
   const originalLength = cart.items.length;
 
   cart.items = cart.items.filter(
-    (item) => item.listing.toString() !== listingId.toString(),
+    (item) => String(item.listing) !== String(listingId),
   );
 
   if (cart.items.length === originalLength) {
-    throw new AppError(404, 'Item is not in the cart.');
+    throw new AppError(404, strings.common.notFound);
   }
 
   await cart.save();
 
-  return cart;
+  return getCart(buyerId);
 }
 
-async function clearCart(userId) {
-  const cart = await Cart.findOne({ buyer: userId });
+async function clearCart(buyerId) {
+  const cart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  });
 
   if (!cart) {
     return {
-      buyer: userId,
       items: [],
+      itemCount: 0,
+      subtotal: 0,
     };
   }
 
   cart.items = [];
-
   await cart.save();
 
-  return cart;
+  return getCart(buyerId);
 }
 
 module.exports = {
