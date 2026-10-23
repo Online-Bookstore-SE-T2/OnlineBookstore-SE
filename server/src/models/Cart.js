@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { toJSONPlugin } = require('./plugins/toJSON');
+const { softDeletePlugin } = require('./plugins/softDelete');
 
 const cartItemSchema = new mongoose.Schema(
   {
@@ -26,17 +27,15 @@ const cartSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-
     items: {
       type: [cartItemSchema],
       default: [],
     },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
+cartSchema.plugin(softDeletePlugin);
 cartSchema.plugin(toJSONPlugin);
 
 module.exports =
