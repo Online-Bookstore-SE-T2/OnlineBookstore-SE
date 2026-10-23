@@ -1,3 +1,4 @@
+
 import { Route, Routes } from 'react-router-dom';
 import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
@@ -11,6 +12,9 @@ import AdminConsolePage from './pages/admin/AdminConsolePage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import BookDetailsPage from './pages/BookDetailsPage.jsx';
 import CartPage from './pages/CartPage.jsx';
+import BookReviewsPage from './pages/BookReviewsPage.jsx';
+import SellerListingsPage from './pages/SellerListingsPage.jsx';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -18,9 +22,25 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<CatalogPage />} />
           <Route path="search" element={<SearchPage />} />
-          <Route path="cart" element={<RequireAuth><CartPage /></RequireAuth>} />
+          <Route
+            path="cart"
+            element={
+              <RequireAuth>
+                <CartPage />
+              </RequireAuth>
+            }
+          />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="books/:bookId/reviews" element={<BookReviewsPage />} />
+          <Route
+            path="seller/listings"
+            element={
+              <RequireAuth roles={['Seller']}>
+                <SellerListingsPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="profile"
             element={
@@ -39,8 +59,8 @@ export default function App() {
           />
           <Route path="help" element={<HelpPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
-          <Route path="*" element={<NotFoundPage />} />
           <Route path="books/:bookId" element={<BookDetailsPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </AuthProvider>
