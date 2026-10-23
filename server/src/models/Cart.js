@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const { toJSONPlugin } = require('./plugins/toJSON');
 const { softDeletePlugin } = require('./plugins/softDelete');

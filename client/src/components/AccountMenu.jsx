@@ -73,6 +73,7 @@ export default function AccountMenu() {
               </Link>
             </li>
           )}
+          {user.role === 'Seller' && <li><Link to="/seller/listings" onClick={() => setOpen(false)}>Manage listings</Link></li>}
           <li>
             <button type="button" onClick={onLogout}>
               {strings.account.logout}

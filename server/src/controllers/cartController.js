@@ -1,14 +1,24 @@
-
 const cartService = require('../services/cartService');
 
+function getUserId(req) {
+  const userId = req.user?.id || req.user?._id || req.user?.userId;
+
+  if (!userId) {
+    const { AppError } = require('../utils/errors');
+    throw new AppError(401, 'Authentication required.');
+  }
+
+  return userId;
+}
+
 async function getCart(req, res) {
-  const cart = await cartService.getCart(req.user._id);
-  res.json(cart);
+  const cart = await cartService.getCart(getUserId(req));
+  res.status(200).json(cart);
 }
 
 async function addItem(req, res) {
   const cart = await cartService.addItem(
-    req.user._id,
+    getUserId(req),
     req.body?.listingId,
     req.body?.quantity ?? 1,
   );
@@ -18,21 +28,26 @@ async function addItem(req, res) {
 
 async function updateItem(req, res) {
   const cart = await cartService.updateItem(
-    req.user._id,
+    getUserId(req),
     req.params.listingId,
     req.body?.quantity,
   );
 
-  res.json(cart);
+  res.status(200).json(cart);
 }
 
 async function removeItem(req, res) {
   const cart = await cartService.removeItem(
-    req.user._id,
+    getUserId(req),
     req.params.listingId,
   );
 
-  res.json(cart);
+  res.status(200).json(cart);
+}
+
+async function clearCart(req, res) {
+  const cart = await cartService.clearCart(getUserId(req));
+  res.status(200).json(cart);
 }
 
 module.exports = {
@@ -40,4 +55,5 @@ module.exports = {
   addItem,
   updateItem,
   removeItem,
+  clearCart,
 };

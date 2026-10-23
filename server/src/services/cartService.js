@@ -269,9 +269,30 @@ async function removeItem(buyerId, listingId) {
   return getCart(buyerId);
 }
 
+async function clearCart(buyerId) {
+  const cart = await Cart.findOne({
+    buyer: buyerId,
+    deletedAt: null,
+  });
+
+  if (!cart) {
+    return {
+      items: [],
+      itemCount: 0,
+      subtotal: 0,
+    };
+  }
+
+  cart.items = [];
+  await cart.save();
+
+  return getCart(buyerId);
+}
+
 module.exports = {
   getCart,
   addItem,
   updateItem,
   removeItem,
+  clearCart,
 };

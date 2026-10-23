@@ -8,6 +8,9 @@ const reviewSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
+    // Provenance for reviews created through the verified-purchase flow. Optional so existing
+    // reviews already in the database remain valid during rollout.
+    order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     rating: { type: Number, required: true, min: 1, max: 5, validate: Number.isInteger },
     text: { type: String, trim: true, maxlength: 2000 },
   },

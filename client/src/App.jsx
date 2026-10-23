@@ -1,4 +1,3 @@
-
 import { Route, Routes } from 'react-router-dom';
 import CatalogPage from './pages/CatalogPage.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
@@ -22,6 +21,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<CatalogPage />} />
           <Route path="search" element={<SearchPage />} />
+
           <Route
             path="cart"
             element={
@@ -30,9 +30,12 @@ export default function App() {
               </RequireAuth>
             }
           />
+
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+
           <Route path="books/:bookId/reviews" element={<BookReviewsPage />} />
+
           <Route
             path="seller/listings"
             element={
@@ -41,6 +44,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+
           <Route
             path="profile"
             element={
@@ -49,6 +53,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+
           <Route
             path="admin"
             element={
@@ -57,6 +62,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+
           <Route path="help" element={<HelpPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="books/:bookId" element={<BookDetailsPage />} />
