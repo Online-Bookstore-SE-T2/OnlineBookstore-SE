@@ -1,15 +1,25 @@
-
 const mongoose = require('mongoose');
 const { Book, Listing, Order } = require('../models');
-const { OPEN_ORDER_STATUSES, LISTING_CONDITIONS, LISTING_STATUS } = require('../constants');
-const { isMoney, isValidIsbn13, sanitizeText, characterCount } = require('../validation/validators');
+const {
+  OPEN_ORDER_STATUSES,
+  LISTING_CONDITIONS,
+  LISTING_STATUS,
+} = require('../constants');
+const {
+  isMoney,
+  isValidIsbn13,
+  sanitizeText,
+  characterCount,
+} = require('../validation/validators');
 const { AppError } = require('../utils/errors');
 
 function validate(body, partial = false) {
   const values = {};
 
   for (const field of ['price', 'quantity', 'condition', 'notes']) {
-    if (partial && body[field] === undefined) continue;
+    if (partial && body[field] === undefined) {
+      continue;
+    }
 
     if (field === 'price') {
       if (!isMoney(body.price) || body.price <= 0) {

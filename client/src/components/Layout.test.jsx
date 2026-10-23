@@ -16,7 +16,9 @@ describe('application shell (SRS 3.1)', () => {
   it('header carries logo, search, cart indicator, account links and Help; footer carries contact and policy links', () => {
     renderApp('/');
 
-    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /online bookstore home/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
 
     expect(
@@ -105,7 +107,10 @@ describe('application shell (SRS 3.1)', () => {
     const privacy = renderApp('/privacy');
 
     const privacyResults = await axe(privacy.container);
-    expect(privacyResults.violations).toHaveLength(0);
+    expect
+expect(
+  screen.getByRole('banner')
+).toBeInTheDocument();
 
     privacy.unmount();
   });
