@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 const { Book, Listing, Category } = require('../models');
 const { LISTING_STATUS } = require('../constants');
@@ -111,20 +112,22 @@ async function getCatalogBooks(query = {}) {
     minimumPrice !== undefined ||
     maximumPrice !== undefined
   ) {
-    filter.price = {};
+    const priceFilter = {};
 
     if (minimumPrice !== undefined) {
-      filter.price.$gte = minimumPrice;
+      priceFilter.$gte = minimumPrice;
     }
 
     if (maximumPrice !== undefined) {
-      filter.price.$lte = maximumPrice;
+      priceFilter.$lte = maximumPrice;
     }
+
+    filter.price = mongoose.trusted(priceFilter);
   }
 
   // Minimum rating filter
   if (rating !== undefined) {
-    filter.averageRating = { $gte: rating };
+    filter.averageRating = mongoose.trusted({ $gte: rating });
   }
 
   // Availability filter
@@ -132,16 +135,16 @@ async function getCatalogBooks(query = {}) {
     const inStockBookIds = await Listing.distinct('book', {
       status: LISTING_STATUS.ACTIVE,
       deletedAt: null,
-      quantity: { $gt: 0 },
+      quantity: mongoose.trusted({ $gt: 0 }),
     });
 
     if (available === 'true') {
       filter.markedUnavailable = false;
-      filter._id = { $in: inStockBookIds };
+      filter._id = mongoose.trusted({ $in: inStockBookIds });
     } else {
       filter.$or = [
         { markedUnavailable: true },
-        { _id: { $nin: inStockBookIds } },
+        { _id: mongoose.trusted({ $nin: inStockBookIds }) },
       ];
     }
   }

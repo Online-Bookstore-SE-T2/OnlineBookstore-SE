@@ -34,7 +34,7 @@ async function getBookDetails(bookId) {
       book: book._id,
       deletedAt: null,
       status: LISTING_STATUS.ACTIVE,
-      quantity: { $gt: 0 },
+      quantity: mongoose.trusted({ $gt: 0 }),
     })
       .select('_id price quantity condition seller')
       .populate('seller', 'name')
