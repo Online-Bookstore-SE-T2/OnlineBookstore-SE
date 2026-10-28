@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+redesign-pdfs/
 
 # Environment configuration (secrets must never be committed - SRS 6.3)
 .env
