@@ -7,6 +7,8 @@ export function SearchPage() {
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [results, setResults] = useState(null);
+  const [resultsQuery, setResultsQuery] = useState(null);
+  const [suggestedCategories, setSuggestedCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +35,7 @@ export function SearchPage() {
 
         if (!cancelled) {
           setResults(data);
+          setResultsQuery(submittedQuery);
         }
       } catch (err) {
         if (!cancelled) {
@@ -52,6 +55,40 @@ export function SearchPage() {
       cancelled = true;
     };
   }, [submittedQuery, page]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSuggestedCategories() {
+      if (
+        !submittedQuery ||
+        !results ||
+        resultsQuery !== submittedQuery ||
+        results.items.length > 0
+      ) {
+        setSuggestedCategories([]);
+        return;
+      }
+
+      try {
+        const data = await apiRequest('/books/categories');
+        if (!cancelled) {
+          setSuggestedCategories(
+            Array.isArray(data.items) ? data.items : []
+          );
+        }
+      } catch {
+        // Search still works if the optional category suggestions fail.
+        if (!cancelled) setSuggestedCategories([]);
+      }
+    }
+
+    loadSuggestedCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [submittedQuery, results, resultsQuery]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -116,8 +153,26 @@ export function SearchPage() {
             </h2>
 
             {results.items.length === 0 ? (
-              <div className="card">
+              <div className="card stack">
                 <p>No books found.</p>
+                {submittedQuery && suggestedCategories.length > 0 && (
+                  <div>
+                    <p>Try browsing one of these categories:</p>
+                    <ul>
+                      {suggestedCategories.map((category) => (
+                        <li key={category._id}>
+                          <Link
+                            to={`/?${new URLSearchParams({
+                              category: category._id,
+                            }).toString()}`}
+                          >
+                            {category.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               results.items.map((book) => (

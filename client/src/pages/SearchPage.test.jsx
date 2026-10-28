@@ -205,6 +205,14 @@ describe('Search Books (OSP-9)', () => {
       )
       .mockResolvedValueOnce(
         response(mockSearchResponse([]))
+      )
+      .mockResolvedValueOnce(
+        response({
+          items: [
+            { _id: 'fiction-id', name: 'Fiction' },
+            { _id: 'tech-id', name: 'Technology' },
+          ],
+        })
       );
 
     renderSearchPage();
@@ -222,12 +230,17 @@ describe('Search Books (OSP-9)', () => {
       await screen.findByText('No books found.')
     ).toBeInTheDocument();
 
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       '/api/books/search?q=Book+That+Does+Not+Exist&page=1',
       expect.objectContaining({
         method: 'GET',
       })
     );
+
+    expect(await screen.findByRole('link', { name: 'Fiction' }))
+      .toHaveAttribute('href', '/?category=fiction-id');
+    expect(screen.getByRole('link', { name: 'Technology' }))
+      .toHaveAttribute('href', '/?category=tech-id');
   });
 
   it('supports pagination when multiple pages are returned', async () => {
