@@ -4,6 +4,8 @@ const { ORDER_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const notificationService = require('./notificationService');
 
+const BUYER_CANCELLABLE_STATUSES = Object.freeze([ORDER_STATUS.PLACED, ORDER_STATUS.PAID]);
+
 async function getBuyerOrders(userId) {
   return Order.find({
     buyer: userId,
@@ -41,6 +43,7 @@ async function cancelBuyerOrder(userId, orderId) {
 
   const session = await mongoose.startSession();
   let cancelledOrder;
+  let previousStatus;
 
   try {
     await session.withTransaction(async () => {
@@ -54,22 +57,19 @@ async function cancelBuyerOrder(userId, orderId) {
         throw new AppError(404, 'Order not found.');
       }
 
-      if (order.status !== ORDER_STATUS.PLACED) {
+      // SRS 6.2: a buyer may cancel only before the order reaches Shipped.
+      if (!BUYER_CANCELLABLE_STATUSES.includes(order.status)) {
         throw new AppError(
           409,
-          'Only unpaid orders with Placed status can be cancelled.'
+          'Only orders that have not yet shipped can be cancelled.'
         );
       }
 
-      if (
-        order.payment &&
-        (order.payment.status === 'Paid' ||
-          order.payment.transactionRef)
-      ) {
-        throw new AppError(
-          409,
-          'This order cannot be cancelled through this endpoint.'
-        );
+      previousStatus = order.status;
+
+      // Refunds are outside Release 1.0; record that one is owed.
+      if (order.payment && order.payment.status === 'Paid') {
+        order.payment.status = 'Refund pending';
       }
 
       for (const item of order.items) {
@@ -95,7 +95,7 @@ async function cancelBuyerOrder(userId, orderId) {
     try {
       await notificationService.notifyOrderStatusChanged(
         cancelledOrder,
-        ORDER_STATUS.PLACED
+        previousStatus
       );
     } catch (error) {
       console.error(
