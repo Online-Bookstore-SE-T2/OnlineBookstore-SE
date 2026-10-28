@@ -239,6 +239,21 @@ describe('ST04 reviews, categories, books and listings', () => {
     expect(duplicate.body.error.fields.isbn).toMatch(/already in the catalog/);
   });
 
+  test('the administrator edits a book; the catalog shows the change and the audit log names the fields', async () => {
+    const id = data.books.B11.id;
+    const res = await request(app).patch(`/api/admin/books/${id}`).set(adminAuth)
+      .send({ title: 'Orchard Care Handbook, 2nd edition', price: 299, category: data.categories.Science.id });
+    expect(res.status).toBe(200);
+    expect(res.body.record).toMatchObject({ title: 'Orchard Care Handbook, 2nd edition', price: 299, category: { name: 'Science' } });
+    expect((await request(app).get(`/api/books/${id}`)).body).toMatchObject({ book: { title: 'Orchard Care Handbook, 2nd edition' } });
+    const [entry] = (await request(app).get('/api/admin/audit-log').set(adminAuth)).body.items;
+    expect(entry).toMatchObject({ action: 'edit', targetType: 'Book', details: { fields: ['title', 'category', 'price'] } });
+
+    const invalid = await request(app).patch(`/api/admin/books/${id}`).set(adminAuth).send({ coverImageUrl: 'ftp://covers/x.jpg' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.fields.coverImageUrl).toMatch(/http/);
+  });
+
   test('a category that still has books cannot be deleted; an open order cannot be deleted', async () => {
     expect((await del(adminAuth, `/categories/${data.categories.Fiction.id}`)).status).toBe(409);
     expect((await del(adminAuth, `/orders/${data.orders['ORD-S03'].id}`)).status).toBe(409);
@@ -256,6 +271,7 @@ describe('ST04 access control (REQ-4 403 rule, BR-3)', () => {
     ['delete a category', (auth) => del(auth, `/categories/${d.categories.Science.id}`)],
     ['delete a book', (auth) => del(auth, `/books/${d.books.B11.id}`)],
     ['add a book', (auth) => post(auth, '/books', { isbn: '9780306406157', title: 'X', author: 'Y', category: d.categories.Fiction.id, price: 5 })],
+    ['edit a book', (auth) => request(app).patch(`/api/admin/books/${d.books.B11.id}`).set(auth).send({ price: 1 })],
     ['promote', (auth) => post(auth, `/users/${d.users['U-B02'].id}/promote`)],
     ['audit log', (auth) => request(app).get('/api/admin/audit-log').set(auth)],
     ['seller requests', (auth) => request(app).get('/api/admin/seller-requests').set(auth)],

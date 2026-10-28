@@ -21,6 +21,7 @@ function createAdminRouter() {
   router.post('/users/:id/seller-request/reject', write, route(admin.rejectSellerRequest));
 
   router.post('/books', write, route(admin.createBook));
+  router.patch('/books/:id', write, route(admin.updateBook));
   router.patch('/books/:id/availability', write, route(admin.setBookAvailability));
 
   router.post('/listings/:id/suspend', write, route(admin.suspendListing));

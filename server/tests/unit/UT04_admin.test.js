@@ -289,6 +289,43 @@ describe('UT04 catalog books', () => {
     expect(deleted.status).toBe(409);
     expect(deleted.fields.isbn).toMatch(/Restore it/);
   });
+
+  test('an edit saves only the changed fields, names them in the audit log and leaves the ISBN alone', async () => {
+    const book = data.books.B01;
+    const updated = await adminService.updateBook(admin, book.id, {
+      title: 'The Silent Orchard',
+      price: 135.5,
+      category: data.categories.History.id,
+      description: 'Revised blurb.',
+      isbn: '9780306406157',
+    });
+    expect(updated).toMatchObject({ title: 'The Silent Orchard', price: 135.5, description: 'Revised blurb.', isbn: book.isbn });
+    expect(updated.category.name).toBe('History');
+    const entry = await AuditLog.findOne({ action: 'edit' });
+    expect(entry).toMatchObject({ targetType: 'Book', targetLabel: 'The Silent Orchard' });
+    expect(entry.details).toEqual({ fields: ['category', 'price', 'description'] });
+
+    await adminService.updateBook(admin, book.id, { description: '', coverImageUrl: 'https://covers.testmail.example/b01.jpg' });
+    const stored = await Book.findById(book.id);
+    expect(stored.description).toBeUndefined();
+    expect(stored.coverImageUrl).toBe('https://covers.testmail.example/b01.jpg');
+  });
+
+  test('an edit that changes nothing writes no audit entry', async () => {
+    const book = data.books.B01;
+    await adminService.updateBook(admin, book.id, { title: book.title, price: book.price, category: data.categories.Fiction.id });
+    expect(await AuditLog.countDocuments()).toBe(0);
+  });
+
+  test('edits use the creation rules and refuse deleted or unknown books', async () => {
+    const err = await rejection(adminService.updateBook(admin, data.books.B01.id, { title: '', author: null, price: 'free', category: 'nope' }));
+    expect(err.status).toBe(400);
+    expect(Object.keys(err.fields).sort()).toEqual(['author', 'category', 'price', 'title']);
+    expect((await Book.findById(data.books.B01.id)).title).toBe('The Silent Orchard');
+    await adminService.deleteRecord(admin, 'books', data.books.B11.id);
+    expect((await rejection(adminService.updateBook(admin, data.books.B11.id, { price: 99 }))).status).toBe(409);
+    expect((await rejection(adminService.updateBook(admin, '64b000000000000000000000', { price: 99 }))).status).toBe(404);
+  });
 });
 
 describe('UT04 audit log is immutable', () => {

@@ -232,6 +232,43 @@ describe('Administration console', () => {
     });
   });
 
+  test('an administrator edits a book: the form starts from its details and the ISBN is not editable', async () => {
+    const u = userEvent.setup();
+    const book = { id: 'bk1', title: 'The Silent Orchard', author: 'Meera Iyer', isbn: '9789380000015', price: 120, category: { id: 'c1', name: 'Fiction' }, description: 'A quiet novel.' };
+    const spy = setup({
+      'POST /admin/books/query': () => [200, page([book])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }, { _id: 'c2', name: 'Poetry' }] }],
+      'PATCH /admin/books/bk1': () => [200, { record: {} }],
+    });
+    await openConsole();
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Edit The Silent Orchard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Edit book details' });
+    const field = (label) => within(dialog).getByLabelText(new RegExp(`^${label}`));
+    await within(dialog).findByRole('option', { name: 'Poetry' });
+    expect(within(dialog).getByText('9789380000015')).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/^ISBN-13/)).not.toBeInTheDocument();
+    expect(field('Title')).toHaveValue('The Silent Orchard');
+    expect(field('Category')).toHaveValue('c1');
+    expect(field('Price')).toHaveValue('120');
+
+    await u.clear(field('Price'));
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(within(dialog).getByText('Price (INR) is required.')).toBeInTheDocument();
+    await u.type(field('Price'), '135.5');
+    await u.selectOptions(field('Category'), 'c2');
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await screen.findByText('Done.')).toBeInTheDocument();
+    expect(lastBody(spy, 'PATCH', '/admin/books/bk1')).toEqual({
+      title: 'The Silent Orchard',
+      author: 'Meera Iyer',
+      category: 'c2',
+      price: 135.5,
+      description: 'A quiet novel.',
+      coverImageUrl: '',
+    });
+  });
+
   test('a seller request is rejected only with a reason code', async () => {
     const u = userEvent.setup();
     const spy = setup({
@@ -291,6 +328,22 @@ describe('Administration console', () => {
     await screen.findByRole('table');
     expect(await axeViolations(container)).toEqual([]);
     await u.click(screen.getByRole('button', { name: 'Delete Vikram Desai' }));
+    expect(await axeViolations(container)).toEqual([]);
+  }, 30000);
+
+  test('TC-NFR-QUA-17: the book form has no accessibility violations, including with errors shown', async () => {
+    const u = userEvent.setup();
+    setup({
+      'POST /admin/books/query': () => [200, page([])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }] }],
+    });
+    const { container } = renderApp('/admin');
+    await screen.findByRole('table');
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Add book' }));
+    await screen.findByRole('option', { name: 'Fiction' });
+    expect(await axeViolations(container)).toEqual([]);
+    await u.click(screen.getByRole('button', { name: 'Save book' }));
     expect(await axeViolations(container)).toEqual([]);
   }, 30000);
 });

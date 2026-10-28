@@ -9,14 +9,27 @@ import { validateBook } from '../../validation/rules.js';
 
 const FIELD_ORDER = ['isbn', 'title', 'author', 'category', 'price', 'description', 'coverImageUrl'];
 const idFor = (field) => `book-${field}`;
-const EMPTY = { isbn: '', title: '', author: '', category: '', price: '', description: '', coverImageUrl: '' };
 const f = strings.fields;
 const t = strings.admin;
 
-// Adds a catalog book (REQ-4). Listings can only reference catalog books (BR-4), so this is
-// how new titles enter the store.
-export default function BookForm({ onSaved, onCancel }) {
-  const [values, setValues] = useState(EMPTY);
+function initialValues(book) {
+  return {
+    isbn: book?.isbn || '',
+    title: book?.title || '',
+    author: book?.author || '',
+    category: book?.category?.id || '',
+    price: typeof book?.price === 'number' ? String(book.price) : '',
+    description: book?.description || '',
+    coverImageUrl: book?.coverImageUrl || '',
+  };
+}
+
+// Adds a catalog book (REQ-4) or, given `book`, edits its details. Listings can only reference
+// catalog books (BR-4), so this is how new titles enter the store. The ISBN identifies a book
+// and is shown but not editable.
+export default function BookForm({ book, onSaved, onCancel }) {
+  const creating = !book;
+  const [values, setValues] = useState(() => initialValues(book));
   const [categories, setCategories] = useState(null);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
@@ -43,15 +56,18 @@ export default function BookForm({ onSaved, onCancel }) {
   async function submit(event) {
     event.preventDefault();
     setFormError('');
-    const clientErrors = validateBook(values);
+    const clientErrors = validateBook(values, { creating });
     setErrors(clientErrors);
     if (Object.keys(clientErrors).length > 0) {
       focusFirstError(clientErrors, FIELD_ORDER, idFor);
       return;
     }
     setSaving(true);
+    const { isbn, ...details } = values;
+    const body = { ...details, price: Number(values.price) };
     try {
-      await apiRequest('/admin/books', { method: 'POST', body: { ...values, price: Number(values.price) } });
+      if (creating) await apiRequest('/admin/books', { method: 'POST', body: { isbn, ...body } });
+      else await apiRequest(`/admin/books/${book.id}`, { method: 'PATCH', body });
       onSaved();
     } catch (err) {
       setSaving(false);
@@ -60,11 +76,17 @@ export default function BookForm({ onSaved, onCancel }) {
   }
 
   return (
-    <Modal title={t.addBookTitle} onClose={onCancel}>
+    <Modal title={creating ? t.addBookTitle : t.editBookTitle} onClose={onCancel}>
       <form className="stack" onSubmit={submit} noValidate>
         <Alert type="error">{formError}</Alert>
-        <FormField id={idFor('isbn')} label={f.isbn} required inputMode="numeric" hint={t.isbnHint}
-          error={errors.isbn} value={values.isbn} onChange={setField('isbn')} />
+        {creating ? (
+          <FormField id={idFor('isbn')} label={f.isbn} required inputMode="numeric" hint={t.isbnHint}
+            error={errors.isbn} value={values.isbn} onChange={setField('isbn')} />
+        ) : (
+          <p>
+            <strong>{f.isbn}:</strong> {book.isbn}
+          </p>
+        )}
         <FormField id={idFor('title')} label={f.title} required error={errors.title} value={values.title} onChange={setField('title')} />
         <FormField id={idFor('author')} label={f.author} required error={errors.author} value={values.author} onChange={setField('author')} />
         <div className="grid-2">

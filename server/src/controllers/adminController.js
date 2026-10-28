@@ -62,6 +62,11 @@ async function createBook(req, res) {
   res.status(201).json({ message: strings.admin.done, record: book.toJSON() });
 }
 
+// PATCH /api/admin/books/:id
+async function updateBook(req, res) {
+  done(res, await adminService.updateBook(req.user, req.params.id, req.body));
+}
+
 async function setBookAvailability(req, res) {
   done(res, await adminService.setBookAvailability(req.user, req.params.id, req.body));
 }
@@ -101,6 +106,7 @@ module.exports = {
   approveSellerRequest,
   rejectSellerRequest,
   createBook,
+  updateBook,
   setBookAvailability,
   suspendListing,
   reinstateListing,

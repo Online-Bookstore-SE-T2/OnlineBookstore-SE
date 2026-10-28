@@ -212,6 +212,8 @@ const strings = {
     categoryNameLabel: 'Category name',
     addBook: 'Add book',
     addBookTitle: 'Add a catalog book',
+    edit: 'Edit',
+    editBookTitle: 'Edit book details',
     saveBook: 'Save book',
     chooseCategory: 'Choose a category',
     categoriesUnavailable: 'Categories could not be loaded. Close this form and try again.',
