@@ -31,6 +31,7 @@ const bookSchema = new mongoose.Schema(
 bookSchema.index({ title: 1 });
 bookSchema.index({ author: 1 });
 bookSchema.index({ category: 1 });
+bookSchema.index({ deletedAt: 1, title: 1, _id: 1 });
 
 bookSchema.plugin(softDeletePlugin);
 bookSchema.plugin(toJSONPlugin);
