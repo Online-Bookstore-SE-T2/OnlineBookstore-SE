@@ -20,7 +20,14 @@ const LIMITS = {
   state: 100,
   sellerRequestNote: 200,
   categoryName: 100,
+  // Catalog book fields (REQ-4, REQ-8); the SRS gives no lengths for these
+  bookTitle: 200,
+  bookAuthor: 100,
+  bookDescription: 2000,
+  coverImageUrl: 500,
 };
+
+const URL_PATTERN = /^https?:\/\/[^\s<>"]+$/i;
 
 // Characters are counted as code points so that non-Latin text (UTF-8, SRS 7) is measured fairly.
 function characterCount(value) {
@@ -184,6 +191,46 @@ class FieldValidator {
       postalCode: this.postalCode(`${prefix}postalCode`, input.postalCode, { required: true }),
     };
     return Object.keys(this.errors).length === errorsBefore ? address : undefined;
+  }
+
+  // ISBN-13 with a valid check digit (SRS 6.5). Hyphens and spaces are allowed and removed.
+  isbn(field, value, { required = true } = {}) {
+    const label = strings.labels.isbn;
+    if (isAbsent(value) || value === '') {
+      if (required) this.addError(field, strings.fields.required(label));
+      return undefined;
+    }
+    const clean = typeof value === 'string' ? value.replace(/[\s-]/g, '') : '';
+    if (!isValidIsbn13(clean)) {
+      this.addError(field, strings.fields.invalidIsbn);
+      return undefined;
+    }
+    return clean;
+  }
+
+  // A positive amount in INR with at most two decimals (SRS 6.5). Numeric strings are accepted.
+  price(field, value, { label = strings.labels.price, required = true } = {}) {
+    if (isAbsent(value) || value === '') {
+      if (required) this.addError(field, strings.fields.required(label));
+      return undefined;
+    }
+    const amount = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+    if (!isMoney(amount) || amount <= 0) {
+      this.addError(field, strings.fields.invalidPrice);
+      return undefined;
+    }
+    return amount;
+  }
+
+  // An http(s) address. Returns '' for an optional field that was cleared.
+  url(field, value, { label, required = false, max }) {
+    const clean = this.text(field, value, { label, required, max });
+    if (!clean) return clean;
+    if (!URL_PATTERN.test(clean)) {
+      this.addError(field, strings.fields.invalidUrl);
+      return undefined;
+    }
+    return clean;
   }
 
   oneOf(field, value, allowed, { label, required = true }) {

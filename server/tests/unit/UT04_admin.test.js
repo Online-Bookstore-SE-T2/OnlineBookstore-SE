@@ -226,6 +226,71 @@ describe('UT04 categories', () => {
   });
 });
 
+describe('UT04 catalog books', () => {
+  const newBook = (extra = {}) => ({
+    isbn: '978-0-306-40615-7',
+    title: 'Monsoon Letters',
+    author: 'Nandini Pai',
+    category: data.categories.Fiction.id,
+    price: 349.5,
+    description: 'Letters written across one rainy season.',
+    coverImageUrl: 'https://covers.testmail.example/monsoon-letters.jpg',
+    ...extra,
+  });
+
+  test('BR-4: an administrator adds a book with a normalised ISBN, and the addition is audited', async () => {
+    const book = await adminService.createBook(admin, newBook());
+    expect(book.isbn).toBe('9780306406157');
+    expect(book.category.name).toBe('Fiction');
+    expect(book.price).toBe(349.5);
+    expect(book.markedUnavailable).toBe(false);
+    const entry = await AuditLog.findOne({ action: 'create', targetType: 'Book' });
+    expect(entry.targetId.equals(book._id)).toBe(true);
+    expect(entry.targetLabel).toBe('Monsoon Letters');
+    expect(entry.details).toEqual({ isbn: '9780306406157' });
+  });
+
+  test('optional description and cover URL may be left out; markup is stripped from text', async () => {
+    const book = await adminService.createBook(admin, newBook({ title: '<b>Monsoon</b> Letters', description: '', coverImageUrl: undefined }));
+    expect(book.title).toBe('Monsoon Letters');
+    expect(book.description).toBeUndefined();
+    expect(book.coverImageUrl).toBeUndefined();
+  });
+
+  test('every invalid field is reported at once and nothing is stored', async () => {
+    const err = await rejection(adminService.createBook(admin, {
+      isbn: '9780306406158',
+      title: ' ',
+      price: 12.345,
+      category: '64b000000000000000000000',
+      coverImageUrl: 'javascript:alert(1)',
+    }));
+    expect(err.status).toBe(400);
+    expect(Object.keys(err.fields).sort()).toEqual(['author', 'category', 'coverImageUrl', 'isbn', 'price', 'title']);
+    expect(err.fields.category).toBe('Choose an existing category.');
+    expect((await rejection(adminService.createBook(admin, newBook({ price: 0 })))).fields.price).toMatch(/above zero/);
+    expect((await rejection(adminService.createBook(admin, newBook({ category: { $ne: null } })))).fields.category).toBeDefined();
+    expect(await Book.countDocuments()).toBe(5);
+    expect(await AuditLog.countDocuments()).toBe(0);
+  });
+
+  test('a deleted category cannot be used', async () => {
+    await adminService.deleteRecord(admin, 'categories', data.categories.Science.id);
+    const err = await rejection(adminService.createBook(admin, newBook({ category: data.categories.Science.id })));
+    expect(err.fields.category).toBe('Choose an existing category.');
+  });
+
+  test('duplicate ISBNs are refused, including those of deleted books', async () => {
+    const live = await rejection(adminService.createBook(admin, newBook({ isbn: data.books.B01.isbn })));
+    expect(live.status).toBe(409);
+    expect(live.fields.isbn).toBe('A book with this ISBN is already in the catalog.');
+    await adminService.deleteRecord(admin, 'books', data.books.B11.id);
+    const deleted = await rejection(adminService.createBook(admin, newBook({ isbn: data.books.B11.isbn })));
+    expect(deleted.status).toBe(409);
+    expect(deleted.fields.isbn).toMatch(/Restore it/);
+  });
+});
+
 describe('UT04 audit log is immutable', () => {
   test('entries record actor, action, target and timestamp and cannot be changed or deleted', async () => {
     await adminService.suspendUser(admin, data.users['U-B04'].id);

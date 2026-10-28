@@ -56,6 +56,12 @@ async function rejectSellerRequest(req, res) {
   done(res, await adminService.rejectSellerRequest(req.user, req.params.id, req.body));
 }
 
+// POST /api/admin/books
+async function createBook(req, res) {
+  const book = await adminService.createBook(req.user, req.body);
+  res.status(201).json({ message: strings.admin.done, record: book.toJSON() });
+}
+
 async function setBookAvailability(req, res) {
   done(res, await adminService.setBookAvailability(req.user, req.params.id, req.body));
 }
@@ -94,6 +100,7 @@ module.exports = {
   listSellerRequests,
   approveSellerRequest,
   rejectSellerRequest,
+  createBook,
   setBookAvailability,
   suspendListing,
   reinstateListing,

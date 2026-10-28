@@ -1,6 +1,7 @@
 import { apiRequest } from '../../api/http.js';
 import strings from '../../resources/strings.js';
 import { formatDate, formatDateTime, formatINR } from '../../utils/format.js';
+import { AddBookButton } from './BookForm.jsx';
 import CategoryCreateForm from './CategoryCreateForm.jsx';
 
 // Table and action definitions for each administration section (REQ-4).
@@ -128,6 +129,7 @@ const books = {
   title: t.tabs.books,
   searchable: true,
   restorable: true,
+  toolbar: ({ onDone }) => <AddBookButton onDone={onDone} />,
   columns: [
     { key: 'title', label: c.title, render: (row) => row.title },
     { key: 'author', label: c.author, render: (row) => row.author },

@@ -54,6 +54,9 @@ module.exports = {
     categoryInUse: 'This category still contains books, so it cannot be deleted.',
     orderOpen: 'Open orders (Placed, Paid or Shipped) cannot be deleted.',
     categoryExists: 'A category with this name already exists.',
+    isbnExists: 'A book with this ISBN is already in the catalog.',
+    isbnExistsDeleted: 'A deleted book has this ISBN. Restore it instead of adding it again.',
+    unknownCategory: 'Choose an existing category.',
     done: 'Done.',
   },
   fields: {
@@ -64,6 +67,9 @@ module.exports = {
     invalidEmail: 'Enter a valid e-mail address.',
     invalidPhone: 'Phone number must be exactly 10 digits.',
     invalidPostalCode: 'Postal code must be exactly 6 digits.',
+    invalidIsbn: 'Enter a valid ISBN-13, including its check digit.',
+    invalidPrice: 'Enter a price above zero in rupees, with at most two decimal places.',
+    invalidUrl: 'Enter a web address starting with http:// or https://.',
   },
   labels: {
     name: 'Name',
@@ -79,5 +85,12 @@ module.exports = {
     note: 'Note',
     categoryName: 'Category name',
     reasonCode: 'Reason code',
+    isbn: 'ISBN',
+    title: 'Title',
+    author: 'Author',
+    category: 'Category',
+    price: 'Price',
+    description: 'Description',
+    coverImageUrl: 'Cover image URL',
   },
 };

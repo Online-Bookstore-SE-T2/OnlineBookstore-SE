@@ -175,6 +175,63 @@ describe('Administration console', () => {
     await waitFor(() => expect(lastBody(spy, 'PATCH', '/admin/categories/c9')).toEqual({ name: 'Poetry and Drama' }));
   });
 
+  test('BR-4: an administrator adds a catalog book; client and server errors appear on the fields', async () => {
+    const u = userEvent.setup();
+    let attempts = 0;
+    const spy = setup({
+      'POST /admin/books/query': () => [200, page([])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }, { _id: 'c2', name: 'Poetry' }] }],
+      'POST /admin/books': () => {
+        attempts += 1;
+        return attempts === 1
+          ? [409, { error: { message: 'A book with this ISBN is already in the catalog.', fields: { isbn: 'A book with this ISBN is already in the catalog.' } } }]
+          : [201, { record: {} }];
+      },
+    });
+    await openConsole();
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Add book' }));
+    const dialog = screen.getByRole('dialog', { name: 'Add a catalog book' });
+    const field = (label) => within(dialog).getByLabelText(new RegExp(`^${label}`));
+    await within(dialog).findByRole('option', { name: 'Poetry' });
+
+    await u.type(field('ISBN-13'), '978-0-306-40615-8');
+    await u.type(field('Price'), '12.345');
+    await u.type(field('Cover image URL'), 'covers/monsoon.jpg');
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(within(dialog).getByText('Enter a valid ISBN-13, including its check digit.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Title is required.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Category is required.')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Enter a price above zero/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Enter a web address starting with http:// or https://.')).toBeInTheDocument();
+    expect(field('ISBN-13')).toHaveFocus();
+    expect(attempts).toBe(0);
+
+    await u.clear(field('ISBN-13'));
+    await u.type(field('ISBN-13'), '978-0-306-40615-7');
+    await u.type(field('Title'), 'Monsoon Letters');
+    await u.type(field('Author'), 'Nandini Pai');
+    await u.selectOptions(field('Category'), 'c2');
+    await u.clear(field('Price'));
+    await u.type(field('Price'), '349.50');
+    await u.clear(field('Cover image URL'));
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await within(dialog).findByText('A book with this ISBN is already in the catalog.')).toBeInTheDocument();
+
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await screen.findByText('Done.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(lastBody(spy, 'POST', '/admin/books')).toEqual({
+      isbn: '978-0-306-40615-7',
+      title: 'Monsoon Letters',
+      author: 'Nandini Pai',
+      category: 'c2',
+      price: 349.5,
+      description: '',
+      coverImageUrl: '',
+    });
+  });
+
   test('a seller request is rejected only with a reason code', async () => {
     const u = userEvent.setup();
     const spy = setup({

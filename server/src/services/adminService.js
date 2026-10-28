@@ -272,6 +272,53 @@ async function rejectSellerRequest(admin, id, body = {}) {
 
 // ----- Books and listings -----
 
+function isLiveCategory(id) {
+  return typeof id === 'string' && mongoose.isValidObjectId(id) && Category.exists({ _id: id, deletedAt: null });
+}
+
+// Validates a catalog book. Every field is checked before the first error is reported.
+async function bookFields(body) {
+  const v = new FieldValidator();
+  const labels = strings.labels;
+  const fields = {
+    isbn: v.isbn('isbn', body.isbn),
+    title: v.text('title', body.title, { label: labels.title, required: true, max: LIMITS.bookTitle }),
+    author: v.text('author', body.author, { label: labels.author, required: true, max: LIMITS.bookAuthor }),
+    category: body.category,
+    price: v.price('price', body.price),
+    description: v.text('description', body.description, { label: labels.description, max: LIMITS.bookDescription }),
+    coverImageUrl: v.url('coverImageUrl', body.coverImageUrl, { label: labels.coverImageUrl, max: LIMITS.coverImageUrl }),
+  };
+  if ([undefined, null, ''].includes(body.category)) v.addError('category', strings.fields.required(labels.category));
+  else if (!(await isLiveCategory(body.category))) v.addError('category', strings.admin.unknownCategory);
+  v.throwIfInvalid();
+  // A cleared optional field is stored as absent.
+  for (const field of ['description', 'coverImageUrl']) if (fields[field] === '') fields[field] = undefined;
+  return fields;
+}
+
+function isbnTaken(existing) {
+  const message = existing.deletedAt ? strings.admin.isbnExistsDeleted : strings.admin.isbnExists;
+  return new AppError(409, message, { isbn: message });
+}
+
+// REQ-4, BR-4: listings can only reference catalog books, so this is how new titles enter the store.
+// ISBNs are unique across live and deleted books, since a deleted book can still be restored.
+async function createBook(admin, body = {}) {
+  const fields = await bookFields(body);
+  const existing = await Book.findOne({ isbn: fields.isbn }).select('deletedAt');
+  if (existing) throw isbnTaken(existing);
+  let book;
+  try {
+    book = await Book.create(fields);
+  } catch (err) {
+    if (err && err.code === 11000) throw isbnTaken({ deletedAt: null });
+    throw err;
+  }
+  await audit.record(admin, 'create', target(ENTITIES.books, book), { isbn: book.isbn });
+  return book.populate(ENTITIES.books.populate);
+}
+
 // BR-5: mark a book unavailable (or available again) instead of deleting it.
 async function setBookAvailability(admin, id, body = {}) {
   if (typeof body.available !== 'boolean') throw new AppError(400, strings.common.validationFailed, { available: strings.common.validationFailed });
@@ -350,6 +397,7 @@ module.exports = {
   listSellerRequests,
   approveSellerRequest,
   rejectSellerRequest,
+  createBook,
   setBookAvailability,
   suspendListing,
   reinstateListing,

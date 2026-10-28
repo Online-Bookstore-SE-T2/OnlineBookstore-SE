@@ -219,6 +219,26 @@ describe('ST04 reviews, categories, books and listings', () => {
     expect((await query(adminAuth, 'books')).body.items.map((b) => b.title)).not.toContain('Orchard Care Handbook');
   });
 
+  test('BR-4: the administrator adds a catalog book, which then appears in the console and the catalog', async () => {
+    const body = { isbn: '9780306406157', title: 'Monsoon Letters', author: 'Nandini Pai', category: data.categories.Fiction.id, price: 349 };
+    const res = await post(adminAuth, '/books', body);
+    expect(res.status).toBe(201);
+    expect(res.body.record).toMatchObject({ isbn: '9780306406157', title: 'Monsoon Letters', category: { name: 'Fiction' }, price: 349 });
+    expect((await query(adminAuth, 'books', { q: 'monsoon' })).body.total).toBe(1);
+    expect((await request(app).get(`/api/books/${res.body.record.id}`)).status).toBe(200);
+    const [entry] = (await request(app).get('/api/admin/audit-log').set(adminAuth)).body.items;
+    expect(entry).toMatchObject({ action: 'create', targetType: 'Book', targetLabel: 'Monsoon Letters' });
+  });
+
+  test('an invalid or duplicate book is refused with field errors', async () => {
+    const invalid = await post(adminAuth, '/books', { isbn: '123', title: 'X', author: 'Y', category: data.categories.Fiction.id, price: -5 });
+    expect(invalid.status).toBe(400);
+    expect(Object.keys(invalid.body.error.fields).sort()).toEqual(['isbn', 'price']);
+    const duplicate = await post(adminAuth, '/books', { isbn: data.books.B01.isbn, title: 'X', author: 'Y', category: data.categories.Fiction.id, price: 5 });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.error.fields.isbn).toMatch(/already in the catalog/);
+  });
+
   test('a category that still has books cannot be deleted; an open order cannot be deleted', async () => {
     expect((await del(adminAuth, `/categories/${data.categories.Fiction.id}`)).status).toBe(409);
     expect((await del(adminAuth, `/orders/${data.orders['ORD-S03'].id}`)).status).toBe(409);
@@ -235,6 +255,7 @@ describe('ST04 access control (REQ-4 403 rule, BR-3)', () => {
     ['rename a category', (auth) => request(app).patch(`/api/admin/categories/${d.categories.Fiction.id}`).set(auth).send({ name: 'X' })],
     ['delete a category', (auth) => del(auth, `/categories/${d.categories.Science.id}`)],
     ['delete a book', (auth) => del(auth, `/books/${d.books.B11.id}`)],
+    ['add a book', (auth) => post(auth, '/books', { isbn: '9780306406157', title: 'X', author: 'Y', category: d.categories.Fiction.id, price: 5 })],
     ['promote', (auth) => post(auth, `/users/${d.users['U-B02'].id}/promote`)],
     ['audit log', (auth) => request(app).get('/api/admin/audit-log').set(auth)],
     ['seller requests', (auth) => request(app).get('/api/admin/seller-requests').set(auth)],

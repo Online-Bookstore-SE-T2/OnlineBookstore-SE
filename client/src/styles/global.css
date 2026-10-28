@@ -955,6 +955,8 @@ button:not([class]):disabled,
   padding: var(--space-5);
   width: 100%;
   max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
 }
 
