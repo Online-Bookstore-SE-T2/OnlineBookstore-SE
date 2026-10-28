@@ -138,7 +138,7 @@ export function SearchPage() {
                     </p>
                   )}
 
-                  {book.price != null && (
+                  {typeof book.price === 'number' && (
                     <p>
                       <strong>Price:</strong> ₹
                       {Number(book.price).toFixed(2)}
