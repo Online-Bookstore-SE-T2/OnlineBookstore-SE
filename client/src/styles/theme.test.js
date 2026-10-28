@@ -28,10 +28,21 @@ describe('monochrome theme', () => {
     expect(tokens['gray-9']).toBe('#000000');
   });
 
-  test('the only colour is the error red required by SRS 3.1', () => {
+  test('the only colours are the error red (SRS 3.1) and the four admin action tones', () => {
     const coloured = Object.entries(tokens).filter(([, hex]) => !isGrey(hex));
-    expect(coloured.map(([name]) => name)).toEqual(['error']);
+    expect(coloured.map(([name]) => name)).toEqual([
+      'error', 'action-info', 'action-positive', 'action-caution', 'action-danger',
+    ]);
   });
+
+  // Tone text and borders on white and table-row surfaces; white text when filled on hover.
+  test.each(['action-info', 'action-positive', 'action-caution', 'action-danger'])(
+    '%s meets 4.5:1 on white and on surfaces, and under white text',
+    (tone) => {
+      expect(contrast(tone, 'gray-0')).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(tone, 'gray-1')).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 
   test.each([
     ['body text', 'gray-7', 'gray-0'],
