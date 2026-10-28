@@ -9,11 +9,12 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 
 export default function Layout() {
-  const { user } = useAuth();
+  const { user, loginCart } = useAuth();
+  const userId = user?.id;
   const [cartCount, setCartCount] = useState(0);
 
   const refreshCartCount = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setCartCount(0);
       return;
     }
@@ -24,17 +25,20 @@ export default function Layout() {
     } catch {
       setCartCount(0);
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    refreshCartCount();
+    // Straight after log-in the response already carried the cart (SASD 4.2.3); a restored
+    // session has none, so the count is fetched.
+    if (userId && loginCart?.userId === userId) setCartCount(loginCart.itemCount || 0);
+    else refreshCartCount();
 
     window.addEventListener('cart-updated', refreshCartCount);
 
     return () => {
       window.removeEventListener('cart-updated', refreshCartCount);
     };
-  }, [refreshCartCount]);
+  }, [refreshCartCount, userId, loginCart]);
 
   return (
     <div className="app">

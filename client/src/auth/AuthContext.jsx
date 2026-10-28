@@ -6,6 +6,8 @@ const AuthContext = createContext(null);
 // Holds the logged-in user. A stored token is checked with the server on load (REQ-2).
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  // The cart returned with the login response (SASD 4.2.3), tagged with its owner.
+  const [loginCart, setLoginCart] = useState(null);
   const [ready, setReady] = useState(() => !getToken());
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const data = await apiRequest('/auth/login', { method: 'POST', body: { email, password } });
     setToken(data.token);
+    setLoginCart(data.cart ? { userId: data.user.id, ...data.cart } : null);
     setUser(data.user);
     return data.user;
   }, []);
@@ -46,11 +49,12 @@ export function AuthProvider({ children }) {
       // The local session is cleared regardless.
     } finally {
       clearToken();
+      setLoginCart(null);
       setUser(null);
     }
   }, []);
 
-  const value = useMemo(() => ({ user, ready, login, logout, setUser }), [user, ready, login, logout]);
+  const value = useMemo(() => ({ user, ready, loginCart, login, logout, setUser }), [user, ready, loginCart, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
