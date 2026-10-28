@@ -1,6 +1,6 @@
 
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 
 const DEFAULT_FILTERS = {
@@ -15,24 +15,69 @@ const DEFAULT_FILTERS = {
 export default function CatalogPage() {
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The query string is the single source of truth for shareable catalog state.
+  // useMemo keeps the filters object stable until the URL actually changes.
+  const queryString = searchParams.toString();
+  const { filters, page } = useMemo(() => {
+    const params = new URLSearchParams(queryString);
+    const allowedSorts = new Set([
+      'title_asc', 'title_desc', 'price_asc',
+      'price_desc', 'rating_desc', 'newest',
+    ]);
+    const requestedSort = params.get('sort') || DEFAULT_FILTERS.sort;
+    const requestedPage = Number(params.get('page') || '1');
+
+    return {
+      filters: {
+        category: params.get('category') || '',
+        minPrice: params.get('minPrice') || '',
+        maxPrice: params.get('maxPrice') || '',
+        minRating: params.get('minRating') || '',
+        availability: params.get('available') || '',
+        sort: allowedSorts.has(requestedSort)
+          ? requestedSort
+          : DEFAULT_FILTERS.sort,
+      },
+      page: Number.isInteger(requestedPage) && requestedPage > 0
+        ? requestedPage
+        : 1,
+    };
+  }, [queryString]);
+
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   function updateFilter(name, value) {
-    setFilters((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-    setPage(1);
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+
+      if (value === '' || (name === 'sort' && value === DEFAULT_FILTERS.sort)) {
+        next.delete(name === 'availability' ? 'available' : name);
+      } else {
+        next.set(name === 'availability' ? 'available' : name, value);
+      }
+
+      // Any filter change returns the user to the first result page.
+      next.delete('page');
+      return next;
+    });
+  }
+
+  function changePage(nextPage) {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (nextPage <= 1) next.delete('page');
+      else next.set('page', String(nextPage));
+      return next;
+    });
   }
 
   function clearFilters() {
-    setFilters({ ...DEFAULT_FILTERS });
-    setPage(1);
+    setSearchParams({});
   }
 
   useEffect(() => {
@@ -286,7 +331,7 @@ export default function CatalogPage() {
           <button
             type="button"
             disabled={page <= 1 || loading}
-            onClick={() => setPage((current) => current - 1)}
+            onClick={() => changePage(page - 1)}
           >
             Previous
           </button>
@@ -296,7 +341,7 @@ export default function CatalogPage() {
           <button
             type="button"
             disabled={page >= totalPages || loading}
-            onClick={() => setPage((current) => current + 1)}
+            onClick={() => changePage(page + 1)}
           >
             Next
           </button>
