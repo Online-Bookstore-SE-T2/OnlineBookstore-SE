@@ -6,6 +6,23 @@ const notificationService = require('./notificationService');
 
 const BUYER_CANCELLABLE_STATUSES = Object.freeze([ORDER_STATUS.PLACED, ORDER_STATUS.PAID]);
 
+// Returns an order's quantities to its listings. Must run inside the caller's transaction.
+async function releaseOrderStock(order, session) {
+  for (const item of order.items) {
+    const listing = await Listing.findById(item.listing).session(session);
+
+    if (!listing) {
+      throw new AppError(
+        409,
+        'A listing for this order no longer exists.'
+      );
+    }
+
+    listing.quantity += item.quantity;
+    await listing.save({ session });
+  }
+}
+
 async function getBuyerOrders(userId) {
   return Order.find({
     buyer: userId,
@@ -72,19 +89,7 @@ async function cancelBuyerOrder(userId, orderId) {
         order.payment.status = 'Refund pending';
       }
 
-      for (const item of order.items) {
-        const listing = await Listing.findById(item.listing).session(session);
-
-        if (!listing) {
-          throw new AppError(
-            409,
-            'A listing for this order no longer exists.'
-          );
-        }
-
-        listing.quantity += item.quantity;
-        await listing.save({ session });
-      }
+      await releaseOrderStock(order, session);
 
       order.status = ORDER_STATUS.CANCELLED;
       await order.save({ session });
@@ -114,4 +119,5 @@ module.exports = {
   getBuyerOrders,
   getBuyerOrder,
   cancelBuyerOrder,
+  releaseOrderStock,
 };
