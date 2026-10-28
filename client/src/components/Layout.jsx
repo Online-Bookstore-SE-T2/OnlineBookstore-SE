@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { getCart } from '../api/cart.js';
 import strings from '../resources/strings.js';
@@ -9,11 +9,14 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 
 export default function Layout() {
-  const { user } = useAuth();
+  const { user, loginCart } = useAuth();
+  // A one-off message handed over by the page that navigated here (for example after registering).
+  const notice = useLocation().state?.notice;
+  const userId = user?.id;
   const [cartCount, setCartCount] = useState(0);
 
   const refreshCartCount = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setCartCount(0);
       return;
     }
@@ -24,17 +27,20 @@ export default function Layout() {
     } catch {
       setCartCount(0);
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    refreshCartCount();
+    // Straight after log-in the response already carried the cart (SASD 4.2.3); a restored
+    // session has none, so the count is fetched.
+    if (userId && loginCart?.userId === userId) setCartCount(loginCart.itemCount || 0);
+    else refreshCartCount();
 
     window.addEventListener('cart-updated', refreshCartCount);
 
     return () => {
       window.removeEventListener('cart-updated', refreshCartCount);
     };
-  }, [refreshCartCount]);
+  }, [refreshCartCount, userId, loginCart]);
 
   return (
     <div className="app">
@@ -49,6 +55,8 @@ export default function Layout() {
           {user?.status === 'Suspended' && (
             <Alert>{strings.account.suspendedBanner}</Alert>
           )}
+
+          {typeof notice === 'string' && <Alert>{notice}</Alert>}
 
           <Outlet />
         </div>

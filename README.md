@@ -48,8 +48,26 @@ A single-member replica set is enough. The connection strings in `server/.env` s
 
 ```bash
 npm run dev:server   # API on http://localhost:5000
-npm run dev:client   # SPA on http://localhost:5173 (proxies /api to the server)
+npm run dev:client   # SPA on http://localhost:5174 (proxies /api to the server)
 ```
+
+### With Docker
+
+`docker-compose.yml` runs the API and MongoDB as separate containers, with MongoDB already set up as a single-member replica set, so the demonstration environment can be rebuilt from the repository alone (SRS 7). Only Docker is needed; no local MongoDB or replica set configuration.
+
+```bash
+cp server/.env.example server/.env   # set JWT_SECRET and the ADMIN_* values
+docker compose up --build -d         # API on http://localhost:5000
+docker compose exec api npm run seed:admin
+docker compose exec api npm run seed:books
+npm run dev:client                   # the SPA still runs from Node and proxies /api to the container
+```
+
+- The API reads `server/.env`, but its MongoDB connection string is always the `mongo` container's, so the `MONGODB_URI` in that file is ignored.
+- The stack runs in development mode by default. Production mode refuses plain HTTP and turns off the simulated payment route, so set `NODE_ENV=production` only behind a proxy that terminates TLS.
+- `API_PORT=5050 docker compose up -d` publishes the API on another port. MongoDB is not published to the host, so it never clashes with a local MongoDB.
+- Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
+- `server/Dockerfile` builds the API image on its own: `docker build -f server/Dockerfile -t online-bookstore-api .` from the repository root.
 
 ## Quality checks
 
@@ -61,7 +79,12 @@ npm run test:coverage   # with coverage reports
 
 Server tests use the MongoDB instance at `MONGODB_TEST_URI` (default `mongodb://127.0.0.1:27017`), with a throwaway database per Jest worker. It must be a replica set too, or the cart, checkout, payment and order tests fail with 500s. Give the base URI without a database name or query string.
 
+Every pull request to `main` runs lint and both test suites in GitHub Actions (`.github/workflows/ci.yml`), against MongoDB started as a single-member replica set.
+
 ## Behaviour notes
+
+- **Registration and login**: `POST /api/auth/register` answers `201 { token, expiresAt, user }`, so a new account is signed in straight away. `POST /api/auth/login` answers `{ token, expiresAt, user, cart }`, with `cart` shaped as below, so the header cart count needs no second request.
+- **Catalog books**: administrators add books with `POST /api/admin/books` (`isbn`, `title`, `author`, `category`, `price`, optional `description` and `coverImageUrl`) and edit them with `PATCH /api/admin/books/:id`. The ISBN must be a valid ISBN-13, is unique across live and deleted books, and cannot be edited. Both are audited and available from the Books tab of the console.
 
 - **Cart** (`/api/cart`): every endpoint answers `200 { cart }`, where `cart` is `{ buyer, items, itemCount, subtotal }`. Each item is `{ listing, quantity, available, lineTotal, listingDetails }`, with `listing` the listing id. Asking for more than the listing's stock is a `409`.
 - **Cancelling orders**: a buyer can cancel an order while it is `Placed` or `Paid` (SRS 6.2); `Shipped` and later orders answer `409`. Cancelling restores the stock. Refunds are outside Release 1.0, so a paid order's payment is marked `Refund pending`.
@@ -74,7 +97,7 @@ These parts of the SRS and SASD are still open:
 
 - Sellers viewing orders for their listings and advancing order status (REQ-14). Nothing moves an order to `Shipped` or `Delivered` yet, so the review flow can only be exercised with test data.
 - E-mail notifications (REQ-15); notifications are in-app only, and sellers are not yet notified of new orders.
-- Administrators adding or editing books, and changing or cancelling orders (FR15, SASD 4.2.4).
+- Administrators changing order status or cancelling orders after they ship (FR15, SASD 4.2.4).
 - A real sandbox payment gateway (SASD OD-1).
 - Client screens for checkout, order confirmation, order history and notifications (SRS 3.1).
 - Suggested categories when a search finds nothing (REQ-6).

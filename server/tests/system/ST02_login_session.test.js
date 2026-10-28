@@ -2,10 +2,11 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const User = require('../../src/models/User');
+const { Cart } = require('../../src/models');
 const { createApp } = require('../../src/app');
 const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
-const { createUser, PASSWORD, WRONG_PASSWORD, USERS } = require('../helpers/fixtures');
+const { createUser, seedMarketplace, PASSWORD, WRONG_PASSWORD, USERS } = require('../helpers/fixtures');
 const { login, signToken, bearer } = require('../helpers/auth');
 
 useTestDatabase();
@@ -24,6 +25,22 @@ describe('ST02 login and session', () => {
     const me = await session(res.body.token);
     expect(me.status).toBe(200);
     expect(me.body.user.email).toBe(USERS['U-B01'].email);
+  });
+
+  test('SASD 4.2.3: the login response carries the stored cart, so the cart count needs no second request', async () => {
+    const data = await seedMarketplace();
+    await Cart.create({
+      buyer: data.users['U-B01']._id,
+      items: [{ listing: data.listings.L01._id, quantity: 2 }, { listing: data.listings.L08._id, quantity: 1 }],
+    });
+    const res = await login(app, USERS['U-B01'].email);
+    expect(res.status).toBe(200);
+    expect(res.body.cart).toMatchObject({ buyer: data.users['U-B01'].id, itemCount: 3, subtotal: 848 });
+    expect(res.body.cart.items.map((item) => item.listing)).toEqual([data.listings.L01.id, data.listings.L08.id]);
+    expect(res.body.cart).toEqual((await request(app).get('/api/cart').set(bearer(res.body.token))).body.cart);
+
+    const empty = await login(app, USERS['U-B02'].email);
+    expect(empty.body.cart).toMatchObject({ items: [], itemCount: 0, subtotal: 0 });
   });
 
   test('TC-ST02-02: a wrong password is rejected and no token is issued', async () => {

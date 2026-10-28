@@ -1,10 +1,12 @@
 import { apiRequest } from '../../api/http.js';
 import strings from '../../resources/strings.js';
 import { formatDate, formatDateTime, formatINR } from '../../utils/format.js';
+import BookForm, { AddBookButton } from './BookForm.jsx';
 import CategoryCreateForm from './CategoryCreateForm.jsx';
 
 // Table and action definitions for each administration section (REQ-4).
-// Columns: { key, label, render(row, ctx) }. Actions: { key, label, tone?, visible?, confirm?, form?, run }.
+// Columns: { key, label, render(row, ctx) }. Actions: { key, label, tone?, visible?, confirm?, form?, run }
+// or { key, label, dialog({ row, onDone, onCancel }) } for an action with its own form.
 // tone colour-codes the button by effect: info (default), positive, caution or danger.
 
 const t = strings.admin;
@@ -128,6 +130,7 @@ const books = {
   title: t.tabs.books,
   searchable: true,
   restorable: true,
+  toolbar: ({ onDone }) => <AddBookButton onDone={onDone} />,
   columns: [
     { key: 'title', label: c.title, render: (row) => row.title },
     { key: 'author', label: c.author, render: (row) => row.author },
@@ -136,6 +139,11 @@ const books = {
     { key: 'availability', label: c.availability, render: (row) => (row.markedUnavailable ? t.unavailable : t.available) },
   ],
   actions: [
+    {
+      key: 'edit',
+      label: t.edit,
+      dialog: ({ row, onDone, onCancel }) => <BookForm book={row} onSaved={onDone} onCancel={onCancel} />,
+    },
     {
       key: 'unavailable',
       label: t.markUnavailable,
