@@ -48,8 +48,26 @@ A single-member replica set is enough. The connection strings in `server/.env` s
 
 ```bash
 npm run dev:server   # API on http://localhost:5000
-npm run dev:client   # SPA on http://localhost:5173 (proxies /api to the server)
+npm run dev:client   # SPA on http://localhost:5174 (proxies /api to the server)
 ```
+
+### With Docker
+
+`docker-compose.yml` runs the API and MongoDB as separate containers, with MongoDB already set up as a single-member replica set, so the demonstration environment can be rebuilt from the repository alone (SRS 7). Only Docker is needed; no local MongoDB or replica set configuration.
+
+```bash
+cp server/.env.example server/.env   # set JWT_SECRET and the ADMIN_* values
+docker compose up --build -d         # API on http://localhost:5000
+docker compose exec api npm run seed:admin
+docker compose exec api npm run seed:books
+npm run dev:client                   # the SPA still runs from Node and proxies /api to the container
+```
+
+- The API reads `server/.env`, but its MongoDB connection string is always the `mongo` container's, so the `MONGODB_URI` in that file is ignored.
+- The stack runs in development mode by default. Production mode refuses plain HTTP and turns off the simulated payment route, so set `NODE_ENV=production` only behind a proxy that terminates TLS.
+- `API_PORT=5050 docker compose up -d` publishes the API on another port. MongoDB is not published to the host, so it never clashes with a local MongoDB.
+- Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
+- `server/Dockerfile` builds the API image on its own: `docker build -f server/Dockerfile -t online-bookstore-api .` from the repository root.
 
 ## Quality checks
 
