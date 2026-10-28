@@ -21,6 +21,24 @@ describe('ST01 registration', () => {
     expect(res.body.user).toMatchObject({ name: 'Divya Kamath', email: NEW_USER.email, role: 'Buyer', status: 'Active' });
   });
 
+  test('SASD 4.3.1: registration answers 201 { token, user } and the token opens a session straight away', async () => {
+    const res = await register(NEW_USER);
+    expect(res.status).toBe(201);
+    expect(res.body.token.split('.')).toHaveLength(3);
+    expect(new Date(res.body.expiresAt).getTime() - Date.now()).toBeGreaterThan(23.9 * 60 * 60 * 1000);
+    const session = await request(app).get('/api/auth/session').set({ Authorization: `Bearer ${res.body.token}` });
+    expect(session.status).toBe(200);
+    expect(session.body.user).toMatchObject({ id: res.body.user.id, email: NEW_USER.email });
+  });
+
+  test('a refused registration issues no token', async () => {
+    await createUser('U-B01');
+    const duplicate = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD });
+    const invalid = await register({ name: '', email: NEW_USER.email, password: PASSWORD });
+    expect(duplicate.body.token).toBeUndefined();
+    expect(invalid.body.token).toBeUndefined();
+  });
+
   test('TC-ST01-02 / TC-FLD-08: an already registered e-mail is rejected with "e-mail already registered"', async () => {
     await createUser('U-B01');
     const res = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD });

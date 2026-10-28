@@ -3,10 +3,11 @@ const cartService = require('../services/cartService');
 const tokenService = require('../services/tokenService');
 const strings = require('../resources/strings');
 
-// POST /api/auth/register (REQ-1)
+// POST /api/auth/register (REQ-1). The new account is signed in straight away (SASD 4.3.1).
 async function register(req, res) {
   const user = await authService.registerUser(req.body);
-  res.status(201).json({ message: strings.auth.registered, user: user.toJSON() });
+  const { token, expiresAt } = tokenService.issueToken(user);
+  res.status(201).json({ message: strings.auth.registered, token, expiresAt, user: user.toJSON() });
 }
 
 // POST /api/auth/login (REQ-2). The stored cart comes back with the token (SASD 4.2.3, 4.3.1)

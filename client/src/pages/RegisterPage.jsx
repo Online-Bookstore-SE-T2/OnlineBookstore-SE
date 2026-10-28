@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { apiRequest } from '../api/http.js';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext.jsx';
 import Alert from '../components/Alert.jsx';
 import FormField from '../components/FormField.jsx';
 import strings from '../resources/strings.js';
@@ -13,12 +13,15 @@ const idFor = (field) => `register-${field.replace('.', '-')}`;
 const EMPTY = { name: '', email: '', password: '', phone: '', address: { line: '', city: '', state: '', postalCode: '' } };
 
 // REQ-1 (FR01): registration with name, e-mail and password; phone and one address optional.
+// The new account is signed in straight away and taken where it was heading (SASD 4.3.1).
 export default function RegisterPage() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState(false);
 
   const setField = (field) => (event) => setValues((prev) => ({ ...prev, [field]: event.target.value }));
   const setAddressField = (field) => (event) =>
@@ -41,36 +44,18 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       const hasAddress = Object.values(values.address).some((part) => part.trim() !== '');
-      await apiRequest('/auth/register', {
-        method: 'POST',
-        body: {
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          ...(values.phone.trim() && { phone: values.phone.trim() }),
-          ...(hasAddress && { address: values.address }),
-        },
+      const user = await register({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        ...(values.phone.trim() && { phone: values.phone.trim() }),
+        ...(hasAddress && { address: values.address }),
       });
-      setCreated(true);
+      navigate(location.state?.from || '/', { replace: true, state: { notice: strings.register.welcome(user.name) } });
     } catch (err) {
-      showApiError(err, { setErrors, setFormError, fieldOrder: FIELD_ORDER, idFor });
-    } finally {
       setSubmitting(false);
+      showApiError(err, { setErrors, setFormError, fieldOrder: FIELD_ORDER, idFor });
     }
-  }
-
-  if (created) {
-    return (
-      <section className="stack narrow auth-card">
-        <h1>{strings.register.successTitle}</h1>
-        <Alert>{strings.register.success}</Alert>
-        <p>
-          <Link className="btn" to="/login">
-            {strings.register.goToLogin}
-          </Link>
-        </p>
-      </section>
-    );
   }
 
   const fieldProps = (field) => ({ id: idFor(field), error: errors[field] });

@@ -41,6 +41,16 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // REQ-1: registration signs the new account in straight away (SASD 4.3.1). A new account has
+  // an empty cart, so the header needs no request for its count.
+  const register = useCallback(async (details) => {
+    const data = await apiRequest('/auth/register', { method: 'POST', body: details });
+    setToken(data.token);
+    setLoginCart({ userId: data.user.id, items: [], itemCount: 0, subtotal: 0 });
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   // Log-out invalidates the token on the server, then always clears it locally.
   const logout = useCallback(async () => {
     try {
@@ -54,7 +64,10 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ user, ready, loginCart, login, logout, setUser }), [user, ready, loginCart, login, logout]);
+  const value = useMemo(
+    () => ({ user, ready, loginCart, login, register, logout, setUser }),
+    [user, ready, loginCart, login, register, logout],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

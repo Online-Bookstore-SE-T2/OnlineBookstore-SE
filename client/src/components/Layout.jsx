@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { getCart } from '../api/cart.js';
 import strings from '../resources/strings.js';
@@ -10,6 +10,8 @@ import Footer from './Footer.jsx';
 
 export default function Layout() {
   const { user, loginCart } = useAuth();
+  // A one-off message handed over by the page that navigated here (for example after registering).
+  const notice = useLocation().state?.notice;
   const userId = user?.id;
   const [cartCount, setCartCount] = useState(0);
 
@@ -53,6 +55,8 @@ export default function Layout() {
           {user?.status === 'Suspended' && (
             <Alert>{strings.account.suspendedBanner}</Alert>
           )}
+
+          {typeof notice === 'string' && <Alert>{notice}</Alert>}
 
           <Outlet />
         </div>

@@ -5,6 +5,7 @@ import { afterEach, vi } from 'vitest';
 import { renderApp } from '../test/render.jsx';
 import { axeViolations } from '../test/a11y.js';
 import { mockApi, lastBody } from '../test/fetchMock.js';
+import { getToken } from '../api/http.js';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -18,16 +19,31 @@ async function fill(user, fields) {
 
 const submit = (user) => user.click(screen.getByRole('button', { name: 'Create account' }));
 
+const DIVYA = { id: 'u9', name: 'Divya Kamath', email: 'divya.kamath@testmail.example', role: 'Buyer', status: 'Active' };
+
+// The registration response, plus the catalog the new user lands on.
+function registerApi(response = [201, { token: 'h.p.s', user: DIVYA }]) {
+  return mockApi({
+    'POST /auth/register': () => response,
+    'GET /books/categories': () => [200, { items: [] }],
+    'GET /books?page=1&sort=title_asc': () => [200, { items: [], page: 1, totalPages: 1, total: 0 }],
+  });
+}
+
 describe('Registration page', () => {
-  test('TC-ST01-01: valid details create the account and show a confirmation', async () => {
+  test('TC-ST01-01 / SASD 4.3.1: valid details create the account and sign the user in straight away', async () => {
     const user = userEvent.setup();
-    const spy = mockApi({ 'POST /auth/register': () => [201, { message: 'ok', user: { id: '1' } }] });
+    const spy = registerApi();
     renderApp('/register');
     await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026' });
     await submit(user);
 
-    expect(await screen.findByRole('heading', { name: 'Account created' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('You can now log in');
+    expect(await screen.findByText('Welcome, Divya Kamath. Your account has been created and you are logged in.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Account menu for Divya Kamath' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Create an account' })).not.toBeInTheDocument();
+    expect(getToken()).toBe('h.p.s');
+    expect(screen.getByRole('link', { name: 'Cart, 0 items' })).toBeInTheDocument();
+    expect(spy.mock.calls.some(([url]) => url === '/api/cart' || url === '/api/auth/login')).toBe(false);
     expect(lastBody(spy, 'POST', '/auth/register')).toEqual({
       name: 'Divya Kamath',
       email: 'divya.kamath@testmail.example',
@@ -107,7 +123,7 @@ describe('Registration page', () => {
 
   test('a complete address and phone are sent with the registration', async () => {
     const user = userEvent.setup();
-    const spy = mockApi({ 'POST /auth/register': () => [201, { user: {} }] });
+    const spy = registerApi();
     renderApp('/register');
     await fill(user, {
       Name: 'Divya Kamath',
@@ -120,7 +136,7 @@ describe('Registration page', () => {
       'Postal code': '560011',
     });
     await submit(user);
-    await screen.findByRole('heading', { name: 'Account created' });
+    await screen.findByRole('button', { name: 'Account menu for Divya Kamath' });
     expect(lastBody(spy, 'POST', '/auth/register')).toMatchObject({
       phone: '9000000099',
       address: { line: 'Flat 12, Lakeview Apartments', city: 'Bengaluru', state: 'Karnataka', postalCode: '560011' },

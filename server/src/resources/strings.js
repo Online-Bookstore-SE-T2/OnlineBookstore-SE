@@ -26,7 +26,7 @@ module.exports = {
   auth: {
     // REQ-1: exact wording required by the SRS
     emailTaken: 'e-mail already registered',
-    registered: 'Your account has been created. You can now log in.',
+    registered: 'Your account has been created and you are logged in.',
     invalidCredentials: 'Incorrect e-mail address or password.',
     locked: 'This account is locked for 15 minutes after five failed log-in attempts. Please try again later.',
     loggedOut: 'You have been logged out.',
