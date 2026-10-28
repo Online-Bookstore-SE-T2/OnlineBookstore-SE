@@ -5,8 +5,10 @@ function notifyCartUpdated() {
   window.dispatchEvent(new Event('cart-updated'));
 }
 
-export function getCart() {
-  return apiRequest('/cart');
+// Every cart endpoint answers { cart }; callers receive the cart itself.
+export async function getCart() {
+  const result = await apiRequest('/cart');
+  return result.cart;
 }
 
 export async function addToCart(listingId, quantity = 1) {
@@ -16,7 +18,7 @@ export async function addToCart(listingId, quantity = 1) {
   });
 
   notifyCartUpdated();
-  return result;
+  return result.cart;
 }
 
 export async function updateCartItem(listingId, quantity) {
@@ -29,7 +31,7 @@ export async function updateCartItem(listingId, quantity) {
   );
 
   notifyCartUpdated();
-  return result;
+  return result.cart;
 }
 
 export async function removeCartItem(listingId) {
@@ -39,5 +41,5 @@ export async function removeCartItem(listingId) {
   );
 
   notifyCartUpdated();
-  return result;
+  return result.cart;
 }
