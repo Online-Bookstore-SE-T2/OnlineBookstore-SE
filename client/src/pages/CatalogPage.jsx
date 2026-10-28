@@ -1,5 +1,6 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 import BookCard from '../components/BookCard.jsx';
 import { Burst } from '../components/Icons.jsx';
@@ -17,8 +18,37 @@ const DEFAULT_FILTERS = {
 export default function CatalogPage() {
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The query string is the single source of truth for shareable catalog state.
+  // useMemo keeps the filters object stable until the URL actually changes.
+  const queryString = searchParams.toString();
+  const { filters, page } = useMemo(() => {
+    const params = new URLSearchParams(queryString);
+    const allowedSorts = new Set([
+      'title_asc', 'title_desc', 'price_asc',
+      'price_desc', 'rating_desc', 'newest',
+    ]);
+    const requestedSort = params.get('sort') || DEFAULT_FILTERS.sort;
+    const requestedPage = Number(params.get('page') || '1');
+
+    return {
+      filters: {
+        category: params.get('category') || '',
+        minPrice: params.get('minPrice') || '',
+        maxPrice: params.get('maxPrice') || '',
+        minRating: params.get('minRating') || '',
+        availability: params.get('available') || '',
+        sort: allowedSorts.has(requestedSort)
+          ? requestedSort
+          : DEFAULT_FILTERS.sort,
+      },
+      page: Number.isInteger(requestedPage) && requestedPage > 0
+        ? requestedPage
+        : 1,
+    };
+  }, [queryString]);
+
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -26,16 +56,32 @@ export default function CatalogPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   function updateFilter(name, value) {
-    setFilters((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-    setPage(1);
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+
+      if (value === '' || (name === 'sort' && value === DEFAULT_FILTERS.sort)) {
+        next.delete(name === 'availability' ? 'available' : name);
+      } else {
+        next.set(name === 'availability' ? 'available' : name, value);
+      }
+
+      // Any filter change returns the user to the first result page.
+      next.delete('page');
+      return next;
+    });
+  }
+
+  function changePage(nextPage) {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (nextPage <= 1) next.delete('page');
+      else next.set('page', String(nextPage));
+      return next;
+    });
   }
 
   function clearFilters() {
-    setFilters({ ...DEFAULT_FILTERS });
-    setPage(1);
+    setSearchParams({});
   }
 
   useEffect(() => {
@@ -116,21 +162,6 @@ export default function CatalogPage() {
     },
   ].filter(Boolean);
 
-  function radio(name, value, label) {
-    return (
-      <label className="choice" key={value || 'any'}>
-        <input
-          type="radio"
-          name={name}
-          value={value}
-          checked={filters[name] === value}
-          onChange={() => updateFilter(name, value)}
-        />
-        {label}
-      </label>
-    );
-  }
-
   return (
     <div className="catalog">
       <section className="hero" aria-labelledby="catalog-title">
@@ -173,17 +204,26 @@ export default function CatalogPage() {
           </button>
 
           <div id="catalog-filters" className={`filters-body${filtersOpen ? ' is-open' : ''}`}>
-            <fieldset>
-              <legend>Category</legend>
-              {radio('category', '', 'All categories')}
-              {categories.map((category) => radio('category', category._id, category.name))}
-            </fieldset>
+            <label className="filter-field">
+              Category
+              <select
+                value={filters.category}
+                onChange={(event) => updateFilter('category', event.target.value)}
+              >
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <fieldset>
               <legend>Price (₹)</legend>
               <div className="price-range">
                 <label>
-                  Minimum
+                  Minimum price
                   <input
                     type="number"
                     min="0"
@@ -193,7 +233,7 @@ export default function CatalogPage() {
                   />
                 </label>
                 <label>
-                  Maximum
+                  Maximum price
                   <input
                     type="number"
                     min="0"
@@ -205,18 +245,32 @@ export default function CatalogPage() {
               </div>
             </fieldset>
 
-            <fieldset>
-              <legend>Customer rating</legend>
-              {radio('minRating', '', 'Any rating')}
-              {['4', '3', '2', '1'].map((stars) => radio('minRating', stars, `${stars} stars & up`))}
-            </fieldset>
+            <label className="filter-field">
+              Minimum rating
+              <select
+                value={filters.minRating}
+                onChange={(event) => updateFilter('minRating', event.target.value)}
+              >
+                <option value="">Any rating</option>
+                <option value="4">4 stars & up</option>
+                <option value="3">3 stars & up</option>
+                <option value="2">2 stars & up</option>
+                <option value="1">1 star & up</option>
+                <option value="5">5 stars only</option>
+              </select>
+            </label>
 
-            <fieldset>
-              <legend>Availability</legend>
-              {radio('availability', '', 'All books')}
-              {radio('availability', 'true', 'Available')}
-              {radio('availability', 'false', 'Unavailable')}
-            </fieldset>
+            <label className="filter-field">
+              Availability
+              <select
+                value={filters.availability}
+                onChange={(event) => updateFilter('availability', event.target.value)}
+              >
+                <option value="">All books</option>
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+              </select>
+            </label>
           </div>
         </aside>
 
@@ -283,7 +337,7 @@ export default function CatalogPage() {
               page={page}
               totalPages={totalPages}
               disabled={loading}
-              onPage={setPage}
+              onPage={changePage}
             />
           )}
         </section>

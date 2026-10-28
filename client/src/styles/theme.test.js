@@ -42,12 +42,14 @@ describe('neobrutalist theme', () => {
     expect(tokens['gray-9']).toBe('#000000');
   });
 
-  test('colours other than grey are the error red and the brand accents', () => {
+  test('colours other than grey are the error red, the brand accents and the four admin action tones', () => {
     const coloured = Object.entries(tokens).filter(([, hex]) => !isGrey(hex)).map(([name]) => name);
-    expect(coloured.filter((name) => !name.startsWith('brand-'))).toEqual(['error']);
+    expect(coloured.filter((name) => !name.startsWith('brand-'))).toEqual([
+      'error', 'action-info', 'action-positive', 'action-caution', 'action-danger',
+    ]);
   });
 
-  test('red is reserved for validation errors (SRS 3.1)', () => {
+  test('brand accents never use red, which marks errors (SRS 3.1) and destructive actions', () => {
     expect(isRed(tokens.error)).toBe(true);
     expect(brand.filter((name) => isRed(tokens[name]))).toEqual([]);
   });
@@ -56,6 +58,15 @@ describe('neobrutalist theme', () => {
     expect(brand.length).toBeGreaterThan(0);
     brand.forEach((name) => expect(contrast('gray-9', name)).toBeGreaterThanOrEqual(4.5));
   });
+
+  // Tone text and borders on white and table-row surfaces; white text when filled on hover.
+  test.each(['action-info', 'action-positive', 'action-caution', 'action-danger'])(
+    '%s meets 4.5:1 on white and on surfaces, and under white text',
+    (tone) => {
+      expect(contrast(tone, 'gray-0')).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(tone, 'gray-1')).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 
   test.each([
     ['body text', 'gray-7', 'gray-0'],

@@ -19,6 +19,7 @@ function defaultLoad(config, { page, q, deleted, filters }) {
 const restoreAction = {
   key: 'restore',
   label: strings.admin.restore,
+  tone: 'positive',
   run: (row, _input, config) => apiRequest(`/admin/${config.entity}/${row.id}/restore`, { method: 'POST' }),
 };
 
@@ -216,13 +217,13 @@ export default function EntityPanel({ config }) {
                       <td>
                         <div className="row">
                           {config.viewable !== false && (
-                            <button type="button" className="btn btn-secondary btn-small"
+                            <button type="button" className="btn btn-info btn-small"
                               aria-label={strings.admin.actionLabel(strings.admin.view, config.label(row))} onClick={() => view(row)}>
                               {strings.admin.view}
                             </button>
                           )}
                           {rowActions(row).map((action) => (
-                            <button key={action.key} type="button" className="btn btn-secondary btn-small"
+                            <button key={action.key} type="button" className={`btn btn-${action.tone || 'info'} btn-small`}
                               aria-label={strings.admin.actionLabel(action.label, config.label(row))}
                               onClick={() => startAction(action, row)} disabled={busy}>
                               {action.label}

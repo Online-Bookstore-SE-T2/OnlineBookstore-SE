@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 import BookCard from '../components/BookCard.jsx';
 import { SearchIcon } from '../components/Icons.jsx';
@@ -13,6 +13,8 @@ export function SearchPage() {
   const submittedQuery = (searchParams.get('q') || '').trim();
   const [query, setQuery] = useState(submittedQuery);
   const [results, setResults] = useState(null);
+  const [resultsQuery, setResultsQuery] = useState(null);
+  const [suggestedCategories, setSuggestedCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +46,7 @@ export function SearchPage() {
 
         if (!cancelled) {
           setResults(data);
+          setResultsQuery(submittedQuery);
         }
       } catch (err) {
         if (!cancelled) {
@@ -63,6 +66,40 @@ export function SearchPage() {
       cancelled = true;
     };
   }, [submittedQuery, page]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSuggestedCategories() {
+      if (
+        !submittedQuery ||
+        !results ||
+        resultsQuery !== submittedQuery ||
+        results.items.length > 0
+      ) {
+        setSuggestedCategories([]);
+        return;
+      }
+
+      try {
+        const data = await apiRequest('/books/categories');
+        if (!cancelled) {
+          setSuggestedCategories(
+            Array.isArray(data.items) ? data.items : []
+          );
+        }
+      } catch {
+        // Search still works if the optional category suggestions fail.
+        if (!cancelled) setSuggestedCategories([]);
+      }
+    }
+
+    loadSuggestedCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [submittedQuery, results, resultsQuery]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -133,6 +170,25 @@ export function SearchPage() {
               <div className="card empty-state">
                 <p>No books found.</p>
                 <p className="muted">Check the spelling, or try a shorter title or the author&rsquo;s surname.</p>
+                {submittedQuery && suggestedCategories.length > 0 && (
+                  <div className="stack">
+                    <p>Try browsing one of these categories:</p>
+                    <ul className="chips">
+                      {suggestedCategories.map((category) => (
+                        <li key={category._id}>
+                          <Link
+                            className="chip"
+                            to={`/?${new URLSearchParams({
+                              category: category._id,
+                            }).toString()}`}
+                          >
+                            {category.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="book-grid book-grid-wide">

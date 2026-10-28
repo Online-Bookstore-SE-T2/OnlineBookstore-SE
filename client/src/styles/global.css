@@ -2,8 +2,9 @@
  * Neobrutalist theme: pitch-black strokes and hard, unblurred shadows on flat colour.
  * Ten greys from white to black carry text and structure. A small brand palette adds flat
  * accent fills behind black text; it never contains red, which stays reserved for validation
- * errors (SRS 3.1, always paired with an icon and a message). Every text pair meets the 4.5:1
- * contrast ratio of WCAG 2.1 AA (SRS 2.5, 6.4 / NFR11); see theme.test.js.
+ * errors (SRS 3.1, always paired with an icon and a message). Four action tones colour-code
+ * administration buttons by effect (always paired with a text label). Every text pair meets the
+ * 4.5:1 contrast ratio of WCAG 2.1 AA (SRS 2.5, 6.4 / NFR11); see theme.test.js.
  */
 :root {
   --gray-0: #ffffff; /* cards, inputs */
@@ -17,6 +18,10 @@
   --gray-8: #0d0d0d; /* footer */
   --gray-9: #000000; /* strokes, shadows, headings, focus ring */
   --error: #b3261e; /* validation errors only (6.0:1 against paper) */
+  --action-info: #0550ae; /* view, rename, promote (7.6:1 against white) */
+  --action-positive: #1a7f37; /* make available, reinstate, approve, restore (5.1:1) */
+  --action-caution: #8a5a00; /* make unavailable, suspend, reject (5.9:1) */
+  --action-danger: #a40e26; /* delete (7.9:1) */
 
   /* Brand accents: flat fills, black text only (9.8:1 or better) */
   --brand-paper: #fff4dc; /* page background */
@@ -774,6 +779,58 @@ button:not([class]):disabled,
   font-size: 0.875rem;
 }
 
+/* Action tones: outlined in the tone colour, filled on hover. Disabled buttons stay grey. */
+.btn-info,
+.btn-positive,
+.btn-caution,
+.btn-danger {
+  background: var(--gray-0);
+}
+
+.btn-info {
+  color: var(--action-info);
+  border-color: var(--action-info);
+}
+
+.btn-positive {
+  color: var(--action-positive);
+  border-color: var(--action-positive);
+}
+
+.btn-caution {
+  color: var(--action-caution);
+  border-color: var(--action-caution);
+}
+
+.btn-danger {
+  color: var(--action-danger);
+  border-color: var(--action-danger);
+}
+
+.btn-info:not(:disabled):hover {
+  background: var(--action-info);
+  border-color: var(--action-info);
+  color: var(--gray-0);
+}
+
+.btn-positive:not(:disabled):hover {
+  background: var(--action-positive);
+  border-color: var(--action-positive);
+  color: var(--gray-0);
+}
+
+.btn-caution:not(:disabled):hover {
+  background: var(--action-caution);
+  border-color: var(--action-caution);
+  color: var(--gray-0);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--action-danger);
+  border-color: var(--action-danger);
+  color: var(--gray-0);
+}
+
 /* ---------- Messages ---------- */
 
 .alert {
@@ -1109,16 +1166,25 @@ button:not([class]):disabled,
   clear: both;
 }
 
-.choice {
+.filter-field {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 34px;
-  cursor: pointer;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-thin) solid var(--gray-9);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.choice:has(input:checked) {
-  font-weight: 800;
+.filter-field select {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .price-range {
@@ -1184,6 +1250,7 @@ button:not([class]):disabled,
   background: var(--brand-yellow);
   border: var(--stroke-thin) solid var(--gray-9);
   border-radius: 999px;
+  text-decoration: none;
   cursor: pointer;
 }
 

@@ -4,7 +4,8 @@ import { formatDate, formatDateTime, formatINR } from '../../utils/format.js';
 import CategoryCreateForm from './CategoryCreateForm.jsx';
 
 // Table and action definitions for each administration section (REQ-4).
-// Columns: { key, label, render(row, ctx) }. Actions: { key, label, visible?, confirm?, form?, run }.
+// Columns: { key, label, render(row, ctx) }. Actions: { key, label, tone?, visible?, confirm?, form?, run }.
+// tone colour-codes the button by effect: info (default), positive, caution or danger.
 
 const t = strings.admin;
 const c = t.columns;
@@ -13,6 +14,7 @@ const post = (path, body) => apiRequest(path, { method: 'POST', body });
 const remove = (entity) => ({
   key: 'delete',
   label: t.delete,
+  tone: 'danger',
   confirm: (row) => ({ title: t.confirm.deleteTitle, message: t.confirm.deleteMessage(LABELS[entity](row)) }),
   run: (row) => apiRequest(`/admin/${entity}/${row.id}`, { method: 'DELETE' }),
 });
@@ -42,6 +44,7 @@ const userActions = [
   {
     key: 'suspend',
     label: t.suspend,
+    tone: 'caution',
     visible: (row, ctx) => row.status === 'Active' && !isSelf(row, ctx),
     confirm: (row) => ({ title: t.confirm.suspendTitle, message: t.confirm.suspendMessage(row.name) }),
     run: (row) => post(`/admin/users/${row.id}/suspend`),
@@ -49,6 +52,7 @@ const userActions = [
   {
     key: 'reinstate',
     label: t.reinstate,
+    tone: 'positive',
     visible: (row, ctx) => row.status === 'Suspended' && !isSelf(row, ctx),
     run: (row) => post(`/admin/users/${row.id}/reinstate`),
   },
@@ -99,10 +103,11 @@ const sellerRequests = {
     { key: 'requested', label: c.requested, render: (row) => formatDate(row.sellerRequest?.requestedAt) },
   ],
   actions: [
-    { key: 'approve', label: t.approve, run: (row) => post(`/admin/users/${row.id}/seller-request/approve`) },
+    { key: 'approve', label: t.approve, tone: 'positive', run: (row) => post(`/admin/users/${row.id}/seller-request/approve`) },
     {
       key: 'reject',
       label: t.reject,
+      tone: 'caution',
       confirm: (row) => ({ title: t.confirm.rejectTitle, message: t.confirm.rejectMessage(row.name) }),
       form: {
         type: 'select',
@@ -134,12 +139,14 @@ const books = {
     {
       key: 'unavailable',
       label: t.markUnavailable,
+      tone: 'caution',
       visible: (row) => !row.markedUnavailable,
       run: (row) => apiRequest(`/admin/books/${row.id}/availability`, { method: 'PATCH', body: { available: false } }),
     },
     {
       key: 'available',
       label: t.markAvailable,
+      tone: 'positive',
       visible: (row) => row.markedUnavailable,
       run: (row) => apiRequest(`/admin/books/${row.id}/availability`, { method: 'PATCH', body: { available: true } }),
     },
@@ -197,6 +204,7 @@ const listings = {
     {
       key: 'suspend',
       label: t.suspend,
+      tone: 'caution',
       visible: (row) => row.status === 'Active',
       confirm: (row) => ({ title: t.confirm.suspendListingTitle, message: t.confirm.suspendListingMessage(LABELS.listings(row)) }),
       run: (row) => post(`/admin/listings/${row.id}/suspend`),
@@ -204,6 +212,7 @@ const listings = {
     {
       key: 'reinstate',
       label: t.reinstate,
+      tone: 'positive',
       visible: (row) => row.status === 'Suspended',
       run: (row) => post(`/admin/listings/${row.id}/reinstate`),
     },
