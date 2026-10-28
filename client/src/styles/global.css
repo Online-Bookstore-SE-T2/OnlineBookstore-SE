@@ -1400,6 +1400,273 @@ button:not([class]):disabled,
   box-shadow: none;
 }
 
+/* ---------- Book details ---------- */
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9375rem;
+}
+
+.breadcrumb li + li::before {
+  content: '/';
+  margin-right: var(--space-2);
+  color: var(--gray-5);
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--gray-5);
+  font-weight: 600;
+}
+
+.product {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr) minmax(0, 300px);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.product-cover {
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: var(--brand-yellow);
+  border: var(--stroke) solid var(--gray-9);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.product-cover img {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  border: var(--stroke) solid var(--gray-9);
+  border-radius: 3px;
+  box-shadow: 6px 6px 0 0 var(--gray-9);
+  background: var(--gray-0);
+}
+
+.product-cover .book-card-placeholder {
+  width: 70%;
+  height: auto;
+}
+
+.product-info h1 {
+  margin: var(--space-3) 0 var(--space-2);
+}
+
+.product-info p {
+  margin: 0;
+}
+
+.product-author {
+  font-size: 1.125rem;
+}
+
+.product-author span {
+  font-weight: 800;
+}
+
+.product-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3) !important;
+  font-weight: 800;
+}
+
+.product-about {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--stroke-thin) solid var(--gray-9);
+}
+
+.product-about h2 {
+  font-size: 1.125rem;
+}
+
+.product-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+}
+
+.product-facts div {
+  padding: var(--space-3);
+  background: var(--gray-0);
+  border: var(--stroke-thin) solid var(--gray-9);
+  border-radius: var(--radius-sm);
+}
+
+.product-facts dt {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-5);
+}
+
+.product-facts dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.buy-box {
+  position: sticky;
+  top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--gray-0);
+  border: var(--stroke) solid var(--gray-9);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.buy-box p {
+  margin: 0;
+}
+
+.buy-box-label {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.buy-box-price {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 1;
+  color: var(--gray-9);
+}
+
+.stock span {
+  display: inline-block;
+  padding: 2px var(--space-3);
+  border: var(--stroke-thin) solid var(--gray-9);
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.875rem;
+}
+
+.stock-in span {
+  background: var(--brand-mint);
+}
+
+.stock-out span {
+  background: var(--gray-1);
+}
+
+.buy-box-offer {
+  font-size: 0.9375rem;
+}
+
+.buy-box .btn-block {
+  min-height: 52px;
+  font-size: 1.0625rem;
+}
+
+.buy-box .alert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.offers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.offer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--gray-0);
+  border: var(--stroke) solid var(--gray-9);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.offer p {
+  margin: 0;
+}
+
+.offer-seller {
+  font-weight: 800;
+}
+
+.offer-price {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.product ~ section {
+  margin-top: var(--space-7);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+.review-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.review-head h3 {
+  margin: 0 var(--space-2) 0 0;
+}
+
+@media (max-width: 1023px) {
+  .product {
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  }
+
+  .buy-box {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}
+
 /* ---------- Motion: honour the visitor's reduced-motion setting ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1414,6 +1681,70 @@ button:not([class]):disabled,
 /* ---------- Responsive: single column below 768 px (SRS 3.1), usable from 360 px (SRS 2.4) ---------- */
 
 @media (max-width: 767px) {
+  /* Flatten the info column so price and Add to Cart sit right under the title on phones. */
+  .product {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .product-info {
+    display: contents;
+  }
+
+  .product-info > * {
+    order: 1;
+  }
+
+  .product-info .tag {
+    justify-self: start;
+  }
+
+  .product-cover {
+    padding: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+
+  .product-cover img {
+    max-height: 220px;
+    width: auto;
+  }
+
+  .product-info h1 {
+    margin: 0;
+  }
+
+  .product-rating {
+    margin-top: 0 !important;
+  }
+
+  .buy-box {
+    order: 2;
+    margin: var(--space-3) 0;
+  }
+
+  .product-about,
+  .product-facts {
+    order: 3;
+    margin-top: 0;
+  }
+
+  .product ~ section {
+    margin-top: var(--space-6);
+  }
+
+  .buy-box {
+    position: static;
+    box-shadow: var(--shadow);
+  }
+
+  .offer {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .offer .btn {
+    grid-column: 1 / -1;
+  }
+
   .hero {
     padding: var(--space-5) var(--space-4);
     margin-bottom: var(--space-5);
