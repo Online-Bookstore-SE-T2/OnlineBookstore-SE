@@ -164,7 +164,7 @@ async function publicListings(bookId) {
   const listings = await Listing.find({
     book: book._id,
     status: LISTING_STATUS.ACTIVE,
-    quantity: { $gt: 0 },
+    quantity: mongoose.trusted({ $gt: 0 }),
     deletedAt: null,
   })
     .populate('seller', 'name')
@@ -206,7 +206,7 @@ async function removeListing(sellerId, id) {
 
   const openOrder = await Order.exists({
     'items.listing': listing._id,
-    status: { $in: OPEN_ORDER_STATUSES },
+    status: mongoose.trusted({ $in: OPEN_ORDER_STATUSES }),
     deletedAt: null,
   });
 

@@ -22,7 +22,7 @@ async function getActiveListing(listingId) {
     _id: listingId,
     deletedAt: null,
     status: LISTING_STATUS.ACTIVE,
-    quantity: { $gt: 0 },
+    quantity: mongoose.trusted({ $gt: 0 }),
   })
     .populate({
       path: 'book',
@@ -53,7 +53,7 @@ async function getOrCreateCart(buyerId) {
   const deletedCart = await Cart.findOneAndUpdate(
     {
       buyer: buyerId,
-      deletedAt: { $ne: null },
+      deletedAt: mongoose.trusted({ $ne: null }),
     },
     {
       $set: {
@@ -94,7 +94,7 @@ async function getCart(buyerId) {
   const listingIds = cart.items.map((item) => item.listing);
 
   const listings = await Listing.find({
-    _id: { $in: listingIds },
+    _id: mongoose.trusted({ $in: listingIds }),
     deletedAt: null,
   })
     .populate({
