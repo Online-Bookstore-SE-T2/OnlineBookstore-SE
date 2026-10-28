@@ -79,7 +79,12 @@ npm run test:coverage   # with coverage reports
 
 Server tests use the MongoDB instance at `MONGODB_TEST_URI` (default `mongodb://127.0.0.1:27017`), with a throwaway database per Jest worker. It must be a replica set too, or the cart, checkout, payment and order tests fail with 500s. Give the base URI without a database name or query string.
 
+Every pull request to `main` runs lint and both test suites in GitHub Actions (`.github/workflows/ci.yml`), against MongoDB started as a single-member replica set.
+
 ## Behaviour notes
+
+- **Registration and login**: `POST /api/auth/register` answers `201 { token, expiresAt, user }`, so a new account is signed in straight away. `POST /api/auth/login` answers `{ token, expiresAt, user, cart }`, with `cart` shaped as below, so the header cart count needs no second request.
+- **Catalog books**: administrators add books with `POST /api/admin/books` (`isbn`, `title`, `author`, `category`, `price`, optional `description` and `coverImageUrl`) and edit them with `PATCH /api/admin/books/:id`. The ISBN must be a valid ISBN-13, is unique across live and deleted books, and cannot be edited. Both are audited and available from the Books tab of the console.
 
 - **Cart** (`/api/cart`): every endpoint answers `200 { cart }`, where `cart` is `{ buyer, items, itemCount, subtotal }`. Each item is `{ listing, quantity, available, lineTotal, listingDetails }`, with `listing` the listing id. Asking for more than the listing's stock is a `409`.
 - **Cancelling orders**: a buyer can cancel an order while it is `Placed` or `Paid` (SRS 6.2); `Shipped` and later orders answer `409`. Cancelling restores the stock. Refunds are outside Release 1.0, so a paid order's payment is marked `Refund pending`.
@@ -92,7 +97,7 @@ These parts of the SRS and SASD are still open:
 
 - Sellers viewing orders for their listings and advancing order status (REQ-14). Nothing moves an order to `Shipped` or `Delivered` yet, so the review flow can only be exercised with test data.
 - E-mail notifications (REQ-15); notifications are in-app only, and sellers are not yet notified of new orders.
-- Administrators adding or editing books, and changing or cancelling orders (FR15, SASD 4.2.4).
+- Administrators changing order status or cancelling orders after they ship (FR15, SASD 4.2.4).
 - A real sandbox payment gateway (SASD OD-1).
 - Client screens for checkout, order confirmation, order history and notifications (SRS 3.1).
 - Suggested categories when a search finds nothing (REQ-6).
