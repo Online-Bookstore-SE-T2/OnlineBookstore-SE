@@ -1,0 +1,59 @@
+# Lint and run both test suites on every pull request to main, so regressions are caught
+# before review (NFR07, C-5, Test Plan section 5: regression testing).
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Orders use multi-document transactions, which MongoDB only allows on a replica set
+      # (SASD 3.3), so the test database runs as a single-member replica set. The member is
+      # named 127.0.0.1:27017 so the driver on the runner can reach it through the mapped port.
+      - name: Start MongoDB as a single-node replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval "db.adminCommand('ping').ok" && break
+            sleep 2
+          done
+          docker exec mongo mongosh --quiet --eval \
+            "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] })"
+          for attempt in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval "rs.status().members[0].stateStr" | grep -q PRIMARY && exit 0
+            sleep 2
+          done
+          echo "MongoDB replica set did not become primary" >&2
+          docker logs mongo
+          exit 1
+
+      - name: Test
+        run: npm test
+        env:
+          MONGODB_TEST_URI: mongodb://127.0.0.1:27017
