@@ -6,6 +6,13 @@ import {
   removeCartItem,
 } from '../api/cart.js';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { Burst, CartIcon } from '../components/Icons.jsx';
+
+function quantitiesFrom(items = []) {
+  return Object.fromEntries(
+    items.map((item) => [item.listing, String(item.quantity)]),
+  );
+}
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -28,15 +35,7 @@ export default function CartPage() {
     try {
       const result = await getCart();
       setCart(result);
-
-      setQuantities(
-        Object.fromEntries(
-          (result.items || []).map((item) => [
-            item.listing,
-            String(item.quantity),
-          ]),
-        ),
-      );
+      setQuantities(quantitiesFrom(result.items));
     } catch (err) {
       setError(err?.message || 'Unable to load your shopping cart.');
     } finally {
@@ -48,8 +47,8 @@ export default function CartPage() {
     loadCart();
   }, [loadCart]);
 
-  async function changeQuantity(item) {
-    const rawQuantity = quantities[item.listing];
+  // The stepper buttons pass the new value directly; a typed value is read from the field.
+  async function changeQuantity(item, rawQuantity = quantities[item.listing]) {
     const quantity = Number(rawQuantity);
     const stock = item.listingDetails?.stock ?? 0;
 
@@ -65,25 +64,18 @@ export default function CartPage() {
 
     if (quantity === item.quantity) {
       setError('');
-      setNotice('Quantity is unchanged.');
       return;
     }
 
     setBusyId(item.listing);
     setError('');
     setNotice('');
+    setQuantities((previous) => ({ ...previous, [item.listing]: String(quantity) }));
 
     try {
       const result = await updateCartItem(item.listing, quantity);
       setCart(result);
-      setQuantities(
-        Object.fromEntries(
-          (result.items || []).map((cartItem) => [
-            cartItem.listing,
-            String(cartItem.quantity),
-          ]),
-        ),
-      );
+      setQuantities(quantitiesFrom(result.items));
       setNotice('Cart quantity updated.');
     } catch (err) {
       setError(err?.message || 'Unable to update the quantity.');
@@ -104,14 +96,7 @@ export default function CartPage() {
     try {
       const result = await removeCartItem(item.listing);
       setCart(result);
-      setQuantities(
-        Object.fromEntries(
-          (result.items || []).map((cartItem) => [
-            cartItem.listing,
-            String(cartItem.quantity),
-          ]),
-        ),
-      );
+      setQuantities(quantitiesFrom(result.items));
       setNotice('Item removed from your cart.');
     } catch (err) {
       setError(err?.message || 'Unable to remove this item.');
@@ -145,13 +130,25 @@ export default function CartPage() {
 
   return (
     <section className="stack">
-      <h1>Shopping cart</h1>
+      <div className="page-head">
+        <h1>Shopping cart</h1>
+        {cart.items.length > 0 && (
+          <p className="muted">
+            {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} from{' '}
+            {cart.items.length} {cart.items.length === 1 ? 'listing' : 'listings'}
+          </p>
+        )}
+      </div>
 
-      {error && <p role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
+      {error && <p role="alert" className="alert alert-error">{error}</p>}
+      {notice && <p role="status" className="alert">{notice}</p>}
 
       {cart.items.length === 0 ? (
-        <article className="card stack">
+        <article className="card empty-state cart-empty">
+          <span className="cart-empty-icon" aria-hidden="true">
+            <Burst size={96} />
+            <CartIcon size={32} />
+          </span>
           <h2>Your cart is empty</h2>
           <p>Find a book you love and add it to your cart.</p>
           <Link className="btn" to="/">
@@ -159,112 +156,129 @@ export default function CartPage() {
           </Link>
         </article>
       ) : (
-        <>
-          {cart.items.map((item) => {
-            const listing = item.listingDetails;
-            const book = listing?.book;
-            const busy = busyId === item.listing;
+        <div className="cart-layout">
+          <ul className="cart-items" aria-label="Items in your cart">
+            {cart.items.map((item) => {
+              const listing = item.listingDetails;
+              const book = listing?.book;
+              const busy = busyId === item.listing;
+              const value = quantities[item.listing] ?? String(item.quantity);
+              const stock = listing?.stock ?? 0;
+              const locked = busy || !item.available;
 
-            return (
-              <article className="card stack" key={item.listing}>
-                <h2>{book?.title || 'Book no longer available'}</h2>
+              return (
+                <li className="cart-item" key={item.listing}>
+                  <div className="cart-item-cover">
+                    {book?.coverImageUrl && <img src={book.coverImageUrl} alt="" />}
+                  </div>
 
-                {book?.coverImageUrl && (
-                  <img
-                    src={book.coverImageUrl}
-                    alt={`Cover of ${book.title}`}
-                    style={{
-                      width: '100%',
-                      maxWidth: '160px',
-                      maxHeight: '220px',
-                      objectFit: 'contain',
-                    }}
-                  />
-                )}
+                  <div className="cart-item-info">
+                    <h2>
+                      {book?._id ? (
+                        <Link to={`/books/${book._id}`}>{book.title}</Link>
+                      ) : (
+                        book?.title || 'Book no longer available'
+                      )}
+                    </h2>
+                    {book?.author && <p className="muted">by {book.author}</p>}
+                    {listing && (
+                      <p className="cart-item-meta">
+                        <span className="tag">{listing.condition}</span>
+                        Sold by {listing.seller?.name || 'Bookstore seller'} · ₹
+                        {Number(listing.price).toFixed(2)} each · {listing.stock} in stock
+                      </p>
+                    )}
 
-                {book?.author && <p>Author: {book.author}</p>}
+                    {!item.available && (
+                      <p role="alert" className="alert alert-error">
+                        This listing is unavailable. Remove it from your cart.
+                      </p>
+                    )}
 
-                {listing && (
-                  <>
-                    <p>
-                      Seller: {listing.seller?.name || 'Bookstore seller'}
-                    </p>
-                    <p>Condition: {listing.condition}</p>
-                    <p>
-                      Unit price: ₹{Number(listing.price).toFixed(2)}
-                    </p>
-                    <p>Available stock: {listing.stock}</p>
-                  </>
-                )}
+                    <div className="cart-item-actions">
+                      <div className="stepper">
+                        <button
+                          type="button"
+                          className="stepper-button"
+                          aria-label={`Decrease quantity of ${book?.title || 'this item'}`}
+                          disabled={locked || item.quantity <= 1}
+                          onClick={() => changeQuantity(item, String(item.quantity - 1))}
+                        >
+                          −
+                        </button>
+                        <label htmlFor={`quantity-${item.listing}`} className="visually-hidden">
+                          Quantity
+                        </label>
+                        <input
+                          id={`quantity-${item.listing}`}
+                          type="number"
+                          min="1"
+                          max={stock || undefined}
+                          step="1"
+                          value={value}
+                          disabled={locked}
+                          onChange={(event) => {
+                            setQuantities((previous) => ({
+                              ...previous,
+                              [item.listing]: event.target.value,
+                            }));
+                          }}
+                          onBlur={() => changeQuantity(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') changeQuantity(item);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="stepper-button"
+                          aria-label={`Increase quantity of ${book?.title || 'this item'}`}
+                          disabled={locked || item.quantity >= stock}
+                          onClick={() => changeQuantity(item, String(item.quantity + 1))}
+                        >
+                          +
+                        </button>
+                      </div>
 
-                {!item.available && (
-                  <p role="alert">
-                    This listing is unavailable. Remove it from your cart.
+                      <button
+                        type="button"
+                        className="link-button"
+                        disabled={busy}
+                        onClick={() => removeItem(item)}
+                      >
+                        {busy ? 'Please wait...' : 'Remove item'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="cart-item-total">
+                    <span className="visually-hidden">Line total: </span>
+                    ₹{Number(item.lineTotal).toFixed(2)}
                   </p>
-                )}
+                </li>
+              );
+            })}
+          </ul>
 
-                <p>
-                  Line total: ₹{Number(item.lineTotal).toFixed(2)}
-                </p>
-
-                <div className="stack">
-                  <label htmlFor={`quantity-${item.listing}`}>
-                    Quantity
-                  </label>
-
-                  <input
-                    id={`quantity-${item.listing}`}
-                    type="number"
-                    min="1"
-                    max={listing?.stock || undefined}
-                    step="1"
-                    value={quantities[item.listing] ?? String(item.quantity)}
-                    disabled={busy || !item.available}
-                    onChange={(event) => {
-                      setQuantities((previous) => ({
-                        ...previous,
-                        [item.listing]: event.target.value,
-                      }));
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    disabled={busy || !item.available}
-                    onClick={() => changeQuantity(item)}
-                  >
-                    {busy ? 'Please wait...' : 'Update quantity'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    disabled={busy}
-                    onClick={() => removeItem(item)}
-                  >
-                    {busy ? 'Please wait...' : 'Remove item'}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-
-          <article className="card stack">
-            <h2>Order summary</h2>
-            <p>Items: {cart.itemCount}</p>
-            <p>
-              <strong>
-                Subtotal: ₹{Number(cart.subtotal).toFixed(2)}
-              </strong>
-            </p>
+          <aside className="order-summary" aria-labelledby="summary-title">
+            <h2 id="summary-title">Order summary</h2>
+            <dl>
+              <div>
+                <dt>Items</dt>
+                <dd>{cart.itemCount}</dd>
+              </div>
+              <div className="order-summary-total">
+                <dt>Subtotal</dt>
+                <dd>₹{Number(cart.subtotal).toFixed(2)}</dd>
+              </div>
+            </dl>
             <p className="muted">
               Delivery charges and final order totals are not included.
             </p>
-            <Link className="btn btn-secondary" to="/">
+            <Link className="btn btn-secondary btn-block" to="/">
               Continue shopping
             </Link>
-          </article>
-        </>
+          </aside>
+        </div>
       )}
     </section>
   );

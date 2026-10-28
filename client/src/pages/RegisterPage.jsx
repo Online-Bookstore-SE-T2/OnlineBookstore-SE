@@ -61,7 +61,7 @@ export default function RegisterPage() {
 
   if (created) {
     return (
-      <section className="stack narrow">
+      <section className="stack narrow auth-card">
         <h1>{strings.register.successTitle}</h1>
         <Alert>{strings.register.success}</Alert>
         <p>
@@ -76,7 +76,7 @@ export default function RegisterPage() {
   const fieldProps = (field) => ({ id: idFor(field), error: errors[field] });
 
   return (
-    <section className="stack narrow">
+    <section className="stack narrow auth-card">
       <h1>{strings.register.title}</h1>
       <p className="muted">{strings.register.intro}</p>
       <Alert type="error">{formError}</Alert>
@@ -105,7 +105,7 @@ export default function RegisterPage() {
             value={values.address.postalCode} onChange={setAddressField('postalCode')} />
         </fieldset>
         <div>
-          <button className="btn" type="submit" disabled={submitting}>
+          <button className="btn btn-block" type="submit" disabled={submitting}>
             {submitting ? strings.register.submitting : strings.register.submit}
           </button>
         </div>

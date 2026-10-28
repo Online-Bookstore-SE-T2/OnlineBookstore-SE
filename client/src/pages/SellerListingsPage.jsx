@@ -45,8 +45,12 @@ export default function SellerListingsPage() {
   }
 
   return <section className="stack">
-    <h1>Manage your listings</h1>
-    <form className="card stack" onSubmit={submit}>
+    <div className="page-head">
+      <h1>Manage your listings</h1>
+      <p className="muted">List a catalog book for sale, or change the price and stock of one you already sell.</p>
+    </div>
+    <div className="seller-layout">
+    <form className={`card stack seller-form${editing ? ' is-editing' : ''}`} onSubmit={submit}>
       <h2>{editing ? 'Edit listing' : 'Sell a book'}</h2>
       {!editing && <FormField id="isbn" label="Catalog ISBN-13" required value={form.isbn} onChange={change} />}
       <div className="grid-2">
@@ -57,14 +61,16 @@ export default function SellerListingsPage() {
         {['New', 'Like New', 'Good', 'Acceptable'].map((condition) => <option key={condition}>{condition}</option>)}
       </FormField>
       <FormField id="notes" label="Notes" as="textarea" hint="Optional, up to 500 characters." maxLength={500} value={form.notes} onChange={change} />
-      {message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}
-      <div className="row"><button type="submit" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save listing' : 'Publish listing'}</button>{editing && <button type="button" onClick={reset}>Cancel edit</button>}</div>
+      {message && <p role="status" className="alert">{message}</p>}{error && <p role="alert" className="alert alert-error">{error}</p>}
+      <div className="row"><button type="submit" className="btn" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save listing' : 'Publish listing'}</button>{editing && <button type="button" className="btn btn-secondary" onClick={reset}>Cancel edit</button>}</div>
     </form>
-    <section className="stack"><h2>Your books for sale</h2>
-      {listings.length === 0 ? <p>You have no listings yet.</p> : listings.map((listing) => <article key={listing.id} className="card stack">
-        <h3>{listing.book.title}</h3><p>{listing.book.author} · ISBN {listing.book.isbn}</p><p>₹{listing.price.toFixed(2)} · {listing.quantity} available · {listing.condition}</p>{listing.notes && <p>{listing.notes}</p>}
-        <div className="row"><button type="button" onClick={() => edit(listing)}>Edit</button><button type="button" onClick={() => remove(listing)}>Remove</button></div>
-      </article>)}
+    <section className="stack"><h2>Your books for sale <span className="count-pill">{listings.length}</span></h2>
+      {listings.length === 0 ? <p className="card">You have no listings yet.</p> : <div className="listing-grid">{listings.map((listing) => <article key={listing.id} className="card listing-card">
+        <div><span className="tag">{listing.condition}</span><h3>{listing.book.title}</h3><p className="muted">{listing.book.author} · ISBN {listing.book.isbn}</p></div>
+        <p className="listing-price">₹{listing.price.toFixed(2)}<span className={`stock ${listing.quantity > 0 ? 'stock-in' : 'stock-out'}`}><span>{listing.quantity} available</span></span></p>{listing.notes && <p className="listing-notes">{listing.notes}</p>}
+        <div className="row"><button type="button" className="btn btn-secondary btn-small" onClick={() => edit(listing)}>Edit</button><button type="button" className="link-button" onClick={() => remove(listing)}>Remove</button></div>
+      </article>)}</div>}
     </section>
+    </div>
   </section>;
 }

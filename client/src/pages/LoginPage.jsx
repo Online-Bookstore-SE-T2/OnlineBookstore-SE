@@ -50,7 +50,7 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="stack narrow">
+    <section className="stack narrow auth-card">
       <h1>{strings.login.title}</h1>
       <Alert type="error">{formError}</Alert>
       <form className="stack" onSubmit={onSubmit} noValidate>
@@ -59,7 +59,7 @@ export default function LoginPage() {
         <FormField id={idFor('password')} label={strings.fields.password} required type="password"
           autoComplete="current-password" error={errors.password} value={values.password} onChange={setField('password')} />
         <div>
-          <button className="btn" type="submit" disabled={submitting}>
+          <button className="btn btn-block" type="submit" disabled={submitting}>
             {submitting ? strings.login.submitting : strings.login.submit}
           </button>
         </div>
