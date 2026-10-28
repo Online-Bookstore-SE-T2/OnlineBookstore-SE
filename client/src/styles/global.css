@@ -1,6 +1,7 @@
 /*
- * Monochrome theme: ten shades from white to black. The only non-grey colour is the red used
- * for validation errors, which SRS 3.1 requires (always paired with an icon and a message).
+ * Monochrome theme: ten shades from white to black. The non-grey colours are the red used for
+ * validation errors, which SRS 3.1 requires (always paired with an icon and a message), and four
+ * action tones that colour-code administration buttons by effect (always paired with a text label).
  * Text pairs meet the 4.5:1 contrast ratio of WCAG 2.1 AA (SRS 2.5, 6.4 / NFR11).
  */
 :root {
@@ -15,6 +16,10 @@
   --gray-8: #0d0d0d; /* header and footer */
   --gray-9: #000000; /* primary actions, focus ring */
   --error: #b3261e; /* validation errors only (6.5:1 against white) */
+  --action-info: #0550ae; /* view, rename, promote (7.6:1 against white) */
+  --action-positive: #1a7f37; /* make available, reinstate, approve, restore (5.1:1) */
+  --action-caution: #8a5a00; /* make unavailable, suspend, reject (5.9:1) */
+  --action-danger: #a40e26; /* delete (7.9:1) */
 
   --radius: 4px;
   --space-1: 4px;
@@ -462,6 +467,58 @@ legend {
 .btn-small {
   padding: var(--space-1) var(--space-2);
   font-size: 0.875rem;
+}
+
+/* Action tones: outlined in the tone colour, filled on hover. Disabled buttons stay grey. */
+.btn-info,
+.btn-positive,
+.btn-caution,
+.btn-danger {
+  background: var(--gray-0);
+}
+
+.btn-info {
+  color: var(--action-info);
+  border-color: var(--action-info);
+}
+
+.btn-positive {
+  color: var(--action-positive);
+  border-color: var(--action-positive);
+}
+
+.btn-caution {
+  color: var(--action-caution);
+  border-color: var(--action-caution);
+}
+
+.btn-danger {
+  color: var(--action-danger);
+  border-color: var(--action-danger);
+}
+
+.btn-info:not(:disabled):hover {
+  background: var(--action-info);
+  border-color: var(--action-info);
+  color: var(--gray-0);
+}
+
+.btn-positive:not(:disabled):hover {
+  background: var(--action-positive);
+  border-color: var(--action-positive);
+  color: var(--gray-0);
+}
+
+.btn-caution:not(:disabled):hover {
+  background: var(--action-caution);
+  border-color: var(--action-caution);
+  color: var(--gray-0);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--action-danger);
+  border-color: var(--action-danger);
+  color: var(--gray-0);
 }
 
 /* ---------- Messages ---------- */
