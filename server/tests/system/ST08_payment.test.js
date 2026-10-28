@@ -3,7 +3,7 @@ const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
 const { seedMarketplace } = require('../helpers/fixtures');
 const { tokenFor, bearer } = require('../helpers/auth');
-const { Order } = require('../../src/models');
+const { Order, Listing } = require('../../src/models');
 
 useTestDatabase();
 
@@ -43,18 +43,24 @@ describe('ST08 Payment Simulation', () => {
     expect(savedOrder.payment.status).toBe('Paid');
   });
 
-  test('TC-PAY-02: failed payment leaves the order unpaid', async () => {
-    const orderId = data.orders['ORD-S05']._id.toString();
+  test('TC-PAY-02: failed payment cancels the order and releases its stock (REQ-11)', async () => {
+    const order = data.orders['ORD-S05'];
+    const orderId = order._id.toString();
+    const listingId = order.items[0].listing;
+    const originalQuantity = (await Listing.findById(listingId)).quantity;
 
     const response = await pay(orderId, 'failure');
 
     expect(response.status).toBe(200);
-    expect(response.body.order.status).toBe('Placed');
+    expect(response.body.order.status).toBe('Cancelled');
     expect(response.body.order.payment.status).toBe('Failed');
 
     const savedOrder = await Order.findById(orderId);
-    expect(savedOrder.status).toBe('Placed');
+    expect(savedOrder.status).toBe('Cancelled');
     expect(savedOrder.payment.status).toBe('Failed');
+
+    const listingAfter = await Listing.findById(listingId);
+    expect(listingAfter.quantity).toBe(originalQuantity + order.items[0].quantity);
   });
 
   test('TC-PAY-03: a buyer cannot pay for another buyer order', async () => {

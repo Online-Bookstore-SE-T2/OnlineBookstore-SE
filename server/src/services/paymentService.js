@@ -5,6 +5,7 @@ const { ORDER_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const { config } = require('../config/env');
 const notificationService = require('./notificationService');
+const { releaseOrderStock } = require('./orderService');
 
 async function simulatePayment(userId, orderId, outcome) {
     // Never expose simulated payment in production.
@@ -23,46 +24,59 @@ async function simulatePayment(userId, orderId, outcome) {
         );
     }
 
-    const order = await Order.findOne({
-        _id: orderId,
-        buyer: userId,
-    });
+    const session = await mongoose.startSession();
+    let order;
 
-    if (!order) {
-        throw new AppError(404, 'Order not found.');
+    try {
+        await session.withTransaction(async () => {
+            order = await Order.findOne({
+                _id: orderId,
+                buyer: userId,
+            }).session(session);
+
+            if (!order) {
+                throw new AppError(404, 'Order not found.');
+            }
+
+            if (order.status === ORDER_STATUS.CANCELLED) {
+                throw new AppError(409, 'Cannot pay for a cancelled order.');
+            }
+
+            if (
+                order.status === ORDER_STATUS.PAID ||
+                order.payment && order.payment.status === 'Paid'
+            ) {
+                throw new AppError(409, 'This order has already been paid.');
+            }
+
+            if (order.status !== ORDER_STATUS.PLACED) {
+                throw new AppError(409, 'This order cannot be paid in its current state.');
+            }
+
+            // Only the server creates the simulated transaction reference.
+            if (outcome === 'success') {
+                order.payment = {
+                    transactionRef: `SIM-${randomUUID()}`,
+                    status: 'Paid',
+                    failureReason: undefined,
+                };
+                order.status = ORDER_STATUS.PAID;
+            } else {
+                // REQ-11: a declined payment releases the reserved stock and
+                // leaves no open order behind.
+                order.payment = {
+                    status: 'Failed',
+                    failureReason: 'Simulated payment failure.',
+                };
+                await releaseOrderStock(order, session);
+                order.status = ORDER_STATUS.CANCELLED;
+            }
+
+            await order.save({ session });
+        });
+    } finally {
+        await session.endSession();
     }
-
-    if (order.status === ORDER_STATUS.CANCELLED) {
-        throw new AppError(409, 'Cannot pay for a cancelled order.');
-    }
-
-    if (
-        order.status === ORDER_STATUS.PAID ||
-        order.payment && order.payment.status === 'Paid'
-    ) {
-        throw new AppError(409, 'This order has already been paid.');
-    }
-
-    if (order.status !== ORDER_STATUS.PLACED) {
-        throw new AppError(409, 'This order cannot be paid in its current state.');
-    }
-
-    // Only the server creates the simulated transaction reference.
-    if (outcome === 'success') {
-        order.payment = {
-            transactionRef: `SIM-${randomUUID()}`,
-            status: 'Paid',
-            failureReason: undefined,
-        };
-        order.status = ORDER_STATUS.PAID;
-    } else {
-        order.payment = {
-            status: 'Failed',
-            failureReason: 'Simulated payment failure.',
-        };
-    }
-
-        await order.save();
 
     try {
         await notificationService.notifyPaymentOutcome(

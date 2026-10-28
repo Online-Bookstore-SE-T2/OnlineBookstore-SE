@@ -133,11 +133,11 @@ describe('ST16-19 reviews, ratings and seller listings', () => {
 
     expect(review).not.toBeNull();
 
-    review.createdAt = new Date(
-      Date.now() - 31 * 24 * 60 * 60 * 1000
+    // timestamps make createdAt immutable through save(), so back-date it directly.
+    await Review.collection.updateOne(
+      { _id: review._id },
+      { $set: { createdAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } }
     );
-
-    await review.save();
 
     const expiredEdit = await request(app)
       .put(`${path}/mine`)
@@ -161,8 +161,10 @@ describe('ST16-19 reviews, ratings and seller listings', () => {
 
     expect(restored.status).toBe(200);
 
+    // The restored review keeps its last accepted rating (the in-window edit to 4).
     const bookAfterRestore = await Book.findById(data.books.B01.id);
-    expect(bookAfterRestore.averageRating).toBe(2);
+    expect(bookAfterRestore.averageRating).toBe(4);
+    expect(bookAfterRestore.reviewCount).toBe(1);
   });
 
   test('BR-6: a seller cannot review a book they actively list', async () => {

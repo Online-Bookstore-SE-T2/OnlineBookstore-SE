@@ -32,7 +32,7 @@ export default function CartPage() {
       setQuantities(
         Object.fromEntries(
           (result.items || []).map((item) => [
-            item.listingId,
+            item.listing,
             String(item.quantity),
           ]),
         ),
@@ -49,9 +49,9 @@ export default function CartPage() {
   }, [loadCart]);
 
   async function changeQuantity(item) {
-    const rawQuantity = quantities[item.listingId];
+    const rawQuantity = quantities[item.listing];
     const quantity = Number(rawQuantity);
-    const stock = item.listing?.stock ?? 0;
+    const stock = item.listingDetails?.stock ?? 0;
 
     if (
       rawQuantity === '' ||
@@ -69,17 +69,17 @@ export default function CartPage() {
       return;
     }
 
-    setBusyId(item.listingId);
+    setBusyId(item.listing);
     setError('');
     setNotice('');
 
     try {
-      const result = await updateCartItem(item.listingId, quantity);
+      const result = await updateCartItem(item.listing, quantity);
       setCart(result);
       setQuantities(
         Object.fromEntries(
           (result.items || []).map((cartItem) => [
-            cartItem.listingId,
+            cartItem.listing,
             String(cartItem.quantity),
           ]),
         ),
@@ -89,7 +89,7 @@ export default function CartPage() {
       setError(err?.message || 'Unable to update the quantity.');
       setQuantities((previous) => ({
         ...previous,
-        [item.listingId]: String(item.quantity),
+        [item.listing]: String(item.quantity),
       }));
     } finally {
       setBusyId('');
@@ -97,17 +97,17 @@ export default function CartPage() {
   }
 
   async function removeItem(item) {
-    setBusyId(item.listingId);
+    setBusyId(item.listing);
     setError('');
     setNotice('');
 
     try {
-      const result = await removeCartItem(item.listingId);
+      const result = await removeCartItem(item.listing);
       setCart(result);
       setQuantities(
         Object.fromEntries(
           (result.items || []).map((cartItem) => [
-            cartItem.listingId,
+            cartItem.listing,
             String(cartItem.quantity),
           ]),
         ),
@@ -161,12 +161,12 @@ export default function CartPage() {
       ) : (
         <>
           {cart.items.map((item) => {
-            const listing = item.listing;
+            const listing = item.listingDetails;
             const book = listing?.book;
-            const busy = busyId === item.listingId;
+            const busy = busyId === item.listing;
 
             return (
-              <article className="card stack" key={item.listingId}>
+              <article className="card stack" key={item.listing}>
                 <h2>{book?.title || 'Book no longer available'}</h2>
 
                 {book?.coverImageUrl && (
@@ -208,22 +208,22 @@ export default function CartPage() {
                 </p>
 
                 <div className="stack">
-                  <label htmlFor={`quantity-${item.listingId}`}>
+                  <label htmlFor={`quantity-${item.listing}`}>
                     Quantity
                   </label>
 
                   <input
-                    id={`quantity-${item.listingId}`}
+                    id={`quantity-${item.listing}`}
                     type="number"
                     min="1"
                     max={listing?.stock || undefined}
                     step="1"
-                    value={quantities[item.listingId] ?? String(item.quantity)}
+                    value={quantities[item.listing] ?? String(item.quantity)}
                     disabled={busy || !item.available}
                     onChange={(event) => {
                       setQuantities((previous) => ({
                         ...previous,
-                        [item.listingId]: event.target.value,
+                        [item.listing]: event.target.value,
                       }));
                     }}
                   />

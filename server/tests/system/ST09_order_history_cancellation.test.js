@@ -89,17 +89,24 @@ describe('ST09 Buyer Order History and Cancellation', () => {
     expect(listingAfter.quantity).toBe(originalQuantity + orderedQuantity);
   });
 
-  test('TC-ORD-06: buyer cannot cancel a paid order', async () => {
-    const orderId = data.orders['ORD-S03']._id.toString();
+  test('TC-ORD-06: buyer can cancel a paid order before it ships (SRS 6.2)', async () => {
+    const order = data.orders['ORD-S03'];
+    await Order.updateOne({ _id: order._id }, { 'payment.status': 'Paid', 'payment.transactionRef': 'SIM-TEST' });
+    const listingId = order.items[0].listing;
+    const originalQuantity = (await Listing.findById(listingId)).quantity;
 
     const response = await request(app)
-      .post(`/api/orders/${orderId}/cancel`)
+      .post(`/api/orders/${order._id}/cancel`)
       .set(buyerAuth);
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(200);
 
-    const savedOrder = await Order.findById(orderId);
-    expect(savedOrder.status).toBe('Paid');
+    const savedOrder = await Order.findById(order._id);
+    expect(savedOrder.status).toBe('Cancelled');
+    expect(savedOrder.payment.status).toBe('Refund pending');
+
+    const listingAfter = await Listing.findById(listingId);
+    expect(listingAfter.quantity).toBe(originalQuantity + order.items[0].quantity);
   });
 
   test('TC-ORD-07: buyer cannot cancel an already cancelled order', async () => {
@@ -141,6 +148,7 @@ describe('ST09 Buyer Order History and Cancellation', () => {
 
   test('TC-ORD-11: failed cancellation does not change listing stock', async () => {
     const order = data.orders['ORD-S03'];
+    await Order.updateOne({ _id: order._id }, { status: 'Shipped' });
     const listingId = order.items[0].listing;
 
     const listingBefore = await Listing.findById(listingId);
@@ -154,5 +162,17 @@ describe('ST09 Buyer Order History and Cancellation', () => {
 
     const listingAfter = await Listing.findById(listingId);
     expect(listingAfter.quantity).toBe(originalQuantity);
+  });
+
+  test('TC-ORD-12: buyer cannot cancel a shipped order', async () => {
+    const orderId = data.orders['ORD-S03']._id;
+    await Order.updateOne({ _id: orderId }, { status: 'Shipped' });
+
+    const response = await request(app)
+      .post(`/api/orders/${orderId}/cancel`)
+      .set(buyerAuth);
+
+    expect(response.status).toBe(409);
+    expect((await Order.findById(orderId)).status).toBe('Shipped');
   });
 });

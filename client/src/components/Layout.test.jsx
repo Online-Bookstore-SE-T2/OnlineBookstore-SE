@@ -107,10 +107,8 @@ describe('application shell (SRS 3.1)', () => {
     const privacy = renderApp('/privacy');
 
     const privacyResults = await axe(privacy.container);
-    expect
-expect(
-  screen.getByRole('banner')
-).toBeInTheDocument();
+    expect(privacyResults.violations).toHaveLength(0);
+    expect(screen.getByRole('banner')).toBeInTheDocument();
 
     privacy.unmount();
   });

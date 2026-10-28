@@ -11,9 +11,10 @@ function getUserId(req) {
   return userId;
 }
 
+// Every cart endpoint answers 200 { cart } (ST05).
 async function getCart(req, res) {
   const cart = await cartService.getCart(getUserId(req));
-  res.status(200).json(cart);
+  res.status(200).json({ cart });
 }
 
 async function addItem(req, res) {
@@ -23,7 +24,7 @@ async function addItem(req, res) {
     req.body?.quantity ?? 1,
   );
 
-  res.status(201).json(cart);
+  res.status(200).json({ cart });
 }
 
 async function updateItem(req, res) {
@@ -33,7 +34,7 @@ async function updateItem(req, res) {
     req.body?.quantity,
   );
 
-  res.status(200).json(cart);
+  res.status(200).json({ cart });
 }
 
 async function removeItem(req, res) {
@@ -42,12 +43,12 @@ async function removeItem(req, res) {
     req.params.listingId,
   );
 
-  res.status(200).json(cart);
+  res.status(200).json({ cart });
 }
 
 async function clearCart(req, res) {
   const cart = await cartService.clearCart(getUserId(req));
-  res.status(200).json(cart);
+  res.status(200).json({ cart });
 }
 
 module.exports = {

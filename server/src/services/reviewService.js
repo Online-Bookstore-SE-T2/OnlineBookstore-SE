@@ -45,7 +45,7 @@ async function validateReview(userId, book, rating, text) {
     if (characterCount(cleanText) > 2000) throw new AppError(400, 'Review must be at most 2,000 characters.', { text: 'Review must be at most 2,000 characters.' });
   }
   const user = await require('../models/User').findById(userId);
-  if (user.role === 'Seller' && await Listing.exists({ seller: userId, book: book._id, status: LISTING_STATUS.ACTIVE, quantity: { $gt: 0 }, deletedAt: null })) {
+  if (user.role === 'Seller' && await Listing.exists({ seller: userId, book: book._id, status: LISTING_STATUS.ACTIVE, quantity: mongoose.trusted({ $gt: 0 }), deletedAt: null })) {
     throw new AppError(403, 'Sellers cannot review a book they are actively listing.');
   }
   return cleanText;

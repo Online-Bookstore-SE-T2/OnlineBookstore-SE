@@ -252,13 +252,13 @@ export default function CatalogPage() {
 
               <p>
                 <strong>Price:</strong>{' '}
-                {book.price != null ? `₹${Number(book.price).toFixed(2)}` : 'Not listed'}
+                {typeof book.price === 'number' ? `₹${Number(book.price).toFixed(2)}` : 'Not listed'}
               </p>
 
               <p>
                 <strong>Rating:</strong>{' '}
-                {book.averageRating != null ? `${book.averageRating} / 5` : 'No ratings yet'}
-                {book.reviewCount != null && ` (${book.reviewCount} reviews)`}
+                {typeof book.averageRating === 'number' ? `${book.averageRating} / 5` : 'No ratings yet'}
+                {typeof book.reviewCount === 'number' && ` (${book.reviewCount} reviews)`}
               </p>
 
               <p>

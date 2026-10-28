@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 const { Cart, Listing } = require('../models');
 const { LISTING_STATUS } = require('../constants');
-const { AppError, ValidationError } = require('../utils/errors');
+const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
 
 function validateId(id) {
@@ -13,16 +13,37 @@ function validateQuantity(quantity) {
   return Number.isInteger(quantity) && quantity >= 1;
 }
 
+function invalidQuantityError() {
+  return new AppError(400, 'Quantity must be a positive whole number.', {
+    quantity: 'Quantity must be a positive whole number.',
+  });
+}
+
+// SASD 4.3.2: a quantity above the listing's stock is a conflict (409).
+function exceedsStockError(listing) {
+  const message = `Only ${listing.quantity} item(s) are currently available.`;
+  return new AppError(409, message, { quantity: message });
+}
+
+function emptyCart(buyerId) {
+  return {
+    buyer: String(buyerId),
+    items: [],
+    itemCount: 0,
+    subtotal: 0,
+  };
+}
+
 async function getActiveListing(listingId) {
   if (!validateId(listingId)) {
-    throw new AppError(404, strings.common.notFound);
+    throw new AppError(404, 'Listing not found.');
   }
 
   const listing = await Listing.findOne({
     _id: listingId,
     deletedAt: null,
     status: LISTING_STATUS.ACTIVE,
-    quantity: { $gt: 0 },
+    quantity: mongoose.trusted({ $gt: 0 }),
   })
     .populate({
       path: 'book',
@@ -33,7 +54,7 @@ async function getActiveListing(listingId) {
     .lean();
 
   if (!listing || !listing.book || listing.book.markedUnavailable) {
-    throw new AppError(404, strings.common.notFound);
+    throw new AppError(404, 'Listing not found.');
   }
 
   return listing;
@@ -53,7 +74,7 @@ async function getOrCreateCart(buyerId) {
   const deletedCart = await Cart.findOneAndUpdate(
     {
       buyer: buyerId,
-      deletedAt: { $ne: null },
+      deletedAt: mongoose.trusted({ $ne: null }),
     },
     {
       $set: {
@@ -84,17 +105,13 @@ async function getCart(buyerId) {
   }).lean();
 
   if (!cart) {
-    return {
-      items: [],
-      itemCount: 0,
-      subtotal: 0,
-    };
+    return emptyCart(buyerId);
   }
 
   const listingIds = cart.items.map((item) => item.listing);
 
   const listings = await Listing.find({
-    _id: { $in: listingIds },
+    _id: mongoose.trusted({ $in: listingIds }),
     deletedAt: null,
   })
     .populate({
@@ -120,10 +137,10 @@ async function getCart(buyerId) {
       !listing.book.markedUnavailable;
 
     return {
-      listingId: String(item.listing),
+      listing: String(item.listing),
       quantity: item.quantity,
       available,
-      listing: listing
+      listingDetails: listing
         ? {
             id: String(listing._id),
             price: listing.price,
@@ -153,6 +170,7 @@ async function getCart(buyerId) {
   );
 
   return {
+    buyer: String(buyerId),
     items,
     itemCount,
     subtotal,
@@ -161,9 +179,7 @@ async function getCart(buyerId) {
 
 async function addItem(buyerId, listingId, quantity = 1) {
   if (!validateQuantity(quantity)) {
-    throw new ValidationError({
-      quantity: 'Quantity must be a positive whole number.',
-    });
+    throw invalidQuantityError();
   }
 
   const listing = await getActiveListing(listingId);
@@ -178,9 +194,7 @@ async function addItem(buyerId, listingId, quantity = 1) {
     : quantity;
 
   if (newQuantity > listing.quantity) {
-    throw new ValidationError({
-      quantity: `Only ${listing.quantity} item(s) are currently available.`,
-    });
+    throw exceedsStockError(listing);
   }
 
   if (existingItem) {
@@ -203,17 +217,13 @@ async function updateItem(buyerId, listingId, quantity) {
   }
 
   if (!validateQuantity(quantity)) {
-    throw new ValidationError({
-      quantity: 'Quantity must be a positive whole number.',
-    });
+    throw invalidQuantityError();
   }
 
   const listing = await getActiveListing(listingId);
 
   if (quantity > listing.quantity) {
-    throw new ValidationError({
-      quantity: `Only ${listing.quantity} item(s) are currently available.`,
-    });
+    throw exceedsStockError(listing);
   }
 
   const cart = await Cart.findOne({
@@ -276,11 +286,7 @@ async function clearCart(buyerId) {
   });
 
   if (!cart) {
-    return {
-      items: [],
-      itemCount: 0,
-      subtotal: 0,
-    };
+    return emptyCart(buyerId);
   }
 
   cart.items = [];

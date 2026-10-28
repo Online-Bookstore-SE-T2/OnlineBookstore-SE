@@ -126,7 +126,7 @@ export default function BookDetailsPage() {
 
         <p>
           <strong>Price:</strong>{' '}
-          {book.price != null
+          {typeof book.price === 'number'
             ? `₹${Number(book.price).toFixed(2)}`
             : 'Not listed'}
         </p>
