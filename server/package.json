@@ -9,6 +9,7 @@
   "dev": "node --watch src/server.js",
   "seed:admin": "node src/scripts/seedAdmin.js",
   "seed:books": "node src/scripts/seedBooks.js",
+  "seed:demo": "node src/scripts/seedDemoData.js",
   "test": "jest",
   "test:coverage": "jest --coverage"
 },  "engines": {
