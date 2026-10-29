@@ -64,6 +64,8 @@ SMTP order e-mails are sent to buyers after placement, payment outcomes and stat
 
 Sellers can review orders containing their listings at `/seller/orders` and advance paid orders to Shipped and Shipped orders to Delivered. Buyers can see status history, cancel before shipment, and review delivered books from `/orders`. Both roles can read and mark notifications from `/notifications`.
 
+The implementation for issues #70–#77 covers checkout and payment, order confirmation and history, buyer cancellation, seller fulfillment, status tracking, in-app notifications, and order e-mail. Backup/restore (#78) and demo seed data (#79) are already available from their earlier merged changes.
+
 ### With Docker
 
 `docker-compose.yml` runs the API and MongoDB as separate containers, with MongoDB already set up as a single-member replica set, so the demonstration environment can be rebuilt from the repository alone (SRS 7). Only Docker is needed; no local MongoDB or replica set configuration.
