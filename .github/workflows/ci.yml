@@ -57,3 +57,46 @@ jobs:
         run: npm test
         env:
           MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+
+      - name: Build MongoDB backup tools image
+        run: docker build -f server/Dockerfile.backup -t online-bookstore-backup .
+
+      - name: Run a timed backup and restore drill
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          backup_dir="$RUNNER_TEMP/bookstore-backups"
+          mkdir -p "$backup_dir"
+
+          docker exec mongo mongosh \
+            "mongodb://127.0.0.1:27017/backup_drill_source?replicaSet=rs0" \
+            --quiet --eval \
+            "db.restore_drill.insertOne({ marker: 'restore-drill', createdAt: new Date() })"
+
+          docker run --rm --network host \
+            -e MONGODB_URI="mongodb://127.0.0.1:27017/backup_drill_source?replicaSet=rs0" \
+            -e BACKUP_DIR=/backups \
+            -v "$backup_dir:/backups" \
+            online-bookstore-backup node src/scripts/backupDatabase.js
+
+          archive=$(find "$backup_dir" -maxdepth 1 -type f -name '*.archive.gz' -print -quit)
+          test -n "$archive"
+          archive_name=$(basename "$archive")
+          started=$(date +%s)
+          docker run --rm --network host -v "$backup_dir:/backups" online-bookstore-backup \
+            mongorestore \
+            --uri="mongodb://127.0.0.1:27017/?replicaSet=rs0" \
+            --archive="/backups/$archive_name" --gzip \
+            --nsFrom="backup_drill_source.*" --nsTo="backup_drill_target.*" --drop
+
+          docker exec mongo mongosh \
+            "mongodb://127.0.0.1:27017/backup_drill_target?replicaSet=rs0" \
+            --quiet --eval \
+            "if (db.restore_drill.countDocuments({ marker: 'restore-drill' }) !== 1) quit(1)"
+
+          elapsed=$(($(date +%s) - started))
+          echo "Timed backup and restore drill completed in ${elapsed}s"
+          if [ "$elapsed" -ge 14400 ]; then
+            echo "Restore drill exceeded the four-hour recovery objective" >&2
+            exit 1
+          fi

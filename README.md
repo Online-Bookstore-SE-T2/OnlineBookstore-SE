@@ -70,10 +70,27 @@ npm run dev:client                   # the SPA still runs from Node and proxies 
 ```
 
 - The API reads `server/.env`, but its MongoDB connection string is always the `mongo` container's, so the `MONGODB_URI` in that file is ignored.
+- The `backup` service takes a compressed database snapshot on startup and at 00:00 UTC each day. It retains snapshots from the last 168 hours in `./backups/`; set `BACKUP_HOST_DIR` to mount a different host directory and `BACKUP_MONGODB_URI` to select another MongoDB deployment. Supply these Compose variables in the shell or a root `.env` file (not `server/.env`); keep any credentials out of tracked files. A failed dump leaves prior backups untouched and is reported in the service logs.
+- Database backups contain the bookstore's data. Restrict access to the backup directory and store a protected, off-host copy for production; do not commit or publish backup archives.
 - The stack runs in development mode by default. Production mode refuses plain HTTP and turns off the simulated payment route, so set `NODE_ENV=production` only behind a proxy that terminates TLS.
 - `API_PORT=5050 docker compose up -d` publishes the API on another port. MongoDB is not published to the host, so it never clashes with a local MongoDB.
 - Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
 - `server/Dockerfile` builds the API image on its own: `docker build -f server/Dockerfile -t online-bookstore-api .` from the repository root.
+
+### Database backups and restore
+
+`docker compose up --build -d` builds and starts the backup service with the API and MongoDB. It writes one compressed `mongodump` archive immediately, then another at midnight UTC each day. Backup files are stored on the host in `./backups` (ignored by Git); files more than 168 hours old are pruned only after a new dump succeeds. Check service status and errors with `docker compose logs backup`. To request an additional backup immediately, run `docker compose run --rm backup node src/scripts/backupDatabase.js`.
+
+To restore a backup, first stop the API so it cannot write during recovery. Select an archive from `./backups`, then restore it into the configured database (the `--drop` option replaces collections present in the archive):
+
+```bash
+docker compose stop api
+docker compose run --rm --no-deps backup sh -c \
+  'mongorestore --uri="$MONGODB_URI" --archive="/backups/<archive-filename>" --gzip --drop'
+docker compose start api
+```
+
+Verify the restored collection counts and exercise the catalog and order flows before returning the service to users. For a restore drill, use an isolated database and a representative backup, time from starting the restore through validation, and record the result; recovery must finish within four hours (NFR09, SRS 6.2, SRS 7). CI runs a timed backup/restore smoke drill against MongoDB and fails if the drill exceeds four hours. The CI smoke dataset verifies the procedure and toolchain, not production-scale throughput, so production operators must also time a drill with representative data and resources.
 
 ## Quality checks
 

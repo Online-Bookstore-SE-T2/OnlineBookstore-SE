@@ -10,6 +10,7 @@ redesign-pdfs/
 # Build and test output
 dist/
 coverage/
+backups/
 
 # Logs
 *.log

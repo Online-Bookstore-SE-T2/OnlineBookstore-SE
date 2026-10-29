@@ -7,7 +7,8 @@
  "scripts": {
   "start": "node src/server.js",
   "dev": "node --watch src/server.js",
-  "seed:admin": "node src/scripts/seedAdmin.js",
+  "backup": "node src/scripts/backupDatabase.js",
+ "seed:admin": "node src/scripts/seedAdmin.js",
   "seed:books": "node src/scripts/seedBooks.js",
   "seed:demo": "node src/scripts/seedDemoData.js",
   "test": "jest",
