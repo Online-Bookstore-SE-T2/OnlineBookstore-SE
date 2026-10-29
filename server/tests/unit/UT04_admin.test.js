@@ -207,7 +207,12 @@ describe('UT04 soft delete, restore and delete guards', () => {
   test('every soft-deletable collection has a 30-day TTL index on deletedAt', async () => {
     for (const model of [User, Book, Category, Listing, Review, Order]) {
       const indexes = await model.collection.indexes();
-      const ttl = indexes.find((index) => index.key.deletedAt === 1);
+      const ttl = indexes.find(
+        (index) =>
+          index.key.deletedAt === 1 &&
+          Object.keys(index.key).length === 1
+      );
+      expect(ttl).toBeDefined();
       expect(ttl.expireAfterSeconds).toBe(30 * 24 * 60 * 60);
     }
   });
