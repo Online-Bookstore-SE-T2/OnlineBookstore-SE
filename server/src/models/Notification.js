@@ -17,6 +17,8 @@ const notificationSchema = new mongoose.Schema(
         'PAYMENT_SUCCESS',
         'PAYMENT_FAILED',
         'ORDER_STATUS_CHANGED',
+        'SELLER_ORDER_PLACED',
+        'SELLER_ORDER_CANCELLED',
       ],
     },
 

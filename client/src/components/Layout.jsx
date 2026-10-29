@@ -7,13 +7,16 @@ import strings from '../resources/strings.js';
 import Alert from './Alert.jsx';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
+import { apiRequest } from '../api/http.js';
 
 export default function Layout() {
   const { user, loginCart } = useAuth();
   // A one-off message handed over by the page that navigated here (for example after registering).
-  const notice = useLocation().state?.notice;
+  const location = useLocation();
+  const notice = location.state?.notice;
   const userId = user?.id;
   const [cartCount, setCartCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const refreshCartCount = useCallback(async () => {
     if (!userId) {
@@ -28,6 +31,29 @@ export default function Layout() {
       setCartCount(0);
     }
   }, [userId]);
+
+  const refreshNotificationCount = useCallback(async () => {
+    if (!userId) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const result = await apiRequest('/notifications?unreadOnly=true');
+      setUnreadCount(result.notifications.length);
+    } catch {
+      setUnreadCount(0);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    refreshNotificationCount();
+    window.addEventListener('notifications-updated', refreshNotificationCount);
+    const timer = window.setInterval(refreshNotificationCount, 30000);
+    return () => {
+      window.removeEventListener('notifications-updated', refreshNotificationCount);
+      window.clearInterval(timer);
+    };
+  }, [location.pathname, refreshNotificationCount]);
 
   useEffect(() => {
     // Straight after log-in the response already carried the cart (SASD 4.2.3); a restored
@@ -48,7 +74,11 @@ export default function Layout() {
         {strings.skipToContent}
       </a>
 
-      <Header cartCount={cartCount} />
+      <Header
+        cartCount={cartCount}
+        unreadCount={unreadCount}
+        showNotifications={['Buyer', 'Seller'].includes(user?.role)}
+      />
 
       <main id="main" className="main" tabIndex={-1}>
         <div className="container stack">

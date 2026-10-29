@@ -274,6 +274,9 @@ export default function CartPage() {
             <p className="muted">
               Delivery charges and final order totals are not included.
             </p>
+            <Link className="btn btn-block" to="/checkout">
+              Continue to checkout
+            </Link>
             <Link className="btn btn-secondary btn-block" to="/">
               Continue shopping
             </Link>

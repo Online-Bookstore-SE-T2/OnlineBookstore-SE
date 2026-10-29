@@ -251,6 +251,7 @@ async function findOrCreateOrder(spec, users, listings, books, created) {
       listing: listing._id,
       book: book._id,
       seller: listing.seller,
+      title: books[key].title,
       quantity: 1,
       unitPrice: listing.price,
     };
@@ -266,6 +267,7 @@ async function findOrCreateOrder(spec, users, listings, books, created) {
     deliveryAddress: spec.deliveryAddress,
     totalAmount,
     status: spec.status,
+    statusHistory: [{ status: spec.status, actor: buyer._id, changedAt: new Date() }],
     ...(payment && { payment }),
   });
   created.orders++;

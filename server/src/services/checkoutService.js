@@ -1,6 +1,7 @@
 ﻿const mongoose = require('mongoose');
 const { Cart, Listing, User, Order } = require('../models');
 const notificationService = require('./notificationService');
+const emailService = require('./emailService');
 const {
     LISTING_STATUS,
     ROLES,
@@ -62,29 +63,28 @@ async function validateCheckout(userId, addressId) {
             .populate('book')
             .populate('seller');
 
-        if (!listing || listing.status !== LISTING_STATUS.ACTIVE) {
-            throw new AppError(409, 'A cart item is no longer available.');
+        if (!listing || listing.status !== LISTING_STATUS.ACTIVE || !listing.book || !listing.seller) {
+            items.push({
+                listingId: cartItem.listing,
+                title: 'Listing no longer available',
+                quantity: cartItem.quantity,
+                available: false,
+                unavailableReason: 'This listing is no longer available.',
+                subtotal: 0,
+            });
+            continue;
         }
 
-        if (!listing.book ||
-            !listing.seller ||
-            !Number.isSafeInteger(cartItem.quantity) ||
-            cartItem.quantity < 1
-        ) {
-            throw new AppError(409, 'A cart item has invalid or missing data.');
+        if (!Number.isSafeInteger(cartItem.quantity) || cartItem.quantity < 1) {
+            throw new AppError(409, 'A cart item has invalid quantity data.');
         }
 
-        if (listing.quantity < cartItem.quantity) {
-            throw new AppError(
-                409,
-                `Only ${listing.quantity} item(s) are available for one of your cart items.`
-            );
-        }
+        const available = listing.quantity >= cartItem.quantity;
 
         const unitPricePaise = Math.round(listing.price * 100);
         const subtotalPaise = unitPricePaise * cartItem.quantity;
 
-        totalPaise += subtotalPaise;
+        if (available) totalPaise += subtotalPaise;
 
         if (!Number.isSafeInteger(totalPaise)) {
             throw new AppError(400, 'The order total is too large.');
@@ -97,9 +97,11 @@ async function validateCheckout(userId, addressId) {
             sellerId: listing.seller._id,
             quantity: cartItem.quantity,
             unitPrice: unitPricePaise / 100,
-            subtotal: subtotalPaise / 100,
+            subtotal: available ? subtotalPaise / 100 : 0,
             condition: listing.condition,
             availableQuantity: listing.quantity,
+            available,
+            unavailableReason: available ? null : `Only ${listing.quantity} item(s) remain in stock.`,
         });
     }
 
@@ -224,6 +226,7 @@ async function createOrder(userId, addressId) {
                     listing: listing._id,
                     book: listing.book._id,
                     seller: listing.seller._id,
+                    title: listing.book.title,
                     quantity,
                     unitPrice: unitPricePaise / 100,
                 });
@@ -245,6 +248,11 @@ async function createOrder(userId, addressId) {
                     payment: {
                         status: 'Pending',
                     },
+                    statusHistory: [{
+                        status: ORDER_STATUS.PLACED,
+                        actor: user._id,
+                        changedAt: new Date(),
+                    }],
                 }, ], { session }
             );
 
@@ -273,8 +281,15 @@ async function createOrder(userId, addressId) {
                 error.message
             );
         }
+        await notificationService.notifySellersOrderPlaced(createdOrder).catch((error) => {
+            console.error('Failed to create seller order notifications:', error.message);
+        });
+        User.findById(createdOrder.buyer)
+            .then((buyer) => buyer && emailService.dispatchOrderEvent('placed', createdOrder, buyer))
+            .catch((error) => console.error('Failed to load order email recipient:', error.message));
 
-        return createdOrder;  } finally {
+        return createdOrder;
+    } finally {
         await session.endSession();
     }
 }

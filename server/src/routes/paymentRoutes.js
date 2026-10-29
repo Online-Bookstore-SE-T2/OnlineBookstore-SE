@@ -15,6 +15,18 @@ function createPaymentRouter() {
     router.use(requireRole(ROLES.BUYER));
     router.use(requireWriteAccess);
 
+    router.get('/config', asyncHandler(paymentController.getConfiguration));
+
+    router.post(
+        '/orders/:orderId/intent',
+        asyncHandler(paymentController.createIntent),
+    );
+
+    router.post(
+        '/orders/:orderId/confirm',
+        asyncHandler(paymentController.completeIntent),
+    );
+
     router.post(
         '/orders/:orderId/simulate',
         asyncHandler(paymentController.simulatePayment),

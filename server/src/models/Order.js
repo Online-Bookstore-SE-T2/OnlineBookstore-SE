@@ -12,6 +12,7 @@ const orderItemSchema = new mongoose.Schema(
     listing: { type: mongoose.Schema.Types.ObjectId, ref: 'Listing', required: true },
     book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true, trim: true, maxlength: 300 },
     quantity: { type: Number, required: true, min: 1, validate: Number.isInteger },
     unitPrice: { ...money, required: true },
   },
@@ -38,10 +39,16 @@ const orderSchema = new mongoose.Schema(
     status: { type: String, enum: Object.values(ORDER_STATUS), default: ORDER_STATUS.PLACED },
     // SRS 4: Order 1 - 0..1 Payment; SRS 3.2: transaction reference, status and failure reason.
     payment: {
+      provider: String,
       transactionRef: String,
       status: String,
       failureReason: String,
     },
+    statusHistory: [{
+      status: { type: String, enum: Object.values(ORDER_STATUS), required: true },
+      actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      changedAt: { type: Date, required: true, default: Date.now },
+    }],
   },
   { timestamps: true },
 );

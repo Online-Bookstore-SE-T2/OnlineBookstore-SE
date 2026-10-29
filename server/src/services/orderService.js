@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
-const { Order, Listing } = require('../models');
-const { ORDER_STATUS } = require('../constants');
+const { Order, Listing, User } = require('../models');
+const { ORDER_STATUS, ORDER_STATUS_TRANSITIONS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const notificationService = require('./notificationService');
-
-const BUYER_CANCELLABLE_STATUSES = Object.freeze([ORDER_STATUS.PLACED, ORDER_STATUS.PAID]);
+const emailService = require('./emailService');
 
 // Returns an order's quantities to its listings. Must run inside the caller's transaction.
 async function releaseOrderStock(order, session) {
@@ -30,6 +29,7 @@ async function getBuyerOrders(userId) {
   })
     .populate('items.book', 'title author isbn')
     .populate('items.seller', 'name')
+    .populate('statusHistory.actor', 'name')
     .sort({ createdAt: -1 });
 }
 
@@ -44,13 +44,86 @@ async function getBuyerOrder(userId, orderId) {
     deletedAt: null,
   })
     .populate('items.book', 'title author isbn')
-    .populate('items.seller', 'name');
+    .populate('items.seller', 'name')
+    .populate('statusHistory.actor', 'name');
 
   if (!order) {
     throw new AppError(404, 'Order not found.');
   }
 
   return order;
+}
+
+async function getSellerOrders(userId) {
+  const orders = await Order.find({
+    'items.seller': userId,
+    deletedAt: null,
+  })
+    .populate('buyer', 'name')
+    .populate('items.book', 'title author isbn')
+    .populate('items.seller', 'name')
+    .populate('statusHistory.actor', 'name')
+    .sort({ createdAt: -1 });
+
+  return orders.map((order) => {
+    const sellerOrder = order.toJSON();
+    sellerOrder.items = sellerOrder.items.filter((item) => item.seller.id === String(userId));
+    sellerOrder.totalAmount = Math.round(sellerOrder.items.reduce(
+      (total, item) => total + Math.round(item.unitPrice * 100) * item.quantity,
+      0,
+    )) / 100;
+    delete sellerOrder.payment;
+    return sellerOrder;
+  });
+}
+
+async function advanceSellerOrder(userId, orderId, nextStatus) {
+  if (!mongoose.isValidObjectId(orderId)) {
+    throw new AppError(400, 'Invalid order ID.');
+  }
+  if (![ORDER_STATUS.SHIPPED, ORDER_STATUS.DELIVERED].includes(nextStatus)) {
+    throw new AppError(400, 'Sellers may only mark orders Shipped or Delivered.');
+  }
+
+  const session = await mongoose.startSession();
+  let updatedOrder;
+  let previousStatus;
+
+  try {
+    await session.withTransaction(async () => {
+      const order = await Order.findOne({
+        _id: orderId,
+        'items.seller': userId,
+        deletedAt: null,
+      }).session(session);
+
+      if (!order) throw new AppError(404, 'Order not found.');
+      if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(nextStatus)) {
+        throw new AppError(409, `An order cannot move from ${order.status} to ${nextStatus}.`);
+      }
+
+      previousStatus = order.status;
+      order.status = nextStatus;
+      order.statusHistory.push({
+        status: nextStatus,
+        actor: userId,
+        changedAt: new Date(),
+      });
+      await order.save({ session });
+      updatedOrder = order;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  await Promise.all([
+    notificationService.notifyOrderStatusChanged(updatedOrder, previousStatus)
+      .catch((error) => console.error('Failed to create order status notification:', error.message)),
+    User.findById(updatedOrder.buyer)
+      .then((buyer) => buyer && emailService.dispatchOrderEvent('status', updatedOrder, buyer))
+      .catch((error) => console.error('Failed to load order email recipient:', error.message)),
+  ]);
+  return updatedOrder;
 }
 
 async function cancelBuyerOrder(userId, orderId) {
@@ -75,7 +148,7 @@ async function cancelBuyerOrder(userId, orderId) {
       }
 
       // SRS 6.2: a buyer may cancel only before the order reaches Shipped.
-      if (!BUYER_CANCELLABLE_STATUSES.includes(order.status)) {
+      if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(ORDER_STATUS.CANCELLED)) {
         throw new AppError(
           409,
           'Only orders that have not yet shipped can be cancelled.'
@@ -92,6 +165,11 @@ async function cancelBuyerOrder(userId, orderId) {
       await releaseOrderStock(order, session);
 
       order.status = ORDER_STATUS.CANCELLED;
+      order.statusHistory.push({
+        status: ORDER_STATUS.CANCELLED,
+        actor: userId,
+        changedAt: new Date(),
+      });
       await order.save({ session });
 
       cancelledOrder = order;
@@ -108,6 +186,12 @@ async function cancelBuyerOrder(userId, orderId) {
         error.message
       );
     }
+    await notificationService.notifySellersOrderCancelled(cancelledOrder).catch((error) => {
+      console.error('Failed to create seller cancellation notifications:', error.message);
+    });
+    User.findById(cancelledOrder.buyer)
+      .then((buyer) => buyer && emailService.dispatchOrderEvent('status', cancelledOrder, buyer))
+      .catch((error) => console.error('Failed to load order email recipient:', error.message));
 
     return cancelledOrder;
   } finally {
@@ -118,6 +202,8 @@ async function cancelBuyerOrder(userId, orderId) {
 module.exports = {
   getBuyerOrders,
   getBuyerOrder,
+  getSellerOrders,
+  advanceSellerOrder,
   cancelBuyerOrder,
   releaseOrderStock,
 };

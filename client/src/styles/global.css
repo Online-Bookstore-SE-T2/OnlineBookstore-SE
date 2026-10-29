@@ -2460,3 +2460,74 @@ button:not([class]):disabled,
     box-shadow: var(--shadow-sm);
   }
 }
+
+.checkout-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-3) 0;
+  border-bottom: var(--stroke-thin) solid var(--gray-3);
+}
+
+.checkout-line p {
+  margin: var(--space-1) 0 0;
+}
+
+.checkout-line-total {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-2);
+}
+
+.order-heading {
+  justify-content: space-between;
+}
+
+.order-heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-detail-totals {
+  max-width: 420px;
+  margin: 0;
+}
+
+.order-detail-totals > div {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+}
+
+.order-detail-totals dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.status-history {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.status-history li + li {
+  margin-top: var(--space-2);
+}
+
+.notification-unread {
+  border-left: 8px solid var(--brand-blue);
+}
+
+.notification-card p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .checkout-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkout-line-total {
+    justify-items: start;
+  }
+}

@@ -56,6 +56,16 @@ npm run dev:server   # API on http://localhost:5000
 npm run dev:client   # SPA on http://localhost:5174 (proxies /api to the server)
 ```
 
+### Checkout, payments and order updates
+
+Buyers select a saved address at `/checkout`, review current stock and totals, then pay using Stripe's hosted Payment Element. Configure Stripe test-mode keys in `server/.env` with `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`; card details go directly to Stripe and are never sent to the API. For offline demos and automated tests, leave `PAYMENT_PROVIDER=simulator`; the payment simulator is disabled in production, where Stripe is required.
+
+SMTP order e-mails are sent to buyers after placement, payment outcomes and status changes. Configure `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` and `SMTP_FROM` for STARTTLS on port 587 (`SMTP_PORT` can override the port). Delivery is retried for transient failures; missing SMTP settings disable e-mail without blocking order processing. Seller notifications remain in-app and include only their own listing lines.
+
+Sellers can review orders containing their listings at `/seller/orders` and advance paid orders to Shipped and Shipped orders to Delivered. Buyers can see status history, cancel before shipment, and review delivered books from `/orders`. Both roles can read and mark notifications from `/notifications`.
+
+The implementation for issues #70–#77 covers checkout and payment, order confirmation and history, buyer cancellation, seller fulfillment, status tracking, in-app notifications, and order e-mail. Backup/restore (#78) and demo seed data (#79) are already available from their earlier merged changes.
+
 ### With Docker
 
 `docker-compose.yml` runs the API and MongoDB as separate containers, with MongoDB already set up as a single-member replica set, so the demonstration environment can be rebuilt from the repository alone (SRS 7). Only Docker is needed; no local MongoDB or replica set configuration.
@@ -95,14 +105,15 @@ Verify the restored collection counts and exercise the catalog and order flows b
 ## Quality checks
 
 ```bash
-npm run lint            # shared ESLint configuration
-npm test                # server and client test suites
-npm run test:coverage   # with coverage reports
+npm run lint                 # shared ESLint configuration
+npm test                     # server and client test suites
+npm run build -w client      # production client bundle
+npm run test:coverage        # with coverage reports
 ```
 
 Server tests use the MongoDB instance at `MONGODB_TEST_URI` (default `mongodb://127.0.0.1:27017`), with a throwaway database per Jest worker. It must be a replica set too, or the cart, checkout, payment and order tests fail with 500s. Give the base URI without a database name or query string.
 
-Every pull request to `main` runs lint and both test suites in GitHub Actions (`.github/workflows/ci.yml`), against MongoDB started as a single-member replica set.
+Every pull request to `main` runs lint, both test suites against MongoDB started as a single-member replica set, the client production build and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`).
 
 ## Behaviour notes
 
@@ -111,16 +122,14 @@ Every pull request to `main` runs lint and both test suites in GitHub Actions (`
 
 - **Cart** (`/api/cart`): every endpoint answers `200 { cart }`, where `cart` is `{ buyer, items, itemCount, subtotal }`. Each item is `{ listing, quantity, available, lineTotal, listingDetails }`, with `listing` the listing id. Asking for more than the listing's stock is a `409`.
 - **Cancelling orders**: a buyer can cancel an order while it is `Placed` or `Paid` (SRS 6.2); `Shipped` and later orders answer `409`. Cancelling restores the stock. Refunds are outside Release 1.0, so a paid order's payment is marked `Refund pending`.
-- **Payments**: `POST /api/payments/orders/:orderId/simulate` with `{ "outcome": "success" | "failure" }` stands in for the sandbox gateway and is disabled in production. A declined payment cancels the order and releases its stock in the same transaction (REQ-11); the buyer checks out again to retry.
+- **Payments**: Stripe test-mode PaymentIntents are verified server-side through the configured gateway; the hosted Payment Element handles card details. The simulator (`POST /api/payments/orders/:orderId/simulate` with `{ "outcome": "success" | "failure" }`) remains available for offline demos and tests, but not in production. A declined or timed-out payment cancels the order and releases its stock in the same transaction (REQ-11); the buyer checks out again to retry.
+- **Order status**: `Placed → Paid → Shipped → Delivered` and pre-shipment cancellation are validated against the transition table. Every status change records its actor and timestamp; sellers can only advance orders containing their listings.
+- **E-mail**: post-commit SMTP e-mails use STARTTLS and bounded retries. Seller order notifications are in-app only and expose only the seller's own lines, not the buyer's e-mail.
 - **Database queries**: `mongoose.set('sanitizeFilter', true)` is on (`server/src/config/db.js`), so any query operator written in code (`$gt`, `$in`, `$ne`, ...) must be wrapped in `mongoose.trusted(...)`. Without that the query fails with a `CastError`, which the API reports as a `404`.
 
-## Not yet implemented
+## Remaining SRS work
 
-These parts of the SRS and SASD are still open:
+The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were already delivered in merged PRs #96 and #95, respectively. Remaining SRS work includes:
 
-- Sellers viewing orders for their listings and advancing order status (REQ-14). Nothing moves an order to `Shipped` or `Delivered` yet, so the review flow can only be exercised with test data.
-- E-mail notifications (REQ-15); notifications are in-app only, and sellers are not yet notified of new orders.
 - Administrators changing order status or cancelling orders after they ship (FR15, SASD 4.2.4).
-- A real sandbox payment gateway (SASD OD-1).
-- Client screens for checkout, order confirmation, order history and notifications (SRS 3.1).
 - Suggested categories when a search finds nothing (REQ-6).
