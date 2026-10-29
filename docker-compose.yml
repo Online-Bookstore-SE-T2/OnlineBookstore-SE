@@ -50,5 +50,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  backup:
+    build:
+      context: .
+      dockerfile: server/Dockerfile.backup
+    environment:
+      MONGODB_URI: ${BACKUP_MONGODB_URI:-mongodb://mongo:27017/online_bookstore?replicaSet=rs0}
+      BACKUP_DIR: /backups
+    volumes:
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   mongo-data:
