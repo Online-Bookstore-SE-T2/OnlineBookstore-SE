@@ -21,6 +21,7 @@ npm install                          # re-run after every pull so new dev depend
 cp server/.env.example server/.env   # then fill in real values
 npm run seed:admin -w server         # creates the first Administrator from ADMIN_* in server/.env
 npm run seed:books -w server         # adds 100 sample books in 10 categories (safe to re-run)
+npm run seed:demo -w server          # creates demo accounts, marketplace listings, orders and reviews
 ```
 
 Registration never creates an administrator. Further administrators are promoted from the administration console.
@@ -44,6 +45,10 @@ A single-member replica set is enough. The connection strings in `server/.env` s
 
 `seed:books` creates any missing categories and 100 sample books with valid ISBN-13s. It never deletes data and skips books whose ISBN already exists, including soft-deleted ones. The sample ratings and review counts are placeholders; a book's rating is recalculated from real reviews as soon as the first one is posted. The SRS performance targets (NFR01) are defined on at least 5,000 books, so load extra data before measuring them.
 
+`seed:demo` adds two demo buyers, two demo sellers and a demo administrator, each with a usable development login. It also creates three demo books and active seller listings, buyer delivery addresses, orders in every order status, and verified-purchase reviews tied to a delivered order. It is safe to re-run without overwriting existing accounts or deleting data, and is disabled in production.
+
+All demo accounts use `DemoPass#2026`. Their e-mail addresses are `demo.buyer@example.test`, `demo.buyer2@example.test`, `demo.seller@example.test`, `demo.seller2@example.test` and `demo.admin@example.test`. Existing accounts keep their existing passwords when the seed is re-run.
+
 ## Running
 
 ```bash
@@ -60,6 +65,7 @@ cp server/.env.example server/.env   # set JWT_SECRET and the ADMIN_* values
 docker compose up --build -d         # API on http://localhost:5000
 docker compose exec api npm run seed:admin
 docker compose exec api npm run seed:books
+docker compose exec api npm run seed:demo
 npm run dev:client                   # the SPA still runs from Node and proxies /api to the container
 ```
 
