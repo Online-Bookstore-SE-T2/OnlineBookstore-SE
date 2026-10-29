@@ -19,7 +19,7 @@ function isTypingTarget(element) {
 }
 
 // Persistent header from SRS 3.1.
-export default function Header({ cartCount = 0 }) {
+export default function Header({ cartCount = 0, unreadCount = 0, showNotifications = false }) {
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const [query, setQuery] = useState('');
@@ -102,6 +102,13 @@ export default function Header({ cartCount = 0 }) {
           </Link>
 
           <AccountMenu />
+
+          {showNotifications && (
+            <Link to="/notifications" className="nav-item" aria-label={`Notifications, ${unreadCount} unread`}>
+              <span className="nav-label">Notifications</span>
+              <span className="cart-count" aria-hidden="true">{unreadCount}</span>
+            </Link>
+          )}
 
           <Link
             to="/cart"

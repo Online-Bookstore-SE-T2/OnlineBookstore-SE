@@ -3,7 +3,7 @@ const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
 const { seedMarketplace } = require('../helpers/fixtures');
 const { tokenFor, bearer } = require('../helpers/auth');
-const { User, Cart, Listing, Order } = require('../../src/models');
+const { User, Cart, Listing, Order, Book } = require('../../src/models');
 
 useTestDatabase();
 
@@ -63,6 +63,17 @@ describe('ST07 Order Creation', () => {
     expect(response.body.order.items).toHaveLength(1);
     expect(response.body.order.items[0].quantity).toBe(2);
     expect(response.body.order.items[0].unitPrice).toBe(349);
+    expect(response.body.order.items[0].title).toBe(data.books.B01.title);
+  });
+
+  test('TC-ORDER-10: order item title remains unchanged when the catalog book is edited', async () => {
+    await addCartItems([{ listing: data.listings.L01._id, quantity: 1 }]);
+    const response = await placeOrder();
+    const orderId = response.body.order.id;
+    await Book.updateOne({ _id: data.books.B01._id }, { $set: { title: 'Updated catalog title' } });
+
+    const savedOrder = await Order.findById(orderId);
+    expect(savedOrder.items[0].title).toBe(data.books.B01.title);
   });
 
   test('TC-ORDER-02: decrements listing stock after successful order creation', async () => {
@@ -97,6 +108,21 @@ describe('ST07 Order Creation', () => {
 
     expect(response.status).toBe(201);
     expect(cart.items).toHaveLength(0);
+  });
+
+  test('TC-ORDER-11: notifies the order’s seller after checkout commits', async () => {
+    await addCartItems([{ listing: data.listings.L01._id, quantity: 1 }]);
+    const response = await placeOrder();
+    expect(response.status).toBe(201);
+
+    const sellerNotifications = await request(app)
+      .get('/api/notifications')
+      .set(sellerAuth);
+    expect(sellerNotifications.status).toBe(200);
+    expect(sellerNotifications.body.notifications).toHaveLength(1);
+    expect(sellerNotifications.body.notifications[0].type).toBe('SELLER_ORDER_PLACED');
+    expect(sellerNotifications.body.notifications[0].message).toContain(data.books.B01.title);
+    expect(sellerNotifications.body.notifications[0].message).not.toContain(data.users['U-B01'].email);
   });
 
   test('TC-ORDER-04: rejects an empty cart', async () => {

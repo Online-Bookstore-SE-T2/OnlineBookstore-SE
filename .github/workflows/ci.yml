@@ -58,6 +58,9 @@ jobs:
         env:
           MONGODB_TEST_URI: mongodb://127.0.0.1:27017
 
+      - name: Build client
+        run: npm run build -w client
+
       - name: Build MongoDB backup tools image
         run: docker build -f server/Dockerfile.backup -t online-bookstore-backup .
 

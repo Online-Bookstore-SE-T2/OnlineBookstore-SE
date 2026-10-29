@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@fontsource-variable/public-sans": "^5.2.5",
+    "@stripe/react-stripe-js": "^3.9.0",
+    "@stripe/stripe-js": "^7.4.0",
     "@fontsource/archivo-black": "^5.2.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

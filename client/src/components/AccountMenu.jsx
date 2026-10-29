@@ -72,6 +72,9 @@ export default function AccountMenu() {
               {strings.account.profile}
             </Link>
           </li>
+          {user.role === 'Buyer' && (
+            <li><Link to="/orders" onClick={() => setOpen(false)}>Your orders</Link></li>
+          )}
           {user.role === 'Administrator' && (
             <li>
               <Link to="/admin" onClick={() => setOpen(false)}>
@@ -79,7 +82,12 @@ export default function AccountMenu() {
               </Link>
             </li>
           )}
-          {user.role === 'Seller' && <li><Link to="/seller/listings" onClick={() => setOpen(false)}>Manage listings</Link></li>}
+          {user.role === 'Seller' && (
+            <>
+              <li><Link to="/seller/listings" onClick={() => setOpen(false)}>Manage listings</Link></li>
+              <li><Link to="/seller/orders" onClick={() => setOpen(false)}>Orders</Link></li>
+            </>
+          )}
           <li>
             <button type="button" onClick={onLogout}>
               {strings.account.logout}

@@ -78,7 +78,7 @@ describe('ST06 Checkout Validation', () => {
     expect(res.status).toBe(400);
   });
 
-  test('TC-CHECKOUT-04: rejects a listing with insufficient stock', async () => {
+  test('TC-CHECKOUT-04: marks a listing with insufficient stock unavailable in place', async () => {
     const listing = data.listings.L01;
     await addCartItem(listing._id, listing.quantity + 1);
 
@@ -87,8 +87,10 @@ describe('ST06 Checkout Validation', () => {
       .set(buyerAuth)
       .send({ addressId });
 
-    expect(res.status).toBe(409);
-    expect(res.body.error.message).toMatch(/available/i);
+    expect(res.status).toBe(200);
+    expect(res.body.checkout.items).toHaveLength(1);
+    expect(res.body.checkout.items[0].available).toBe(false);
+    expect(res.body.checkout.items[0].unavailableReason).toMatch(/remain in stock/i);
   });
 
   test('TC-CHECKOUT-05: rejects requests without authentication', async () => {

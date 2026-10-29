@@ -37,6 +37,10 @@ describe('ST08 Payment Simulation', () => {
     expect(response.body.order.status).toBe('Paid');
     expect(response.body.order.payment.status).toBe('Paid');
     expect(response.body.order.payment.transactionRef).toMatch(/^SIM-/);
+    expect(response.body.order.statusHistory.at(-1)).toMatchObject({
+      status: 'Paid',
+      actor: data.users['U-B01']._id.toString(),
+    });
 
     const savedOrder = await Order.findById(orderId);
     expect(savedOrder.status).toBe('Paid');

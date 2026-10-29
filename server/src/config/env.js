@@ -29,10 +29,29 @@ const config = {
     email: process.env.ADMIN_EMAIL,
     password: process.env.ADMIN_PASSWORD,
   },
+  paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM,
+  },
 };
 
 function assertServerConfig() {
   const missing = ['mongoUri', 'jwtSecret'].filter((key) => !config[key]);
+  if (!['simulator', 'stripe'].includes(config.paymentProvider)) {
+    missing.push('PAYMENT_PROVIDER must be simulator or stripe');
+  }
+  if (config.env === 'production' && config.paymentProvider !== 'stripe') {
+    missing.push('PAYMENT_PROVIDER=stripe');
+  }
+  if (config.paymentProvider === 'stripe' && !config.stripeSecretKey) {
+    missing.push('STRIPE_SECRET_KEY');
+  }
   if (missing.length > 0) {
     throw new Error(`Missing required environment configuration: ${missing.join(', ')}`);
   }
