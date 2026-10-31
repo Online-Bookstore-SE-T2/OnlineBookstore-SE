@@ -83,7 +83,14 @@ async function seedMarketplace() {
   const order = (buyer, listingKey, bookKey, sellerKey, status) =>
     Order.create({
       buyer: users[buyer]._id,
-      items: [{ listing: listings[listingKey]._id, book: books[bookKey]._id, seller: users[sellerKey]._id, quantity: 1, unitPrice: listings[listingKey].price }],
+      items: [{
+        listing: listings[listingKey]._id,
+        book: books[bookKey]._id,
+        seller: users[sellerKey]._id,
+        title: books[bookKey].title,
+        quantity: 1,
+        unitPrice: listings[listingKey].price,
+      }],
       deliveryAddress: ADDRESSES['ADDR-1'],
       totalAmount: listings[listingKey].price,
       status,

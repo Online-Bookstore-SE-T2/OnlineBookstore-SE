@@ -12,6 +12,8 @@ describe('ST09 Buyer Order History and Cancellation', () => {
   let data;
   let buyerAuth;
   let secondBuyerAuth;
+  let sellerAuth;
+  let otherSellerAuth;
 
   beforeEach(async () => {
     app = testApp();
@@ -19,6 +21,8 @@ describe('ST09 Buyer Order History and Cancellation', () => {
 
     buyerAuth = bearer(await tokenFor(app, data.users['U-B01']));
     secondBuyerAuth = bearer(await tokenFor(app, data.users['U-B02']));
+    sellerAuth = bearer(await tokenFor(app, data.users['U-S01']));
+    otherSellerAuth = bearer(await tokenFor(app, data.users['U-S02']));
   });
 
   test('TC-ORD-01: buyer can view their order history', async () => {
@@ -69,6 +73,8 @@ describe('ST09 Buyer Order History and Cancellation', () => {
 
     const savedOrder = await Order.findById(orderId);
     expect(savedOrder.status).toBe('Cancelled');
+    const sellerNotifications = await request(app).get('/api/notifications').set(sellerAuth);
+    expect(sellerNotifications.body.notifications.map((item) => item.type)).toContain('SELLER_ORDER_CANCELLED');
   });
 
   test('TC-ORD-05: cancellation restores listing stock', async () => {
@@ -174,5 +180,48 @@ describe('ST09 Buyer Order History and Cancellation', () => {
 
     expect(response.status).toBe(409);
     expect((await Order.findById(orderId)).status).toBe('Shipped');
+  });
+
+  test('TC-ORD-13: seller can advance an owned paid order and the change records actor and time', async () => {
+    const order = data.orders['ORD-S03'];
+    const response = await request(app)
+      .patch(`/api/orders/seller/${order._id}/status`)
+      .set(sellerAuth)
+      .send({ status: 'Shipped' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.order.status).toBe('Shipped');
+    const latestChange = response.body.order.statusHistory.at(-1);
+    expect(latestChange.status).toBe('Shipped');
+    expect(latestChange.actor).toBe(data.users['U-S01']._id.toString());
+    expect(latestChange.changedAt).toBeTruthy();
+    const buyerNotifications = await request(app).get('/api/notifications').set(buyerAuth);
+    expect(buyerNotifications.body.notifications.map((item) => item.type)).toContain('ORDER_STATUS_CHANGED');
+  });
+
+  test('TC-ORD-14: seller cannot advance another seller order or move a delivered order backwards', async () => {
+    const order = data.orders['ORD-S03'];
+    const notOwned = await request(app)
+      .patch(`/api/orders/seller/${order._id}/status`)
+      .set(otherSellerAuth)
+      .send({ status: 'Shipped' });
+    expect(notOwned.status).toBe(404);
+
+    await Order.updateOne({ _id: order._id }, { status: 'Delivered' });
+    const backwards = await request(app)
+      .patch(`/api/orders/seller/${order._id}/status`)
+      .set(sellerAuth)
+      .send({ status: 'Shipped' });
+    expect(backwards.status).toBe(409);
+  });
+
+  test('TC-ORD-15: seller order list includes only that seller’s lines and no buyer email', async () => {
+    const response = await request(app).get('/api/orders/seller').set(sellerAuth);
+    expect(response.status).toBe(200);
+    const order = response.body.orders.find((candidate) => candidate.id === data.orders['ORD-S05']._id.toString());
+    expect(order.items).toHaveLength(1);
+    expect(order.items[0].seller.id).toBe(data.users['U-S01']._id.toString());
+    expect(order.buyer.email).toBeUndefined();
+    expect(order.payment).toBeUndefined();
   });
 });

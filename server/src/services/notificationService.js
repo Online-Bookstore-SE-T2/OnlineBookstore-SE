@@ -26,7 +26,7 @@ async function getNotifications(userId, { unreadOnly = false } = {}) {
   }
 
   return Notification.find(filter)
-    .populate('relatedOrder', 'status totalAmount createdAt')
+    .populate('relatedOrder', 'status createdAt')
     .sort({ createdAt: -1 });
 }
 
@@ -88,6 +88,46 @@ async function notifyOrderStatusChanged(order, previousStatus) {
   });
 }
 
+async function notifySellersOrderPlaced(order) {
+  const sellerItems = new Map();
+  for (const item of order.items) {
+    const sellerId = item.seller.toString();
+    const current = sellerItems.get(sellerId) || [];
+    current.push(item);
+    sellerItems.set(sellerId, current);
+  }
+
+  return Promise.all([...sellerItems.entries()].map(([sellerId, items]) =>
+    createNotification({
+      recipient: sellerId,
+      type: 'SELLER_ORDER_PLACED',
+      title: 'Your listing is in a new order',
+      message: `Your listing${items.length === 1 ? '' : 's'} ${items.map((item) => `"${item.title}"`).join(', ')} ${items.length === 1 ? 'was' : 'were'} ordered.`,
+      relatedOrder: order._id,
+    })
+  ));
+}
+
+async function notifySellersOrderCancelled(order) {
+  const sellerItems = new Map();
+  for (const item of order.items) {
+    const sellerId = item.seller.toString();
+    const current = sellerItems.get(sellerId) || [];
+    current.push(item);
+    sellerItems.set(sellerId, current);
+  }
+
+  return Promise.all([...sellerItems.entries()].map(([sellerId, items]) =>
+    createNotification({
+      recipient: sellerId,
+      type: 'SELLER_ORDER_CANCELLED',
+      title: 'An order containing your listing was cancelled',
+      message: `The order containing your listing${items.length === 1 ? '' : 's'} ${items.map((item) => `"${item.title}"`).join(', ')} was cancelled.`,
+      relatedOrder: order._id,
+    })
+  ));
+}
+
 module.exports = {
   createNotification,
   getNotifications,
@@ -95,4 +135,6 @@ module.exports = {
   notifyOrderPlaced,
   notifyPaymentOutcome,
   notifyOrderStatusChanged,
+  notifySellersOrderPlaced,
+  notifySellersOrderCancelled,
 };

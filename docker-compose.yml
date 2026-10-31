@@ -1,0 +1,68 @@
+# Demonstration environment (SRS 7): the API and MongoDB run as separate containers and can be
+# rebuilt from the repository alone. Settings are read from server/.env (copy it from
+# server/.env.example first); the values under `environment` below take precedence.
+#
+#   docker compose up --build -d
+#   docker compose exec api npm run seed:admin
+#   docker compose exec api npm run seed:books
+#
+# Then run the client with `npm run dev:client`; it proxies /api to http://localhost:5000.
+
+services:
+  mongo:
+    image: mongo:7.0
+    # Orders use multi-document transactions, which need a replica set (SASD 3.3).
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo-data:/data/db
+    # Starts the single-member replica set on first boot and reports healthy once it is primary.
+    # The member is named after this service so the API container can reach it.
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { quit(rs.status().myState === 1 ? 0 : 1) } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }); quit(1) }"
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    env_file:
+      - path: server/.env
+        required: false
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/online_bookstore?replicaSet=rs0
+      PORT: "5000"
+      # Production mode refuses plain HTTP (SRS 6.3) and turns off the simulated payment route,
+      # so the local demo runs in development mode. Use production only behind a TLS proxy.
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${API_PORT:-5000}:5000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backup:
+    build:
+      context: .
+      dockerfile: server/Dockerfile.backup
+    environment:
+      MONGODB_URI: ${BACKUP_MONGODB_URI:-mongodb://mongo:27017/online_bookstore?replicaSet=rs0}
+      BACKUP_DIR: /backups
+    volumes:
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

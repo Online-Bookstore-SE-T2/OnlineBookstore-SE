@@ -7,11 +7,13 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "backup": "node src/scripts/backupDatabase.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "seed:books": "node src/scripts/seedBooks.js",
+    "seed:demo": "node src/scripts/seedDemoData.js",
+    "seed:performance": "node src/scripts/seedPerformanceBooks.js",
     "test": "jest",
-    "test:coverage": "jest --coverage",
-    "seed:performance": "node src/scripts/seedPerformanceBooks.js"
+    "test:coverage": "jest --coverage"
   },
   "engines": {
     "node": "20.x"
@@ -24,7 +26,9 @@
     "express-rate-limit": "^8.0.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.24.0"
+    "mongoose": "^8.24.0",
+    "nodemailer": "^7.0.5",
+    "stripe": "^18.2.1"
   },
   "devDependencies": {
     "jest": "^30.0.0",

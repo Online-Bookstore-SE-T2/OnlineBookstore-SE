@@ -12,14 +12,27 @@ function createOrderRouter() {
   const router = express.Router();
 
   router.use(authenticate);
-  router.use(requireRole(ROLES.BUYER));
 
-  router.get('/', asyncHandler(orderController.listOrders));
+  router.get(
+    '/seller',
+    requireRole(ROLES.SELLER),
+    asyncHandler(orderController.listSellerOrders)
+  );
 
-  router.get('/:orderId', asyncHandler(orderController.getOrder));
+  router.patch(
+    '/seller/:orderId/status',
+    requireRole(ROLES.SELLER),
+    requireWriteAccess,
+    asyncHandler(orderController.advanceSellerOrder)
+  );
+
+  router.get('/', requireRole(ROLES.BUYER), asyncHandler(orderController.listOrders));
+
+  router.get('/:orderId', requireRole(ROLES.BUYER), asyncHandler(orderController.getOrder));
 
   router.post(
     '/:orderId/cancel',
+    requireRole(ROLES.BUYER),
     requireWriteAccess,
     asyncHandler(orderController.cancelOrder)
   );

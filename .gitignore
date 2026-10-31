@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+redesign-pdfs/
 
 # Environment configuration (secrets must never be committed - SRS 6.3)
 .env
@@ -9,6 +10,7 @@ node_modules/
 # Build and test output
 dist/
 coverage/
+backups/
 
 # Logs
 *.log

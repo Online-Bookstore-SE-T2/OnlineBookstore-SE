@@ -31,8 +31,24 @@ async function cancelOrder(req, res) {
   });
 }
 
+async function listSellerOrders(req, res) {
+  const orders = await orderService.getSellerOrders(getUserId(req));
+  res.status(200).json({ orders });
+}
+
+async function advanceSellerOrder(req, res) {
+  const order = await orderService.advanceSellerOrder(
+    getUserId(req),
+    req.params.orderId,
+    req.body.status,
+  );
+  res.status(200).json({ order });
+}
+
 module.exports = {
   listOrders,
   getOrder,
   cancelOrder,
+  listSellerOrders,
+  advanceSellerOrder,
 };

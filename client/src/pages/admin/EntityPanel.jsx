@@ -19,6 +19,7 @@ function defaultLoad(config, { page, q, deleted, filters }) {
 const restoreAction = {
   key: 'restore',
   label: strings.admin.restore,
+  tone: 'positive',
   run: (row, _input, config) => apiRequest(`/admin/${config.entity}/${row.id}/restore`, { method: 'POST' }),
 };
 
@@ -62,6 +63,7 @@ export default function EntityPanel({ config }) {
   const [inputError, setInputError] = useState('');
   const [busy, setBusy] = useState(false);
   const [viewing, setViewing] = useState(null);
+  const [editing, setEditing] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -111,7 +113,11 @@ export default function EntityPanel({ config }) {
   }
 
   function startAction(action, row) {
-    if (action.confirm || action.form) {
+    setActionError('');
+    setMessage('');
+    if (action.dialog) {
+      setEditing({ action, row });
+    } else if (action.confirm || action.form) {
       setInput(action.form?.initial ? action.form.initial(row) : '');
       setInputError('');
       setPending({ action, row });
@@ -216,13 +222,13 @@ export default function EntityPanel({ config }) {
                       <td>
                         <div className="row">
                           {config.viewable !== false && (
-                            <button type="button" className="btn btn-secondary btn-small"
+                            <button type="button" className="btn btn-info btn-small"
                               aria-label={strings.admin.actionLabel(strings.admin.view, config.label(row))} onClick={() => view(row)}>
                               {strings.admin.view}
                             </button>
                           )}
                           {rowActions(row).map((action) => (
-                            <button key={action.key} type="button" className="btn btn-secondary btn-small"
+                            <button key={action.key} type="button" className={`btn btn-${action.tone || 'info'} btn-small`}
                               aria-label={strings.admin.actionLabel(action.label, config.label(row))}
                               onClick={() => startAction(action, row)} disabled={busy}>
                               {action.label}
@@ -254,6 +260,17 @@ export default function EntityPanel({ config }) {
           )}
         </ConfirmDialog>
       )}
+
+      {editing &&
+        editing.action.dialog({
+          row: editing.row,
+          onCancel: () => setEditing(null),
+          onDone: () => {
+            setEditing(null);
+            setMessage(strings.admin.done);
+            reload();
+          },
+        })}
 
       {viewing && <RecordDetails record={viewing} onClose={() => setViewing(null)} />}
     </div>

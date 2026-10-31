@@ -30,6 +30,28 @@ describe('Login page', () => {
     expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
   });
 
+  test('SASD 4.2.3: the cart count comes from the login response, without a second request', async () => {
+    const user = userEvent.setup();
+    const cart = { buyer: 'u1', items: [], itemCount: 3, subtotal: 848 };
+    const spy = mockApi({ 'POST /auth/login': () => [200, { token: 'h.p.s', user: ANITA, cart }] });
+    renderApp('/login');
+    await logIn(user);
+
+    expect(await screen.findByRole('link', { name: 'Cart, 3 items' })).toBeInTheDocument();
+    expect(spy.mock.calls.some(([url]) => url === '/api/cart')).toBe(false);
+  });
+
+  test('a restored session fetches the cart count, since there was no login response', async () => {
+    setToken('h.p.s');
+    const spy = mockApi({
+      'GET /auth/session': () => [200, { user: ANITA }],
+      'GET /cart': () => [200, { cart: { buyer: 'u1', items: [], itemCount: 1, subtotal: 120 } }],
+    });
+    renderApp('/');
+    expect(await screen.findByRole('link', { name: 'Cart, 1 item' })).toBeInTheDocument();
+    expect(spy.mock.calls.some(([url]) => url === '/api/cart')).toBe(true);
+  });
+
   test('TC-ST02-02: a wrong password shows an error and no token is stored', async () => {
     const user = userEvent.setup();
     mockApi({ 'POST /auth/login': () => [401, { error: { message: 'Incorrect e-mail address or password.' } }] });

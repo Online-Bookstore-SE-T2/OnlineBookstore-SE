@@ -13,6 +13,9 @@ import BookDetailsPage from './pages/BookDetailsPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import BookReviewsPage from './pages/BookReviewsPage.jsx';
 import SellerListingsPage from './pages/SellerListingsPage.jsx';
+import CheckoutPage from './pages/CheckoutPage.jsx';
+import NotificationsPage from './pages/NotificationsPage.jsx';
+import { OrderDetailPage, OrderHistoryPage, SellerOrdersPage } from './pages/OrderPages.jsx';
 
 export default function App() {
   return (
@@ -29,6 +32,46 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route
+            path="checkout"
+            element={
+              <RequireAuth roles={['Buyer']}>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="orders"
+            element={
+              <RequireAuth roles={['Buyer']}>
+                <OrderHistoryPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="orders/:orderId/confirmation"
+            element={
+              <RequireAuth roles={['Buyer']}>
+                <OrderDetailPage confirmation />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="orders/:orderId"
+            element={
+              <RequireAuth roles={['Buyer']}>
+                <OrderDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <RequireAuth roles={['Buyer', 'Seller']}>
+                <NotificationsPage />
+              </RequireAuth>
+            }
+          />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="books/:bookId" element={<BookDetailsPage />} />
@@ -38,6 +81,14 @@ export default function App() {
             element={
               <RequireAuth roles={['Seller']}>
                 <SellerListingsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="seller/orders"
+            element={
+              <RequireAuth roles={['Seller']}>
+                <SellerOrdersPage />
               </RequireAuth>
             }
           />

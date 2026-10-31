@@ -272,6 +272,78 @@ async function rejectSellerRequest(admin, id, body = {}) {
 
 // ----- Books and listings -----
 
+function isLiveCategory(id) {
+  return typeof id === 'string' && mongoose.isValidObjectId(id) && Category.exists({ _id: id, deletedAt: null });
+}
+
+// Validates a catalog book. Every field is checked before the first error is reported.
+// With `partial` (an edit) only the fields present in the body are checked and returned, and
+// the ISBN is never read: it identifies the book and cannot be changed.
+async function bookFields(body, { partial = false } = {}) {
+  const v = new FieldValidator();
+  const labels = strings.labels;
+  const given = (field) => !partial || body[field] !== undefined;
+  const fields = {};
+  if (!partial) fields.isbn = v.isbn('isbn', body.isbn);
+  if (given('title')) fields.title = v.text('title', body.title, { label: labels.title, required: true, max: LIMITS.bookTitle });
+  if (given('author')) fields.author = v.text('author', body.author, { label: labels.author, required: true, max: LIMITS.bookAuthor });
+  if (given('category')) {
+    fields.category = body.category;
+    if ([undefined, null, ''].includes(body.category)) v.addError('category', strings.fields.required(labels.category));
+    else if (!(await isLiveCategory(body.category))) v.addError('category', strings.admin.unknownCategory);
+  }
+  if (given('price')) fields.price = v.price('price', body.price);
+  if (given('description')) {
+    fields.description = v.text('description', body.description, { label: labels.description, max: LIMITS.bookDescription });
+  }
+  if (given('coverImageUrl')) {
+    fields.coverImageUrl = v.url('coverImageUrl', body.coverImageUrl, { label: labels.coverImageUrl, max: LIMITS.coverImageUrl });
+  }
+  v.throwIfInvalid();
+  // A cleared optional field is stored as absent.
+  for (const field of ['description', 'coverImageUrl']) if (fields[field] === '') fields[field] = undefined;
+  return fields;
+}
+
+function isbnTaken(existing) {
+  const message = existing.deletedAt ? strings.admin.isbnExistsDeleted : strings.admin.isbnExists;
+  return new AppError(409, message, { isbn: message });
+}
+
+// REQ-4, BR-4: listings can only reference catalog books, so this is how new titles enter the store.
+// ISBNs are unique across live and deleted books, since a deleted book can still be restored.
+async function createBook(admin, body = {}) {
+  const fields = await bookFields(body);
+  const existing = await Book.findOne({ isbn: fields.isbn }).select('deletedAt');
+  if (existing) throw isbnTaken(existing);
+  let book;
+  try {
+    book = await Book.create(fields);
+  } catch (err) {
+    if (err && err.code === 11000) throw isbnTaken({ deletedAt: null });
+    throw err;
+  }
+  await audit.record(admin, 'create', target(ENTITIES.books, book), { isbn: book.isbn });
+  return book.populate(ENTITIES.books.populate);
+}
+
+// REQ-4: edits a book's details. Only fields whose value changes are saved and named in the audit
+// entry; an edit that changes nothing writes no entry. Orders keep their own snapshot of the
+// title and price (SASD 4.1), so past orders are unaffected.
+async function updateBook(admin, id, body = {}) {
+  const config = ENTITIES.books;
+  const book = await findLiveRecord(config, id);
+  const fields = await bookFields(body, { partial: true });
+  const current = (field) => (field === 'category' ? String(book.populated('category') || book.category) : book[field]);
+  const changed = Object.keys(fields).filter((field) => current(field) !== fields[field]);
+  if (changed.length === 0) return book;
+
+  for (const field of changed) book[field] = fields[field];
+  await book.save();
+  await audit.record(admin, 'edit', target(config, book), { fields: changed });
+  return book.populate(config.populate);
+}
+
 // BR-5: mark a book unavailable (or available again) instead of deleting it.
 async function setBookAvailability(admin, id, body = {}) {
   if (typeof body.available !== 'boolean') throw new AppError(400, strings.common.validationFailed, { available: strings.common.validationFailed });
@@ -350,6 +422,8 @@ module.exports = {
   listSellerRequests,
   approveSellerRequest,
   rejectSellerRequest,
+  createBook,
+  updateBook,
   setBookAvailability,
   suspendListing,
   reinstateListing,

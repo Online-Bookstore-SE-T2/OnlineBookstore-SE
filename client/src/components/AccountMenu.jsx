@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import strings from '../resources/strings.js';
+import { ChevronDownIcon, UserIcon } from './Icons.jsx';
 
 // Visitors see Log in and Register; a logged-in user gets a keyboard-operable account menu.
 export default function AccountMenu() {
@@ -34,8 +35,11 @@ export default function AccountMenu() {
   if (!user) {
     return (
       <>
-        <Link to="/login">{strings.header.login}</Link>
-        <Link to="/register">{strings.header.register}</Link>
+        <Link to="/login" className="nav-item">
+          <UserIcon />
+          <span className="nav-label">{strings.header.login}</span>
+        </Link>
+        <Link to="/register" className="btn btn-small btn-dark">{strings.header.register}</Link>
       </>
     );
   }
@@ -51,13 +55,15 @@ export default function AccountMenu() {
       <button
         ref={buttonRef}
         type="button"
-        className="link-button"
+        className="nav-item"
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={strings.header.accountMenuLabel(user.name)}
         onClick={() => setOpen((value) => !value)}
       >
-        {strings.header.accountMenu}
+        <UserIcon />
+        <span className="nav-label">{strings.header.accountMenu}</span>
+        <ChevronDownIcon size={16} />
       </button>
       {open && (
         <ul id={menuId} className="account-menu-list">
@@ -66,6 +72,9 @@ export default function AccountMenu() {
               {strings.account.profile}
             </Link>
           </li>
+          {user.role === 'Buyer' && (
+            <li><Link to="/orders" onClick={() => setOpen(false)}>Your orders</Link></li>
+          )}
           {user.role === 'Administrator' && (
             <li>
               <Link to="/admin" onClick={() => setOpen(false)}>
@@ -73,7 +82,12 @@ export default function AccountMenu() {
               </Link>
             </li>
           )}
-          {user.role === 'Seller' && <li><Link to="/seller/listings" onClick={() => setOpen(false)}>Manage listings</Link></li>}
+          {user.role === 'Seller' && (
+            <>
+              <li><Link to="/seller/listings" onClick={() => setOpen(false)}>Manage listings</Link></li>
+              <li><Link to="/seller/orders" onClick={() => setOpen(false)}>Orders</Link></li>
+            </>
+          )}
           <li>
             <button type="button" onClick={onLogout}>
               {strings.account.logout}

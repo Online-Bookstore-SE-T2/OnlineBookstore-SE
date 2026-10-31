@@ -1,17 +1,21 @@
 const authService = require('../services/authService');
+const cartService = require('../services/cartService');
 const tokenService = require('../services/tokenService');
 const strings = require('../resources/strings');
 
-// POST /api/auth/register (REQ-1)
+// POST /api/auth/register (REQ-1). The new account is signed in straight away (SASD 4.3.1).
 async function register(req, res) {
   const user = await authService.registerUser(req.body);
-  res.status(201).json({ message: strings.auth.registered, user: user.toJSON() });
+  const { token, expiresAt } = tokenService.issueToken(user);
+  res.status(201).json({ message: strings.auth.registered, token, expiresAt, user: user.toJSON() });
 }
 
-// POST /api/auth/login (REQ-2)
+// POST /api/auth/login (REQ-2). The stored cart comes back with the token (SASD 4.2.3, 4.3.1)
+// so the header cart count is right on first render without a second request.
 async function login(req, res) {
   const { user, token, expiresAt } = await authService.loginUser(req.body);
-  res.json({ token, expiresAt, user: user.toJSON() });
+  const cart = await cartService.getCart(user._id);
+  res.json({ token, expiresAt, user: user.toJSON(), cart });
 }
 
 // POST /api/auth/logout (REQ-2)

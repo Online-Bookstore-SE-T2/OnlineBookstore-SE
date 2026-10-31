@@ -3,6 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiRequest } from '../api/http.js';
 import { addToCart } from '../api/cart.js';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { Stars } from '../components/Rating.jsx';
+
+function sellerName(listing) {
+  return typeof listing.seller === 'string'
+    ? listing.seller
+    : listing.seller?.name || 'Bookstore seller';
+}
 
 export default function BookDetailsPage() {
   const { bookId } = useParams();
@@ -89,68 +96,131 @@ export default function BookDetailsPage() {
 
   const { book, rating, reviews } = data;
   const listings = Array.isArray(data.listings) ? data.listings : [];
+  const inStock = listings.filter((listing) => Number(listing.quantity) > 0);
+  // The cheapest offer in stock is the one the main Add to Cart button buys.
+  const bestOffer = [...inStock].sort((a, b) => Number(a.price) - Number(b.price))[0];
+  const ratingCount = rating?.count ?? 0;
+  const availability = book.markedUnavailable
+    ? 'Unavailable'
+    : listings.length > 0
+      ? 'Available from sellers'
+      : 'Currently out of stock';
+
+  function addButton(listing, primary) {
+    return (
+      <button
+        type="button"
+        className={primary ? 'btn btn-block' : 'btn btn-secondary btn-small'}
+        disabled={Number(listing.quantity) < 1 || addingListingId === listing.id}
+        onClick={() => handleAddToCart(listing)}
+      >
+        {addingListingId === listing.id ? 'Adding...' : 'Add to Cart'}
+      </button>
+    );
+  }
 
   return (
     <section className="stack">
-      <Link to="/">← Back to catalog</Link>
+      <nav aria-label="Breadcrumb" className="breadcrumb">
+        <ol>
+          <li>
+            <Link to="/">Catalog</Link>
+          </li>
+          <li aria-current="page">{book.title}</li>
+        </ol>
+      </nav>
 
-      <article className="card stack">
-        {book.coverImageUrl && (
-          <img
-            src={book.coverImageUrl}
-            alt={`Cover of ${book.title}`}
-            style={{
-              width: '100%',
-              maxWidth: '320px',
-              maxHeight: '400px',
-              objectFit: 'contain',
-            }}
-          />
-        )}
+      <article className="product">
+        <div className="product-cover">
+          {book.coverImageUrl ? (
+            <img src={book.coverImageUrl} alt={`Cover of ${book.title}`} />
+          ) : (
+            <span className="book-card-placeholder" aria-hidden="true">{book.title}</span>
+          )}
+        </div>
 
-        <h1>{book.title}</h1>
-        <p><strong>Author:</strong> {book.author}</p>
-        <p><strong>ISBN:</strong> {book.isbn}</p>
-        <p>
-          <strong>Category:</strong>{' '}
-          {book.category?.name || 'Uncategorised'}
-        </p>
-        <p>
-          <strong>Availability:</strong>{' '}
-          {book.markedUnavailable
-            ? 'Unavailable'
-            : listings.length > 0
-              ? 'Available from sellers'
-              : 'Currently out of stock'}
-        </p>
-
-        <p>
-          <strong>Price:</strong>{' '}
-          {typeof book.price === 'number'
-            ? `₹${Number(book.price).toFixed(2)}`
-            : 'Not listed'}
-        </p>
-
-        <section className="stack">
-          <h2>About this book</h2>
-          <p>{book.description || 'No description is available yet.'}</p>
-        </section>
-
-        <section className="stack">
-          <h2>Customer rating</h2>
-          <p>
-            ⭐ {Number(rating?.average ?? 0).toFixed(1)} / 5
-            {' '}({rating?.count ?? 0}{' '}
-            {(rating?.count ?? 0) === 1 ? 'review' : 'reviews'})
+        <div className="product-info">
+          <span className="tag">{book.category?.name || 'Uncategorised'}</span>
+          <h1>{book.title}</h1>
+          <p className="product-author">
+            by <span>{book.author}</span>
           </p>
-        </section>
+
+          <p className="product-rating">
+            <Stars value={rating?.average ?? 0} size={20} />
+            <span>{Number(rating?.average ?? 0).toFixed(1)} / 5</span>
+            <a href="#reviews">
+              ({ratingCount} {ratingCount === 1 ? 'review' : 'reviews'})
+            </a>
+          </p>
+
+          <section className="product-about">
+            <h2>About this book</h2>
+            <p>{book.description || 'No description is available yet.'}</p>
+          </section>
+
+          <dl className="product-facts">
+            <div>
+              <dt>ISBN</dt>
+              <dd>{book.isbn}</dd>
+            </div>
+            <div>
+              <dt>Sellers</dt>
+              <dd>{listings.length === 0 ? 'None yet' : `${listings.length} offering this book`}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <aside className="buy-box" aria-label="Buy this book">
+          {bestOffer ? (
+            <>
+              <p className="buy-box-label">Best price from sellers</p>
+              <p className="buy-box-price">₹{Number(bestOffer.price).toFixed(2)}</p>
+              {typeof book.price === 'number' && (
+                <p className="muted">
+                  List price <span>₹{Number(book.price).toFixed(2)}</span>
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="buy-box-label">List price</p>
+              <p className="buy-box-price">
+                {typeof book.price === 'number'
+                  ? `₹${Number(book.price).toFixed(2)}`
+                  : 'Not listed'}
+              </p>
+            </>
+          )}
+
+          <p className={`stock ${bestOffer ? 'stock-in' : 'stock-out'}`}>
+            <span>{availability}</span>
+          </p>
+
+          {bestOffer && (
+            <>
+              <p className="buy-box-offer">
+                {bestOffer.condition || 'Condition not specified'} · sold by {sellerName(bestOffer)} ·{' '}
+                {bestOffer.quantity} in stock
+              </p>
+              {addButton(bestOffer, true)}
+            </>
+          )}
+
+          {cartMessage && (
+            <div className="alert" role="status">
+              <p>{cartMessage}</p>
+              <Link className="btn btn-secondary btn-small" to="/cart">
+                View shopping cart
+              </Link>
+            </div>
+          )}
+          {cartError && <p role="alert" className="alert alert-error">{cartError}</p>}
+        </aside>
       </article>
 
-      <section className="stack">
-        <h2>Available seller listings</h2>
-
-        {cartMessage && <p role="status">{cartMessage}</p>}
-        {cartError && <p role="alert">{cartError}</p>}
+      <section className="stack" aria-labelledby="offers-title">
+        <h2 id="offers-title">Available seller listings</h2>
 
         {listings.length === 0 ? (
           <article className="card">
@@ -161,83 +231,56 @@ export default function BookDetailsPage() {
             </p>
           </article>
         ) : (
-          listings.map((listing) => (
-            <article className="card stack" key={listing.id}>
-              <h3>{book.title}</h3>
-
-              <p>
-                <strong>Seller:</strong>{' '}
-                {typeof listing.seller === 'string'
-                  ? listing.seller
-                  : listing.seller?.name || 'Bookstore seller'}
-              </p>
-
-              <p>
-                <strong>Price:</strong>{' '}
-                ₹{Number(listing.price).toFixed(2)}
-              </p>
-
-              <p>
-                <strong>Condition:</strong>{' '}
-                {listing.condition || 'Not specified'}
-              </p>
-
-              <p>
-                <strong>Available quantity:</strong>{' '}
-                {listing.quantity}
-              </p>
-
-              <button
-                type="button"
-                className="btn"
-                disabled={
-                  Number(listing.quantity) < 1 ||
-                  addingListingId === listing.id
-                }
-                onClick={() => handleAddToCart(listing)}
-              >
-                {addingListingId === listing.id
-                  ? 'Adding...'
-                  : 'Add to Cart'}
-              </button>
-            </article>
-          ))
-        )}
-
-        {cartMessage && (
-          <Link className="btn btn-secondary" to="/cart">
-            View shopping cart
-          </Link>
+          <ul className="offers">
+            {listings.map((listing) => (
+              <li className="offer" key={listing.id}>
+                <div>
+                  <p className="offer-seller">{sellerName(listing)}</p>
+                  <p className="muted">
+                    {listing.condition || 'Not specified'} · {listing.quantity} in stock
+                  </p>
+                </div>
+                <p className="offer-price">₹{Number(listing.price).toFixed(2)}</p>
+                {addButton(listing, false)}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
-      <section className="stack">
-        <h2>Customer reviews</h2>
+      <section className="stack" id="reviews" aria-labelledby="reviews-title">
+        <div className="section-head">
+          <h2 id="reviews-title">Customer reviews</h2>
+          <Link className="btn btn-secondary btn-small" to={`/books/${book._id || bookId}/reviews`}>
+            Write a review
+          </Link>
+        </div>
 
         {!Array.isArray(reviews) || reviews.length === 0 ? (
           <article className="card">
             <p>No reviews have been submitted for this book yet.</p>
           </article>
         ) : (
-          reviews.map((review) => (
-            <article className="card stack" key={review.id}>
-              <h3>{review.reviewer}</h3>
+          <div className="review-list">
+            {reviews.map((review) => (
+              <article className="card review" key={review.id}>
+                <div className="review-head">
+                  <h3>{review.reviewer}</h3>
+                  <Stars value={review.rating} />
+                  <span className="visually-hidden">{review.rating} out of 5</span>
+                  <span aria-hidden="true" className="muted">({review.rating}/5)</span>
+                </div>
 
-              <p>
-                {'⭐'.repeat(review.rating)}
-                {'☆'.repeat(Math.max(0, 5 - review.rating))}
-                {' '}({review.rating}/5)
-              </p>
+                <p>{review.text || 'No written comment.'}</p>
 
-              <p>{review.text || 'No written comment.'}</p>
-
-              {review.createdAt && (
-                <p className="muted">
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </p>
-              )}
-            </article>
-          ))
+                {review.createdAt && (
+                  <p className="muted">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
         )}
       </section>
     </section>

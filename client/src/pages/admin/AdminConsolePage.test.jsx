@@ -175,6 +175,100 @@ describe('Administration console', () => {
     await waitFor(() => expect(lastBody(spy, 'PATCH', '/admin/categories/c9')).toEqual({ name: 'Poetry and Drama' }));
   });
 
+  test('BR-4: an administrator adds a catalog book; client and server errors appear on the fields', async () => {
+    const u = userEvent.setup();
+    let attempts = 0;
+    const spy = setup({
+      'POST /admin/books/query': () => [200, page([])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }, { _id: 'c2', name: 'Poetry' }] }],
+      'POST /admin/books': () => {
+        attempts += 1;
+        return attempts === 1
+          ? [409, { error: { message: 'A book with this ISBN is already in the catalog.', fields: { isbn: 'A book with this ISBN is already in the catalog.' } } }]
+          : [201, { record: {} }];
+      },
+    });
+    await openConsole();
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Add book' }));
+    const dialog = screen.getByRole('dialog', { name: 'Add a catalog book' });
+    const field = (label) => within(dialog).getByLabelText(new RegExp(`^${label}`));
+    await within(dialog).findByRole('option', { name: 'Poetry' });
+
+    await u.type(field('ISBN-13'), '978-0-306-40615-8');
+    await u.type(field('Price'), '12.345');
+    await u.type(field('Cover image URL'), 'covers/monsoon.jpg');
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(within(dialog).getByText('Enter a valid ISBN-13, including its check digit.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Title is required.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Category is required.')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Enter a price above zero/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Enter a web address starting with http:// or https://.')).toBeInTheDocument();
+    expect(field('ISBN-13')).toHaveFocus();
+    expect(attempts).toBe(0);
+
+    await u.clear(field('ISBN-13'));
+    await u.type(field('ISBN-13'), '978-0-306-40615-7');
+    await u.type(field('Title'), 'Monsoon Letters');
+    await u.type(field('Author'), 'Nandini Pai');
+    await u.selectOptions(field('Category'), 'c2');
+    await u.clear(field('Price'));
+    await u.type(field('Price'), '349.50');
+    await u.clear(field('Cover image URL'));
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await within(dialog).findByText('A book with this ISBN is already in the catalog.')).toBeInTheDocument();
+
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await screen.findByText('Done.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(lastBody(spy, 'POST', '/admin/books')).toEqual({
+      isbn: '978-0-306-40615-7',
+      title: 'Monsoon Letters',
+      author: 'Nandini Pai',
+      category: 'c2',
+      price: 349.5,
+      description: '',
+      coverImageUrl: '',
+    });
+  });
+
+  test('an administrator edits a book: the form starts from its details and the ISBN is not editable', async () => {
+    const u = userEvent.setup();
+    const book = { id: 'bk1', title: 'The Silent Orchard', author: 'Meera Iyer', isbn: '9789380000015', price: 120, category: { id: 'c1', name: 'Fiction' }, description: 'A quiet novel.' };
+    const spy = setup({
+      'POST /admin/books/query': () => [200, page([book])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }, { _id: 'c2', name: 'Poetry' }] }],
+      'PATCH /admin/books/bk1': () => [200, { record: {} }],
+    });
+    await openConsole();
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Edit The Silent Orchard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Edit book details' });
+    const field = (label) => within(dialog).getByLabelText(new RegExp(`^${label}`));
+    await within(dialog).findByRole('option', { name: 'Poetry' });
+    expect(within(dialog).getByText('9789380000015')).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/^ISBN-13/)).not.toBeInTheDocument();
+    expect(field('Title')).toHaveValue('The Silent Orchard');
+    expect(field('Category')).toHaveValue('c1');
+    expect(field('Price')).toHaveValue('120');
+
+    await u.clear(field('Price'));
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(within(dialog).getByText('Price (INR) is required.')).toBeInTheDocument();
+    await u.type(field('Price'), '135.5');
+    await u.selectOptions(field('Category'), 'c2');
+    await u.click(within(dialog).getByRole('button', { name: 'Save book' }));
+    expect(await screen.findByText('Done.')).toBeInTheDocument();
+    expect(lastBody(spy, 'PATCH', '/admin/books/bk1')).toEqual({
+      title: 'The Silent Orchard',
+      author: 'Meera Iyer',
+      category: 'c2',
+      price: 135.5,
+      description: 'A quiet novel.',
+      coverImageUrl: '',
+    });
+  });
+
   test('a seller request is rejected only with a reason code', async () => {
     const u = userEvent.setup();
     const spy = setup({
@@ -234,6 +328,22 @@ describe('Administration console', () => {
     await screen.findByRole('table');
     expect(await axeViolations(container)).toEqual([]);
     await u.click(screen.getByRole('button', { name: 'Delete Vikram Desai' }));
+    expect(await axeViolations(container)).toEqual([]);
+  }, 30000);
+
+  test('TC-NFR-QUA-17: the book form has no accessibility violations, including with errors shown', async () => {
+    const u = userEvent.setup();
+    setup({
+      'POST /admin/books/query': () => [200, page([])],
+      'GET /books/categories': () => [200, { items: [{ _id: 'c1', name: 'Fiction' }] }],
+    });
+    const { container } = renderApp('/admin');
+    await screen.findByRole('table');
+    await u.click(tab('Books'));
+    await u.click(await screen.findByRole('button', { name: 'Add book' }));
+    await screen.findByRole('option', { name: 'Fiction' });
+    expect(await axeViolations(container)).toEqual([]);
+    await u.click(screen.getByRole('button', { name: 'Save book' }));
     expect(await axeViolations(container)).toEqual([]);
   }, 30000);
 });

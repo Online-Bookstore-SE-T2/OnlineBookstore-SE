@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import strings from '../resources/strings.js';
 import AccountMenu from './AccountMenu.jsx';
+import { BookIcon, CartIcon, HelpIcon, SearchIcon } from './Icons.jsx';
 
 function isTypingTarget(element) {
   if (!element) return false;
@@ -18,7 +19,7 @@ function isTypingTarget(element) {
 }
 
 // Persistent header from SRS 3.1.
-export default function Header({ cartCount = 0 }) {
+export default function Header({ cartCount = 0, unreadCount = 0, showNotifications = false }) {
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const [query, setQuery] = useState('');
@@ -48,12 +49,23 @@ export default function Header({ cartCount = 0 }) {
 
   return (
     <header className="site-header">
+      <div className="promo-strip">
+        <ul className="container" aria-label={strings.header.promoLabel}>
+          {strings.header.promo.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+
       <div className="container header-inner">
         <Link
           to="/"
           className="logo"
           aria-label={strings.header.homeLabel}
         >
+          <span className="logo-mark">
+            <BookIcon size={18} />
+          </span>
           {strings.appName}
         </Link>
 
@@ -66,6 +78,8 @@ export default function Header({ cartCount = 0 }) {
           <label htmlFor="global-search" className="visually-hidden">
             {strings.header.searchLabel}
           </label>
+
+          <SearchIcon />
 
           <input
             id="global-search"
@@ -82,17 +96,28 @@ export default function Header({ cartCount = 0 }) {
         </form>
 
         <nav className="header-nav" aria-label="Primary">
-          <Link
-            to="/cart"
-            aria-label={strings.header.cartLabel(cartCount)}
-          >
-            {strings.header.cart} ({cartCount})
+          <Link to="/help" className="nav-item">
+            <HelpIcon />
+            <span className="nav-label">{strings.header.help}</span>
           </Link>
 
           <AccountMenu />
 
-          <Link to="/help">
-            {strings.header.help}
+          {showNotifications && (
+            <Link to="/notifications" className="nav-item" aria-label={`Notifications, ${unreadCount} unread`}>
+              <span className="nav-label">Notifications</span>
+              <span className="cart-count" aria-hidden="true">{unreadCount}</span>
+            </Link>
+          )}
+
+          <Link
+            to="/cart"
+            className="nav-item cart-link"
+            aria-label={strings.header.cartLabel(cartCount)}
+          >
+            <CartIcon />
+            <span className="nav-label">{strings.header.cart}</span>
+            <span className="cart-count">{cartCount}</span>
           </Link>
         </nav>
       </div>
