@@ -29,6 +29,8 @@ function createAdminRouter() {
   router.post('/listings/:id/suspend', write, route(admin.suspendListing));
   router.post('/listings/:id/reinstate', write, route(admin.reinstateListing));
 
+  router.patch('/orders/:id/status', write, route(admin.changeOrderStatus));
+
   router.post('/categories', write, route(admin.createCategory));
   router.patch('/categories/:id', write, route(admin.renameCategory));
 

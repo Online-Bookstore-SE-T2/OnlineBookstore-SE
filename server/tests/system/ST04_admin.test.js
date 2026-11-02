@@ -254,6 +254,29 @@ describe('ST04 reviews, categories, books and listings', () => {
     expect(invalid.body.error.fields.coverImageUrl).toMatch(/http/);
   });
 
+  test('SASD 4.2.4: the administrator ships, then cancels a shipped order; the buyer sees the change', async () => {
+    const id = data.orders['ORD-S03'].id;
+    const patch = (status) => request(app).patch(`/api/admin/orders/${id}/status`).set(adminAuth).send({ status });
+    expect((await patch('Shipped')).body.record).toMatchObject({ status: 'Shipped', buyer: { name: 'Anita Rao' } });
+    const cancelled = await patch('Cancelled');
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.record.status).toBe('Cancelled');
+    expect((await patch('Delivered')).status).toBe(409);
+
+    const buyerView = await request(app).get(`/api/orders/${id}`).set(buyerAuth);
+    expect(buyerView.body.order.status).toBe('Cancelled');
+    expect(buyerView.body.order.statusHistory.map((entry) => entry.status)).toEqual(['Shipped', 'Cancelled']);
+    const actions = (await request(app).get('/api/admin/audit-log').set(adminAuth)).body.items.map((e) => e.action);
+    expect(actions).toEqual(['cancel-order', 'change-order-status']);
+  });
+
+  test('an order cannot be marked Paid by an administrator or moved to an unknown status', async () => {
+    const path = `/api/admin/orders/${data.orders['ORD-S05'].id}/status`;
+    expect((await request(app).patch(path).set(adminAuth).send({ status: 'Paid' })).status).toBe(409);
+    const unknown = await request(app).patch(path).set(adminAuth).send({ status: { $ne: null } });
+    expect(unknown.status).toBe(400);
+  });
+
   test('a category that still has books cannot be deleted; an open order cannot be deleted', async () => {
     expect((await del(adminAuth, `/categories/${data.categories.Fiction.id}`)).status).toBe(409);
     expect((await del(adminAuth, `/orders/${data.orders['ORD-S03'].id}`)).status).toBe(409);
@@ -272,6 +295,7 @@ describe('ST04 access control (REQ-4 403 rule, BR-3)', () => {
     ['delete a book', (auth) => del(auth, `/books/${d.books.B11.id}`)],
     ['add a book', (auth) => post(auth, '/books', { isbn: '9780306406157', title: 'X', author: 'Y', category: d.categories.Fiction.id, price: 5 })],
     ['edit a book', (auth) => request(app).patch(`/api/admin/books/${d.books.B11.id}`).set(auth).send({ price: 1 })],
+    ['cancel an order', (auth) => request(app).patch(`/api/admin/orders/${d.orders['ORD-S03'].id}/status`).set(auth).send({ status: 'Cancelled' })],
     ['promote', (auth) => post(auth, `/users/${d.users['U-B02'].id}/promote`)],
     ['audit log', (auth) => request(app).get('/api/admin/audit-log').set(auth)],
     ['seller requests', (auth) => request(app).get('/api/admin/seller-requests').set(auth)],

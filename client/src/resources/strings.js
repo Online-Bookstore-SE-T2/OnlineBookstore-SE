@@ -163,6 +163,10 @@ const strings = {
     delete: 'Delete',
     restore: 'Restore',
     rename: 'Rename',
+    markShipped: 'Mark shipped',
+    markDelivered: 'Mark delivered',
+    cancelOrder: 'Cancel order',
+    cancel: 'Cancel',
     markUnavailable: 'Mark unavailable',
     markAvailable: 'Mark available',
     approve: 'Approve',
@@ -215,6 +219,11 @@ const strings = {
       deleteMessage: (name) => `"${name}" will be hidden and can be restored for 30 days, then it is removed permanently.`,
       suspendListingTitle: 'Suspend this listing?',
       suspendListingMessage: (name) => `${name} will no longer be offered to buyers until reinstated.`,
+      cancelOrderTitle: 'Cancel this order?',
+      cancelOrderMessage: (name, status) =>
+        `${name} will be cancelled and its stock returned to the listings. The buyer and sellers are notified.${
+          status === 'Placed' ? '' : ' Its payment is marked for refund.'
+        }`,
       rejectTitle: 'Reject this seller request?',
       rejectMessage: (name) => `Choose the reason for rejecting the request from ${name}.`,
     },

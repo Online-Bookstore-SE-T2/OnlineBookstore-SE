@@ -1,5 +1,5 @@
 // UT04 - REQ-4 (FR15) administration service, audit log and soft delete.
-const { User, AuditLog, Book, Category, Listing, Order, Review } = require('../../src/models');
+const { User, AuditLog, Book, Category, Listing, Order, Review, Notification } = require('../../src/models');
 const adminService = require('../../src/services/adminService');
 const userService = require('../../src/services/userService');
 const { isWithinRetention } = require('../../src/models/plugins/softDelete');
@@ -325,6 +325,72 @@ describe('UT04 catalog books', () => {
     await adminService.deleteRecord(admin, 'books', data.books.B11.id);
     expect((await rejection(adminService.updateBook(admin, data.books.B11.id, { price: 99 }))).status).toBe(409);
     expect((await rejection(adminService.updateBook(admin, '64b000000000000000000000', { price: 99 }))).status).toBe(404);
+  });
+});
+
+describe('UT04 order status (SASD 4.2.4)', () => {
+  test('an administrator ships and delivers a paid order; each step is recorded, audited and notified', async () => {
+    const order = data.orders['ORD-S03'];
+    await adminService.changeOrderStatus(admin, order.id, { status: 'Shipped' });
+    const delivered = await adminService.changeOrderStatus(admin, order.id, { status: 'Delivered' });
+    expect(delivered.status).toBe('Delivered');
+    expect(delivered.items[0].book.title).toBe('Modern Database Systems');
+
+    const stored = await Order.findById(order.id);
+    expect(stored.statusHistory.map((entry) => [entry.status, String(entry.actor)])).toEqual([
+      ['Shipped', admin.id],
+      ['Delivered', admin.id],
+    ]);
+    const entries = await AuditLog.find({ targetId: order._id }).sort({ createdAt: 1, _id: 1 });
+    expect(entries.map((e) => [e.action, e.details])).toEqual([
+      ['change-order-status', { from: 'Paid', to: 'Shipped' }],
+      ['change-order-status', { from: 'Shipped', to: 'Delivered' }],
+    ]);
+    const notices = await Notification.find({ recipient: data.users['U-B01']._id, relatedOrder: order._id });
+    expect(notices.map((n) => n.message)).toEqual(expect.arrayContaining([
+      expect.stringMatching(/from Paid to Shipped/),
+      expect.stringMatching(/from Shipped to Delivered/),
+    ]));
+  });
+
+  test('only an administrator can cancel after Shipped: stock returns, the payment is owed back, sellers are told', async () => {
+    const order = data.orders['ORD-S03'];
+    await Order.updateOne({ _id: order._id }, { $set: { payment: { status: 'Paid', transactionRef: 'SIM-1' } } });
+    await adminService.changeOrderStatus(admin, order.id, { status: 'Shipped' });
+    const stockBefore = (await Listing.findById(data.listings.L06.id)).quantity;
+
+    const cancelled = await adminService.changeOrderStatus(admin, order.id, { status: 'Cancelled' });
+    expect(cancelled.status).toBe('Cancelled');
+    expect(cancelled.payment.status).toBe('Refund pending');
+    expect((await Listing.findById(data.listings.L06.id)).quantity).toBe(stockBefore + 1);
+    expect((await AuditLog.findOne({ action: 'cancel-order' })).details).toEqual({ from: 'Shipped', to: 'Cancelled' });
+    expect(await Notification.exists({ recipient: data.users['U-S01']._id, type: 'SELLER_ORDER_CANCELLED', relatedOrder: order._id })).toBeTruthy();
+  });
+
+  test('moves outside the table are refused and change nothing', async () => {
+    const placed = data.orders['ORD-S05'];
+    const paidOnly = await rejection(adminService.changeOrderStatus(admin, placed.id, { status: 'Paid' }));
+    expect(paidOnly.status).toBe(409);
+    expect(paidOnly.message).toMatch(/Only a confirmed payment/);
+    expect((await rejection(adminService.changeOrderStatus(admin, placed.id, { status: 'Shipped' }))).status).toBe(409);
+    expect((await rejection(adminService.changeOrderStatus(admin, data.orders['ORD-S04'].id, { status: 'Shipped' }))).status).toBe(409);
+    const invalid = await rejection(adminService.changeOrderStatus(admin, placed.id, { status: 'Lost' }));
+    expect(invalid.status).toBe(400);
+    expect(invalid.fields.status).toBeDefined();
+    expect((await rejection(adminService.changeOrderStatus(admin, '64b000000000000000000000', { status: 'Cancelled' }))).status).toBe(404);
+
+    expect((await Order.findById(placed.id)).status).toBe('Placed');
+    expect(await AuditLog.countDocuments()).toBe(0);
+  });
+
+  test('a delivered order cannot be cancelled, and a deleted order cannot be changed', async () => {
+    const order = data.orders['ORD-S03'];
+    await adminService.changeOrderStatus(admin, order.id, { status: 'Shipped' });
+    await adminService.changeOrderStatus(admin, order.id, { status: 'Delivered' });
+    expect((await rejection(adminService.changeOrderStatus(admin, order.id, { status: 'Cancelled' }))).status).toBe(409);
+
+    await adminService.deleteRecord(admin, 'orders', data.orders['ORD-S04'].id);
+    expect((await rejection(adminService.changeOrderStatus(admin, data.orders['ORD-S04'].id, { status: 'Cancelled' }))).status).toBe(409);
   });
 });
 

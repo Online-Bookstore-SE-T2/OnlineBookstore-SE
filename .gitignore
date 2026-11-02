@@ -2,6 +2,9 @@
 node_modules/
 redesign-pdfs/
 
+# Local task tracking
+To_Do.md
+
 # Environment configuration (secrets must never be committed - SRS 6.3)
 .env
 .env.*

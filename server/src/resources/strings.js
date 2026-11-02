@@ -92,5 +92,6 @@ module.exports = {
     price: 'Price',
     description: 'Description',
     coverImageUrl: 'Cover image URL',
+    orderStatus: 'Order status',
   },
 };

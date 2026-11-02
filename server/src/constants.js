@@ -40,6 +40,17 @@ const ORDER_STATUS_TRANSITIONS = Object.freeze({
   [ORDER_STATUS.CANCELLED]: Object.freeze([]),
 });
 
+// SASD 4.2.4: moves an administrator may make. Same as the table above, except that only an
+// administrator may cancel after Shipped, and an administrator never marks an order Paid:
+// only a confirmed payment does that (SASD 3.1, no order without payment).
+const ADMIN_ORDER_STATUS_TRANSITIONS = Object.freeze({
+  [ORDER_STATUS.PLACED]: Object.freeze([ORDER_STATUS.CANCELLED]),
+  [ORDER_STATUS.PAID]: Object.freeze([ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED]),
+  [ORDER_STATUS.SHIPPED]: Object.freeze([ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED]),
+  [ORDER_STATUS.DELIVERED]: Object.freeze([]),
+  [ORDER_STATUS.CANCELLED]: Object.freeze([]),
+});
+
 // "Open order" = Placed, Paid or Shipped (Test Case Design assumption A1).
 const OPEN_ORDER_STATUSES = Object.freeze([ORDER_STATUS.PLACED, ORDER_STATUS.PAID, ORDER_STATUS.SHIPPED]);
 
@@ -65,6 +76,7 @@ module.exports = {
   SELLER_REQUEST_STATUS,
   ORDER_STATUS,
   ORDER_STATUS_TRANSITIONS,
+  ADMIN_ORDER_STATUS_TRANSITIONS,
   OPEN_ORDER_STATUSES,
   LISTING_CONDITIONS,
   LISTING_STATUS,
