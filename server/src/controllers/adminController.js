@@ -79,6 +79,11 @@ async function reinstateListing(req, res) {
   done(res, await adminService.reinstateListing(req.user, req.params.id));
 }
 
+// PATCH /api/admin/orders/:id/status
+async function changeOrderStatus(req, res) {
+  done(res, await adminService.changeOrderStatus(req.user, req.params.id, req.body));
+}
+
 async function createCategory(req, res) {
   const category = await adminService.createCategory(req.user, req.body);
   res.status(201).json({ message: strings.admin.done, record: category.toJSON() });
@@ -110,6 +115,7 @@ module.exports = {
   setBookAvailability,
   suspendListing,
   reinstateListing,
+  changeOrderStatus,
   createCategory,
   renameCategory,
   auditLog,

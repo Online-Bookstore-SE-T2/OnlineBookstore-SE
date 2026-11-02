@@ -269,6 +269,34 @@ describe('Administration console', () => {
     });
   });
 
+  test('SASD 4.2.4: the Orders tab offers only the allowed moves, and cancelling asks first', async () => {
+    const u = userEvent.setup();
+    const order = (id, status) => ({ id, buyer: { name: 'Anita Rao' }, items: [{ quantity: 1 }], totalAmount: 410, status, createdAt: '2026-10-01T00:00:00.000Z' });
+    const spy = setup({
+      'POST /admin/orders/query': () => [200, page([order('o000PAID01', 'Paid'), order('o000SHIP02', 'Shipped'), order('o000DELV03', 'Delivered')])],
+      'PATCH /admin/orders/o000PAID01/status': () => [200, { record: {} }],
+      'PATCH /admin/orders/o000SHIP02/status': () => [200, { record: {} }],
+    });
+    await openConsole();
+    await u.click(tab('Orders'));
+    const paid = (await screen.findByRole('cell', { name: 'PAID01' })).closest('tr');
+    const shipped = rowFor('SHIP02');
+    const delivered = rowFor('DELV03');
+    expect(within(paid).queryByRole('button', { name: /^Mark delivered/ })).not.toBeInTheDocument();
+    expect(within(shipped).queryByRole('button', { name: /^Mark shipped/ })).not.toBeInTheDocument();
+    expect(within(delivered).queryByRole('button', { name: /^(Mark|Cancel order)/ })).not.toBeInTheDocument();
+
+    await u.click(within(paid).getByRole('button', { name: 'Mark shipped order PAID01' }));
+    await waitFor(() => expect(lastBody(spy, 'PATCH', '/admin/orders/o000PAID01/status')).toEqual({ status: 'Shipped' }));
+
+    await u.click(within(rowFor('SHIP02')).getByRole('button', { name: 'Cancel order SHIP02' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Cancel this order?' });
+    expect(dialog).toHaveTextContent('stock returned');
+    expect(dialog).toHaveTextContent('marked for refund');
+    await u.click(within(dialog).getByRole('button', { name: 'Cancel order' }));
+    await waitFor(() => expect(lastBody(spy, 'PATCH', '/admin/orders/o000SHIP02/status')).toEqual({ status: 'Cancelled' }));
+  });
+
   test('a seller request is rejected only with a reason code', async () => {
     const u = userEvent.setup();
     const spy = setup({

@@ -229,7 +229,7 @@ export default function EntityPanel({ config }) {
                           )}
                           {rowActions(row).map((action) => (
                             <button key={action.key} type="button" className={`btn btn-${action.tone || 'info'} btn-small`}
-                              aria-label={strings.admin.actionLabel(action.label, config.label(row))}
+                              aria-label={strings.admin.actionLabel(action.verb || action.label, config.label(row))}
                               onClick={() => startAction(action, row)} disabled={busy}>
                               {action.label}
                             </button>

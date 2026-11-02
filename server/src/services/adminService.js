@@ -7,12 +7,14 @@ const {
   REJECT_REASON_CODES,
   OPEN_ORDER_STATUSES,
   LISTING_STATUS,
+  ORDER_STATUS,
 } = require('../constants');
 const strings = require('../resources/strings');
 const { AppError } = require('../utils/errors');
 const { FieldValidator, LIMITS } = require('../validation/validators');
 const { isWithinRetention } = require('../models/plugins/softDelete');
 const audit = require('./auditService');
+const orderService = require('./orderService');
 const { recomputeBookRating } = require('./ratingService');
 
 const PAGE_SIZE = 20;
@@ -368,6 +370,22 @@ async function setListingStatus(admin, id, status, action) {
 const suspendListing = (admin, id) => setListingStatus(admin, id, LISTING_STATUS.SUSPENDED, 'suspend');
 const reinstateListing = (admin, id) => setListingStatus(admin, id, LISTING_STATUS.ACTIVE, 'reinstate');
 
+// ----- Orders (SASD 4.2.4) -----
+
+// Moves an order to `body.status` under the administrator's transition table; the order rules
+// themselves live in orderService. Every change is audited with the previous and new status.
+async function changeOrderStatus(admin, id, body = {}) {
+  const v = new FieldValidator();
+  const status = v.oneOf('status', body.status, Object.values(ORDER_STATUS), { label: strings.labels.orderStatus });
+  v.throwIfInvalid();
+  const config = ENTITIES.orders;
+  await findLiveRecord(config, id);
+  const { order, previousStatus } = await orderService.adminSetOrderStatus(admin._id, id, status);
+  const action = status === ORDER_STATUS.CANCELLED ? 'cancel-order' : 'change-order-status';
+  await audit.record(admin, action, target(config, order), { from: previousStatus, to: status });
+  return order.populate(config.populate);
+}
+
 // ----- Categories (BR-3: only administrators alter the category structure) -----
 
 function categoryName(body) {
@@ -427,6 +445,7 @@ module.exports = {
   setBookAvailability,
   suspendListing,
   reinstateListing,
+  changeOrderStatus,
   createCategory,
   renameCategory,
 };

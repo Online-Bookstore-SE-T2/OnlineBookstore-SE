@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Order, Listing, User } = require('../models');
-const { ORDER_STATUS, ORDER_STATUS_TRANSITIONS } = require('../constants');
+const { ORDER_STATUS, ORDER_STATUS_TRANSITIONS, ADMIN_ORDER_STATUS_TRANSITIONS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
@@ -199,11 +199,71 @@ async function cancelBuyerOrder(userId, orderId) {
   }
 }
 
+// REQ-4, SASD 4.2.4: an administrator moves an order along ADMIN_ORDER_STATUS_TRANSITIONS.
+// Cancelling restores the stock in the same transaction and marks a payment as owed back.
+// The buyer is notified of every change, and the sellers of a cancellation.
+async function adminSetOrderStatus(adminId, orderId, nextStatus) {
+  if (!mongoose.isValidObjectId(orderId)) {
+    throw new AppError(400, 'Invalid order ID.');
+  }
+
+  const session = await mongoose.startSession();
+  let updatedOrder;
+  let previousStatus;
+
+  try {
+    await session.withTransaction(async () => {
+      const order = await Order.findOne({ _id: orderId, deletedAt: null }).session(session);
+
+      if (!order) throw new AppError(404, 'Order not found.');
+      if (nextStatus === ORDER_STATUS.PAID) {
+        throw new AppError(409, 'Only a confirmed payment can mark an order Paid.');
+      }
+      if (!ADMIN_ORDER_STATUS_TRANSITIONS[order.status]?.includes(nextStatus)) {
+        throw new AppError(409, `An order cannot move from ${order.status} to ${nextStatus}.`);
+      }
+
+      previousStatus = order.status;
+      if (nextStatus === ORDER_STATUS.CANCELLED) {
+        // Refunds are outside Release 1.0; record that one is owed.
+        if (order.payment && order.payment.status === 'Paid') {
+          order.payment.status = 'Refund pending';
+        }
+        await releaseOrderStock(order, session);
+      }
+
+      order.status = nextStatus;
+      order.statusHistory.push({
+        status: nextStatus,
+        actor: adminId,
+        changedAt: new Date(),
+      });
+      await order.save({ session });
+      updatedOrder = order;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  await Promise.all([
+    notificationService.notifyOrderStatusChanged(updatedOrder, previousStatus)
+      .catch((error) => console.error('Failed to create order status notification:', error.message)),
+    nextStatus === ORDER_STATUS.CANCELLED
+      && notificationService.notifySellersOrderCancelled(updatedOrder)
+        .catch((error) => console.error('Failed to create seller cancellation notifications:', error.message)),
+    User.findById(updatedOrder.buyer)
+      .then((buyer) => buyer && emailService.dispatchOrderEvent('status', updatedOrder, buyer))
+      .catch((error) => console.error('Failed to load order email recipient:', error.message)),
+  ]);
+  return { order: updatedOrder, previousStatus };
+}
+
 module.exports = {
   getBuyerOrders,
   getBuyerOrder,
   getSellerOrders,
   advanceSellerOrder,
   cancelBuyerOrder,
+  adminSetOrderStatus,
   releaseOrderStock,
 };

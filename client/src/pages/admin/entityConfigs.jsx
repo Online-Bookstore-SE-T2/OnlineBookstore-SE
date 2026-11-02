@@ -5,7 +5,8 @@ import BookForm, { AddBookButton } from './BookForm.jsx';
 import CategoryCreateForm from './CategoryCreateForm.jsx';
 
 // Table and action definitions for each administration section (REQ-4).
-// Columns: { key, label, render(row, ctx) }. Actions: { key, label, tone?, visible?, confirm?, form?, run }
+// Columns: { key, label, render(row, ctx) }. Actions: { key, label, verb?, tone?, visible?, confirm?, form?, run }
+// (`verb` replaces the label in the button's accessible name when the label already names the record type)
 // or { key, label, dialog({ row, onDone, onCancel }) } for an action with its own form.
 // tone colour-codes the button by effect: info (default), positive, caution or danger.
 
@@ -13,6 +14,7 @@ const t = strings.admin;
 const c = t.columns;
 
 const post = (path, body) => apiRequest(path, { method: 'POST', body });
+const setOrderStatus = (row, status) => apiRequest(`/admin/orders/${row.id}/status`, { method: 'PATCH', body: { status } });
 const remove = (entity) => ({
   key: 'delete',
   label: t.delete,
@@ -259,7 +261,33 @@ const orders = {
     { key: 'status', label: c.status, render: (row) => row.status },
     { key: 'placed', label: c.placed, render: (row) => formatDate(row.createdAt) },
   ],
-  actions: [remove('orders')],
+  // SASD 4.2.4: the server enforces the transition table; these buttons only offer the moves it allows.
+  actions: [
+    {
+      key: 'ship',
+      label: t.markShipped,
+      tone: 'positive',
+      visible: (row) => row.status === 'Paid',
+      run: (row) => setOrderStatus(row, 'Shipped'),
+    },
+    {
+      key: 'deliver',
+      label: t.markDelivered,
+      tone: 'positive',
+      visible: (row) => row.status === 'Shipped',
+      run: (row) => setOrderStatus(row, 'Delivered'),
+    },
+    {
+      key: 'cancel',
+      label: t.cancelOrder,
+      verb: t.cancel,
+      tone: 'danger',
+      visible: (row) => ['Placed', 'Paid', 'Shipped'].includes(row.status),
+      confirm: (row) => ({ title: t.confirm.cancelOrderTitle, message: t.confirm.cancelOrderMessage(LABELS.orders(row), row.status) }),
+      run: (row) => setOrderStatus(row, 'Cancelled'),
+    },
+    remove('orders'),
+  ],
   label: LABELS.orders,
 };
 
