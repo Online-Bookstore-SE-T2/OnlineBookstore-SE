@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
-const { User, Category, Book, Listing, Review, Order } = require('../models');
+const {
+  User,
+  Category,
+  Book,
+  Listing,
+  Review,
+  Order,
+  ListingRemovalRequest,
+} = require('../models');
 const {
   ROLES,
   ACCOUNT_STATUS,
@@ -7,10 +15,16 @@ const {
   REJECT_REASON_CODES,
   OPEN_ORDER_STATUSES,
   LISTING_STATUS,
+  LISTING_REMOVAL_STATUS,
 } = require('../constants');
 const strings = require('../resources/strings');
 const { AppError } = require('../utils/errors');
-const { FieldValidator, LIMITS } = require('../validation/validators');
+const {
+  FieldValidator,
+  LIMITS,
+  sanitizeText,
+  characterCount,
+} = require('../validation/validators');
 const { isWithinRetention } = require('../models/plugins/softDelete');
 const audit = require('./auditService');
 const { recomputeBookRating } = require('./ratingService');
@@ -368,6 +382,112 @@ async function setListingStatus(admin, id, status, action) {
 const suspendListing = (admin, id) => setListingStatus(admin, id, LISTING_STATUS.SUSPENDED, 'suspend');
 const reinstateListing = (admin, id) => setListingStatus(admin, id, LISTING_STATUS.ACTIVE, 'reinstate');
 
+// REQ-19 / TBD-1: open orders remain valid from their stored order-item snapshots. An
+// administrator may therefore approve hiding the listing without changing or cancelling orders.
+async function listListingRemovalRequests({ page: pageValue = 1, status } = {}) {
+  const page = pageNumber(pageValue);
+  const allowedStatuses = Object.values(LISTING_REMOVAL_STATUS);
+  const requestStatus = status || LISTING_REMOVAL_STATUS.PENDING;
+  if (!allowedStatuses.includes(requestStatus)) {
+    throw new AppError(400, 'Choose a valid listing removal request status.');
+  }
+
+  const filter = { status: requestStatus };
+  const populate = [
+    {
+      path: 'listing',
+      select: 'book seller status deletedAt',
+      populate: [{ path: 'book', select: 'title isbn' }, { path: 'seller', select: 'name' }],
+    },
+    { path: 'seller', select: 'name' },
+    { path: 'openOrders', select: 'status createdAt totalAmount' },
+    { path: 'reviewedBy', select: 'name' },
+  ];
+  const [items, total] = await Promise.all([
+    ListingRemovalRequest.find(filter)
+      .populate(populate)
+      .sort({ createdAt: 1, _id: 1 })
+      .skip((page - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE),
+    ListingRemovalRequest.countDocuments(filter),
+  ]);
+  return { items, page, pageSize: PAGE_SIZE, total, totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+async function resolveListingRemovalRequest(admin, id, body = {}) {
+  if (!mongoose.isValidObjectId(id)) throw new AppError(404, strings.admin.notFound);
+
+  const status = body.status;
+  if (![LISTING_REMOVAL_STATUS.APPROVED, LISTING_REMOVAL_STATUS.REJECTED].includes(status)) {
+    throw new AppError(400, 'Choose Approve or Reject for the removal request.', {
+      status: 'Choose Approve or Reject.',
+    });
+  }
+
+  if (typeof body.resolutionNote !== 'string' || !body.resolutionNote.trim()) {
+    throw new AppError(400, 'Add a note explaining the decision.', {
+      resolutionNote: 'A resolution note is required.',
+    });
+  }
+  const resolutionNote = sanitizeText(body.resolutionNote);
+  if (characterCount(resolutionNote) > 1000) {
+    throw new AppError(400, 'The resolution note must be at most 1,000 characters.', {
+      resolutionNote: 'The resolution note must be at most 1,000 characters.',
+    });
+  }
+
+  const session = await mongoose.startSession();
+  let resolved;
+  try {
+    await session.withTransaction(async () => {
+      const removalRequest = await ListingRemovalRequest.findOne({
+        _id: id,
+        status: LISTING_REMOVAL_STATUS.PENDING,
+      }).session(session);
+
+      if (!removalRequest) {
+        const existing = await ListingRemovalRequest.findById(id).session(session);
+        throw new AppError(existing ? 409 : 404, existing
+          ? 'This listing removal request has already been resolved.'
+          : strings.admin.notFound);
+      }
+
+      const listing = await Listing.findById(removalRequest.listing).session(session);
+      if (!listing) throw new AppError(409, 'The listing for this request no longer exists.');
+
+      if (status === LISTING_REMOVAL_STATUS.APPROVED && !listing.deletedAt) {
+        listing.deletedAt = new Date();
+        await listing.save({ session });
+      }
+
+      removalRequest.status = status;
+      removalRequest.resolutionNote = resolutionNote;
+      removalRequest.reviewedBy = admin._id;
+      removalRequest.reviewedAt = new Date();
+      await removalRequest.save({ session });
+      resolved = removalRequest;
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  const action = status === LISTING_REMOVAL_STATUS.APPROVED
+    ? 'approve-listing-removal'
+    : 'reject-listing-removal';
+  await audit.record(
+    admin,
+    action,
+    { type: 'ListingRemovalRequest', id: resolved._id, label: `Listing removal request ${resolved.id}` },
+    { listingId: String(resolved.listing), resolutionNote },
+  );
+  return resolved.populate([
+    { path: 'listing', select: 'book', populate: { path: 'book', select: 'title isbn' } },
+    { path: 'seller', select: 'name' },
+    { path: 'openOrders', select: 'status createdAt totalAmount' },
+    { path: 'reviewedBy', select: 'name' },
+  ]);
+}
+
 // ----- Categories (BR-3: only administrators alter the category structure) -----
 
 function categoryName(body) {
@@ -427,6 +547,8 @@ module.exports = {
   setBookAvailability,
   suspendListing,
   reinstateListing,
+  listListingRemovalRequests,
+  resolveListingRemovalRequest,
   createCategory,
   renameCategory,
 };

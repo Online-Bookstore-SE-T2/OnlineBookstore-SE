@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SellerListingsPage from './SellerListingsPage.jsx';
 import { apiRequest } from '../api/http.js';
 import { axeViolations } from '../test/a11y.js';
 
 vi.mock('../api/http.js', () => ({ apiRequest: vi.fn() }));
+
+afterEach(() => vi.restoreAllMocks());
 
 describe('SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11)', () => {
   beforeEach(() => {
@@ -76,5 +78,52 @@ describe('SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11)',
     cancel.focus();
     await user.keyboard('{Enter}');
     expect(screen.getByRole('heading', { name: 'Sell a book' })).toBeInTheDocument();
+  });
+
+  it('records an administrator removal request when an open order blocks deletion', async () => {
+    const user = userEvent.setup();
+    const listing = {
+      id: 'listing-1',
+      book: { title: 'The Silent Orchard', author: 'Anita Sharma', isbn: '9781234567890' },
+      price: 24.99,
+      quantity: 2,
+      condition: 'Good',
+      notes: '',
+    };
+    let requests = [];
+    apiRequest.mockImplementation(async (path, options = {}) => {
+      if (path === '/listings/mine') return { listings: [listing] };
+      if (path === '/listings/removal-requests') return { requests };
+      if (path === '/listings/listing-1' && options.method === 'DELETE') {
+        const error = new Error('This listing is tied to an open order.');
+        error.status = 409;
+        throw error;
+      }
+      if (path === '/listings/listing-1/removal-requests') {
+        const removalRequest = {
+          id: 'request-1',
+          listing: { book: { title: listing.book.title } },
+          reason: 'The listed copies were damaged.',
+          status: 'Pending',
+        };
+        requests = [removalRequest];
+        return { request: removalRequest };
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<main><SellerListingsPage /></main>);
+
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
+    expect(await screen.findByRole('heading', { name: 'Request administrator review' })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: /why should this listing be removed/i }), 'The listed copies were damaged.');
+    await user.click(screen.getByRole('button', { name: 'Send removal request' }));
+
+    expect(await screen.findByText('Your removal request has been sent to an administrator.')).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(apiRequest).toHaveBeenCalledWith('/listings/listing-1/removal-requests', {
+      method: 'POST',
+      body: { reason: 'The listed copies were damaged.' },
+    });
   });
 });

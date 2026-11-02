@@ -246,6 +246,63 @@ const reviews = {
   label: LABELS.reviews,
 };
 
+const listingRemovalRequests = {
+  id: 'listingRemovalRequests',
+  entity: 'listing-removal-requests',
+  title: t.tabs.listingRemovalRequests,
+  emptyMessage: t.noListingRemovalRequests,
+  viewable: false,
+  load: ({ page }) => apiRequest(`/admin/listing-removal-requests?page=${page}`),
+  columns: [
+    { key: 'listing', label: c.book, render: (row) => row.listing?.book?.title || 'Listing unavailable' },
+    { key: 'seller', label: c.seller, render: (row) => row.seller?.name || '-' },
+    { key: 'reason', label: t.removalReason, render: (row) => row.reason },
+    { key: 'orders', label: t.openOrders, render: (row) => (row.openOrders || []).map((order) => order.status).join(', ') || '-' },
+    { key: 'requested', label: t.requested, render: (row) => formatDate(row.createdAt) },
+  ],
+  actions: [
+    {
+      key: 'approveRemoval',
+      label: t.approveRemoval,
+      tone: 'positive',
+      confirm: (row) => ({
+        title: t.approveRemovalTitle,
+        message: t.approveRemovalMessage(row.listing?.book?.title || 'this listing'),
+      }),
+      form: {
+        type: 'text',
+        field: 'resolutionNote',
+        label: t.removalResolutionNote,
+        requiredMessage: t.removalResolutionRequired,
+      },
+      run: (row, resolutionNote) => post(`/admin/listing-removal-requests/${row.id}/resolve`, {
+        status: 'Approved',
+        resolutionNote,
+      }),
+    },
+    {
+      key: 'rejectRemoval',
+      label: t.rejectRemoval,
+      tone: 'caution',
+      confirm: (row) => ({
+        title: t.rejectRemovalTitle,
+        message: t.rejectRemovalMessage(row.listing?.book?.title || 'this listing'),
+      }),
+      form: {
+        type: 'text',
+        field: 'resolutionNote',
+        label: t.removalResolutionNote,
+        requiredMessage: t.removalResolutionRequired,
+      },
+      run: (row, resolutionNote) => post(`/admin/listing-removal-requests/${row.id}/resolve`, {
+        status: 'Rejected',
+        resolutionNote,
+      }),
+    },
+  ],
+  label: (row) => `removal request for ${row.listing?.book?.title || 'listing'}`,
+};
+
 const orders = {
   id: 'orders',
   entity: 'orders',
@@ -280,4 +337,4 @@ const audit = {
   label: (row) => row.id,
 };
 
-export const ADMIN_SECTIONS = [users, sellers, sellerRequests, books, categories, listings, reviews, orders, audit];
+export const ADMIN_SECTIONS = [users, sellers, sellerRequests, books, categories, listings, listingRemovalRequests, reviews, orders, audit];

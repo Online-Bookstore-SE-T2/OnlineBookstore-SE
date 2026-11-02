@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
-const { Book, Listing, Order } = require('../models');
+const { Book, Listing, Order, ListingRemovalRequest } = require('../models');
 const {
   OPEN_ORDER_STATUSES,
   LISTING_CONDITIONS,
   LISTING_STATUS,
+  LISTING_REMOVAL_STATUS,
 } = require('../constants');
 const {
   isMoney,
@@ -213,7 +214,7 @@ async function removeListing(sellerId, id) {
   if (openOrder) {
     throw new AppError(
       409,
-      'This listing is tied to an open order. Contact an administrator for help before removing it.'
+      'This listing is tied to an open order. Submit an administrator removal request from your listings page.'
     );
   }
 
@@ -224,10 +225,84 @@ async function removeListing(sellerId, id) {
   return listing;
 }
 
+async function requestListingRemoval(sellerId, id, body = {}) {
+  const listing = await ownedListing(sellerId, id);
+  if (typeof body.reason !== 'string' || !body.reason.trim()) {
+    throw new AppError(400, 'Explain why this listing should be removed.', {
+      reason: 'A reason is required.',
+    });
+  }
+
+  const reason = sanitizeText(body.reason);
+  if (characterCount(reason) > 1000) {
+    throw new AppError(400, 'The removal reason must be at most 1,000 characters.', {
+      reason: 'The removal reason must be at most 1,000 characters.',
+    });
+  }
+
+  const openOrders = await Order.find({
+    'items.listing': listing._id,
+    status: mongoose.trusted({ $in: OPEN_ORDER_STATUSES }),
+    deletedAt: null,
+  }).select('_id');
+
+  if (openOrders.length === 0) {
+    throw new AppError(409, 'This listing can be removed directly because no open orders remain.');
+  }
+
+  const existing = await ListingRemovalRequest.findOne({
+    listing: listing._id,
+    status: LISTING_REMOVAL_STATUS.PENDING,
+  });
+  if (existing) return { request: existing, created: false };
+
+  try {
+    const [request] = await ListingRemovalRequest.create([{
+      listing: listing._id,
+      seller: sellerId,
+      reason,
+      openOrders: openOrders.map((order) => order._id),
+    }]);
+    return { request, created: true };
+  } catch (error) {
+    // A concurrent request may win the unique pending-request index.
+    if (error.code !== 11000) throw error;
+    const request = await ListingRemovalRequest.findOne({
+      listing: listing._id,
+      status: LISTING_REMOVAL_STATUS.PENDING,
+    });
+    if (!request) throw error;
+    return { request, created: false };
+  }
+}
+
+async function myListingRemovalRequests(sellerId, page = 1) {
+  const safePage = Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+  const filter = { seller: sellerId };
+  const [requests, total] = await Promise.all([
+    ListingRemovalRequest.find(filter)
+      .populate({ path: 'listing', select: 'book', populate: { path: 'book', select: 'title isbn' } })
+      .populate('reviewedBy', 'name')
+      .sort({ createdAt: -1 })
+      .skip((safePage - 1) * 20)
+      .limit(20),
+    ListingRemovalRequest.countDocuments(filter),
+  ]);
+  return {
+    requests,
+    page: safePage,
+    pageSize: 20,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / 20)),
+  };
+}
+
 module.exports = {
   createListing,
   myListings,
   publicListings,
   updateListing,
   removeListing,
+  requestListingRemoval,
+  myListingRemovalRequests,
 };

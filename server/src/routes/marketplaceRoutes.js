@@ -19,7 +19,9 @@ function createSellerListingRouter() {
   const router = express.Router();
   router.use(authenticate, requireWriteAccess, requireRole(ROLES.SELLER));
   router.get('/mine', asyncHandler(controller.listMyListings));
+  router.get('/removal-requests', asyncHandler(controller.listMyListingRemovalRequests));
   router.post('/', asyncHandler(controller.createListing));
+  router.post('/:listingId/removal-requests', asyncHandler(controller.requestListingRemoval));
   router.patch('/:listingId', asyncHandler(controller.updateListing));
   router.delete('/:listingId', asyncHandler(controller.removeListing));
   return router;

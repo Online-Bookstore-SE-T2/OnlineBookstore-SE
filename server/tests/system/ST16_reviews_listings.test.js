@@ -3,7 +3,7 @@ const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
 const { seedMarketplace } = require('../helpers/fixtures');
 const { tokenFor, bearer } = require('../helpers/auth');
-const { Order, Review, Book, Listing } = require('../../src/models');
+const { Order, Review, Book, Listing, AuditLog } = require('../../src/models');
 
 useTestDatabase();
 
@@ -295,5 +295,126 @@ describe('ST16-19 reviews, ratings and seller listings', () => {
         deletedAt: null,
       })
     ).toBeNull();
+  });
+
+  test('ST19 / TBD-1: administrators resolve tracked removal requests without changing open orders', async () => {
+    const listing = data.listings.L04;
+    const openOrder = data.orders['ORD-S05'];
+    const path = `/api/listings/${listing.id}/removal-requests`;
+
+    const buyerAttempt = await request(app)
+      .post(path)
+      .set(buyerAuth)
+      .send({ reason: 'I cannot fulfil this listing.' });
+    expect(buyerAttempt.status).toBe(403);
+
+    const created = await request(app)
+      .post(path)
+      .set(sellerAuth)
+      .send({ reason: 'The listed copies were damaged before fulfilment.' });
+    expect(created.status).toBe(201);
+    expect(created.body.request).toMatchObject({
+      status: 'Pending',
+      reason: 'The listed copies were damaged before fulfilment.',
+    });
+    expect(created.body.request.openOrders).toContain(openOrder.id);
+
+    const duplicate = await request(app)
+      .post(path)
+      .set(sellerAuth)
+      .send({ reason: 'Retry after a network timeout.' });
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body.request.id).toBe(created.body.request.id);
+
+    const sellerHistory = await request(app)
+      .get('/api/listings/removal-requests')
+      .set(sellerAuth);
+    expect(sellerHistory.status).toBe(200);
+    expect(sellerHistory.body.requests[0]).toMatchObject({
+      id: created.body.request.id,
+      status: 'Pending',
+      listing: { book: { title: data.books.B02.title } },
+    });
+
+    const sellerQueueAttempt = await request(app)
+      .get('/api/admin/listing-removal-requests')
+      .set(sellerAuth);
+    expect(sellerQueueAttempt.status).toBe(403);
+
+    const queue = await request(app)
+      .get('/api/admin/listing-removal-requests')
+      .set(adminAuth);
+    expect(queue.status).toBe(200);
+    expect(queue.body.items[0]).toMatchObject({
+      id: created.body.request.id,
+      status: 'Pending',
+      seller: { name: data.users['U-S01'].name },
+      listing: { book: { title: data.books.B02.title } },
+    });
+    expect(queue.body.items[0].openOrders.map((order) => order.status)).toContain('Placed');
+
+    const missingNote = await request(app)
+      .post(`/api/admin/listing-removal-requests/${created.body.request.id}/resolve`)
+      .set(adminAuth)
+      .send({ status: 'Approved' });
+    expect(missingNote.status).toBe(400);
+
+    const approved = await request(app)
+      .post(`/api/admin/listing-removal-requests/${created.body.request.id}/resolve`)
+      .set(adminAuth)
+      .send({
+        status: 'Approved',
+        resolutionNote: 'Approved due to the seller’s documented damage; existing orders remain unchanged.',
+      });
+    expect(approved.status).toBe(200);
+    expect(approved.body.record).toMatchObject({
+      status: 'Approved',
+      resolutionNote: 'Approved due to the seller’s documented damage; existing orders remain unchanged.',
+      reviewedBy: { name: data.users.A01.name },
+    });
+
+    const removedListing = await Listing.findById(listing._id);
+    const unchangedOrder = await Order.findById(openOrder._id);
+    expect(removedListing.deletedAt).toBeInstanceOf(Date);
+    expect(unchangedOrder.status).toBe('Placed');
+    expect(String(unchangedOrder.items[0].listing)).toBe(String(listing._id));
+
+    const sellerOrders = await request(app)
+      .get('/api/orders/seller')
+      .set(sellerAuth);
+    expect(sellerOrders.body.orders.find((order) => order.id === openOrder.id).items[0].title)
+      .toBe(data.books.B02.title);
+
+    const publicListings = await request(app)
+      .get(`/api/books/${data.books.B02.id}/listings`);
+    expect(publicListings.body.listings.map((item) => item.id)).not.toContain(listing.id);
+
+    const auditEntry = await AuditLog.findOne({
+      targetId: created.body.request.id,
+      action: 'approve-listing-removal',
+    });
+    expect(auditEntry).not.toBeNull();
+  });
+
+  test('ST19 / TBD-1: a rejection records its note and leaves the listing active', async () => {
+    const listing = data.listings.L04;
+    const created = await request(app)
+      .post(`/api/listings/${listing.id}/removal-requests`)
+      .set(sellerAuth)
+      .send({ reason: 'Please review this listing for removal.' });
+
+    const rejected = await request(app)
+      .post(`/api/admin/listing-removal-requests/${created.body.request.id}/resolve`)
+      .set(adminAuth)
+      .send({ status: 'Rejected', resolutionNote: 'The seller can safely fulfil the existing order.' });
+
+    expect(rejected.status).toBe(200);
+    expect(rejected.body.record.status).toBe('Rejected');
+    expect((await Listing.findById(listing._id)).deletedAt).toBeNull();
+    expect((await request(app).get('/api/listings/removal-requests').set(sellerAuth))
+      .body.requests[0]).toMatchObject({
+      status: 'Rejected',
+      resolutionNote: 'The seller can safely fulfil the existing order.',
+    });
   });
 });

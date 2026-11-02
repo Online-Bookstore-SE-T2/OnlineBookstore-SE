@@ -69,6 +69,14 @@ describe('Administration console', () => {
       'POST /admin/categories/query': () => [200, page([{ id: 'c1', name: 'Fiction', createdAt: '2026-08-01T00:00:00.000Z' }])],
       'POST /admin/listings/query': () => [200, page([{ id: 'l1', book: { title: 'The Silent Orchard' }, seller: { name: 'Kiran Hegde' }, condition: 'New', price: 349, quantity: 5, status: 'Active' }])],
       'POST /admin/reviews/query': () => [200, page([{ id: 'r1', book: { title: 'The Silent Orchard' }, user: { name: 'Pooja Nambiar' }, rating: 4, text: 'Nice', createdAt: '2026-08-01T00:00:00.000Z' }])],
+      'GET /admin/listing-removal-requests?page=1': () => [200, page([{
+        id: 'lr1',
+        listing: { book: { title: 'The Silent Orchard' } },
+        seller: { name: 'Kiran Hegde' },
+        reason: 'The copies were damaged.',
+        openOrders: [{ status: 'Paid' }],
+        createdAt: '2026-08-01T00:00:00.000Z',
+      }])],
       'POST /admin/orders/query': () => [200, page([{ id: 'o00000000000ORD004', buyer: { name: 'Anita Rao' }, items: [{ quantity: 1 }], totalAmount: 550, status: 'Cancelled', createdAt: '2026-08-01T00:00:00.000Z' }])],
       'GET /admin/audit-log?page=1': () => [200, page([{ id: 'a1', actor: { name: 'Admin User One' }, action: 'suspend', targetType: 'User', targetLabel: 'Vikram Desai', createdAt: '2026-10-01T10:00:00.000Z' }])],
     });
@@ -84,6 +92,7 @@ describe('Administration console', () => {
       ['Books', 'The Silent Orchard'],
       ['Categories', 'Fiction'],
       ['Listings', '₹349.00'],
+      ['Listing removal requests', 'The copies were damaged.'],
       ['Reviews', 'Pooja Nambiar'],
       ['Orders', '₹550.00'],
       ['Audit log', 'User: Vikram Desai'],
@@ -93,6 +102,36 @@ describe('Administration console', () => {
       expect(await screen.findByText(text)).toBeInTheDocument();
     }
   });
+
+  test('an administrator records a decision note when resolving a listing removal request', async () => {
+    const u = userEvent.setup();
+    const spy = setup({
+      'GET /admin/listing-removal-requests?page=1': () => [200, page([{
+        id: 'lr1',
+        listing: { book: { title: 'The Silent Orchard' } },
+        seller: { name: 'Kiran Hegde' },
+        reason: 'The copies were damaged.',
+        openOrders: [{ status: 'Paid' }],
+        createdAt: '2026-08-01T00:00:00.000Z',
+      }])],
+      'POST /admin/listing-removal-requests/lr1/resolve': () => [200, { record: {} }],
+    });
+    await openConsole();
+    await u.click(tab('Listing removal requests'));
+    expect(await screen.findByText('The copies were damaged.')).toBeInTheDocument();
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+
+    await u.click(screen.getByRole('button', { name: /Approve removal/ }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Approve this listing removal?' });
+    await u.type(within(dialog).getByLabelText(/^Decision note/), 'Approved after confirming the stock damage.');
+    await u.click(within(dialog).getByRole('button', { name: 'Approve removal' }));
+
+    await waitFor(() => expect(lastBody(spy, 'POST', '/admin/listing-removal-requests/lr1/resolve')).toEqual({
+      status: 'Approved',
+      resolutionNote: 'Approved after confirming the stock damage.',
+    }));
+  });
+
 
   test('tabs can be changed with the arrow keys', async () => {
     const u = userEvent.setup();
