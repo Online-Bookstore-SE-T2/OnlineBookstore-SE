@@ -124,6 +124,7 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 - **Cancelling orders**: a buyer can cancel an order while it is `Placed` or `Paid` (SRS 6.2); `Shipped` and later orders answer `409`. Cancelling restores the stock. Refunds are outside Release 1.0, so a paid order's payment is marked `Refund pending`.
 - **Payments**: Stripe test-mode PaymentIntents are verified server-side through the configured gateway; the hosted Payment Element handles card details. The simulator (`POST /api/payments/orders/:orderId/simulate` with `{ "outcome": "success" | "failure" }`) remains available for offline demos and tests, but not in production. A declined or timed-out payment cancels the order and releases its stock in the same transaction (REQ-11); the buyer checks out again to retry.
 - **Order status**: `Placed → Paid → Shipped → Delivered` and pre-shipment cancellation are validated against the transition table. Every status change records its actor and timestamp; sellers can only advance orders containing their listings.
+- **Administrator order changes**: `PATCH /api/admin/orders/:id/status` with `{ "status": ... }` follows its own table (SASD 4.2.4): `Paid → Shipped`, `Shipped → Delivered`, and cancellation from `Placed`, `Paid` or `Shipped`, so only an administrator can cancel after shipping. Cancelling restores stock and marks a paid order `Refund pending`. Administrators can never mark an order `Paid`. Each change is audited and notified, and the actions are on the Orders tab of the console.
 - **E-mail**: post-commit SMTP e-mails use STARTTLS and bounded retries. Seller order notifications are in-app only and expose only the seller's own lines, not the buyer's e-mail.
 - **Database queries**: `mongoose.set('sanitizeFilter', true)` is on (`server/src/config/db.js`), so any query operator written in code (`$gt`, `$in`, `$ne`, ...) must be wrapped in `mongoose.trusted(...)`. Without that the query fails with a `CastError`, which the API reports as a `404`.
 
@@ -131,5 +132,4 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 
 The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were already delivered in merged PRs #96 and #95, respectively. Remaining SRS work includes:
 
-- Administrators changing order status or cancelling orders after they ship (FR15, SASD 4.2.4).
 - Suggested categories when a search finds nothing (REQ-6).
