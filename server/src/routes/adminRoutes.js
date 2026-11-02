@@ -13,6 +13,8 @@ function createAdminRouter() {
 
   router.get('/audit-log', route(admin.auditLog));
   router.get('/seller-requests', route(admin.listSellerRequests));
+  router.get('/listing-removal-requests', route(admin.listListingRemovalRequests));
+  router.post('/listing-removal-requests/:id/resolve', write, route(admin.resolveListingRemovalRequest));
 
   router.post('/users/:id/suspend', write, route(admin.suspendUser));
   router.post('/users/:id/reinstate', write, route(admin.reinstateUser));

@@ -6,15 +6,22 @@ const blank = { isbn: '', price: '', quantity: '1', condition: 'Good', notes: ''
 
 export default function SellerListingsPage() {
   const [listings, setListings] = useState([]);
+  const [removalRequests, setRemovalRequests] = useState([]);
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState(null);
+  const [requestingRemoval, setRequestingRemoval] = useState(null);
+  const [removalReason, setRemovalReason] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const data = await apiRequest('/listings/mine');
+    const [data, requestData] = await Promise.all([
+      apiRequest('/listings/mine'),
+      apiRequest('/listings/removal-requests'),
+    ]);
     setListings(data.listings);
+    setRemovalRequests(requestData.requests || []);
   }
   useEffect(() => { load().catch((err) => setError(err.message)); }, []);
 
@@ -39,9 +46,35 @@ export default function SellerListingsPage() {
 
   async function remove(listing) {
     if (!window.confirm(`Remove your listing for “${listing.book.title}”?`)) return;
-    setError(''); setMessage('');
+    setError(''); setMessage(''); setRequestingRemoval(null);
     try { await apiRequest(`/listings/${listing.id}`, { method: 'DELETE' }); await load(); setMessage('Listing removed.'); }
-    catch (err) { setError(err.message); }
+    catch (err) {
+      if (err.status === 409 && /open order/i.test(err.message)) {
+        setRequestingRemoval(listing.id);
+        setError('An open order prevents this listing from being removed. You can ask an administrator to review it.');
+      } else {
+        setError(err.message);
+      }
+    }
+  }
+
+  async function submitRemovalRequest(event, listing) {
+    event.preventDefault();
+    setBusy(true); setError(''); setMessage('');
+    try {
+      await apiRequest(`/listings/${listing.id}/removal-requests`, {
+        method: 'POST',
+        body: { reason: removalReason },
+      });
+      setRequestingRemoval(null);
+      setRemovalReason('');
+      await load();
+      setMessage('Your removal request has been sent to an administrator.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return <section className="stack">
@@ -69,8 +102,31 @@ export default function SellerListingsPage() {
         <div><span className="tag">{listing.condition}</span><h3>{listing.book.title}</h3><p className="muted">{listing.book.author} · ISBN {listing.book.isbn}</p></div>
         <p className="listing-price">₹{listing.price.toFixed(2)}<span className={`stock ${listing.quantity > 0 ? 'stock-in' : 'stock-out'}`}><span>{listing.quantity} available</span></span></p>{listing.notes && <p className="listing-notes">{listing.notes}</p>}
         <div className="row"><button type="button" className="btn btn-secondary btn-small" onClick={() => edit(listing)}>Edit</button><button type="button" className="link-button" onClick={() => remove(listing)}>Remove</button></div>
+        {requestingRemoval === listing.id && <form className="stack" onSubmit={(event) => submitRemovalRequest(event, listing)}>
+          <h4>Request administrator review</h4>
+          <p className="muted">If approved, the listing is hidden from the catalog. Existing orders remain available to fulfil or cancel.</p>
+          <FormField id={`removal-reason-${listing.id}`} label="Why should this listing be removed?" as="textarea" required maxLength={1000} value={removalReason} onChange={(event) => setRemovalReason(event.target.value)} />
+          <div className="row">
+            <button type="submit" className="btn btn-small" disabled={busy}>{busy ? 'Sending…' : 'Send removal request'}</button>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => { setRequestingRemoval(null); setRemovalReason(''); }}>Cancel request</button>
+          </div>
+        </form>}
       </article>)}</div>}
     </section>
     </div>
+    <section className="stack">
+      <h2>Your listing removal requests</h2>
+      {removalRequests.length === 0 ? <p className="card">You have no listing removal requests.</p> : (
+        <ul className="stack plain-list">
+          {removalRequests.map((request) => (
+            <li className="card stack" key={request.id}>
+              <div className="row"><h3>{request.listing?.book?.title || 'Listing'} removal</h3><span className="badge">{request.status}</span></div>
+              <p><strong>Reason:</strong> {request.reason}</p>
+              {request.resolutionNote && <p><strong>Administrator’s note:</strong> {request.resolutionNote}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   </section>;
 }

@@ -62,6 +62,13 @@ const LISTING_STATUS = Object.freeze({
   SUSPENDED: 'Suspended',
 });
 
+// REQ-19: seller requests to remove listings that still appear on open orders.
+const LISTING_REMOVAL_STATUS = Object.freeze({
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+});
+
 module.exports = {
   ROLES,
   ACCOUNT_STATUS,
@@ -73,4 +80,5 @@ module.exports = {
   OPEN_ORDER_STATUSES,
   LISTING_CONDITIONS,
   LISTING_STATUS,
+  LISTING_REMOVAL_STATUS,
 };

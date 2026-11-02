@@ -9,6 +9,7 @@ const Review = require('./Review');
 const Order = require('./Order');
 const Cart = require('./Cart');
 const Notification = require('./Notification');
+const ListingRemovalRequest = require('./ListingRemovalRequest');
 
 module.exports = {
   User,
@@ -21,4 +22,5 @@ module.exports = {
   Order,
   Cart,
   Notification,
+  ListingRemovalRequest,
 };

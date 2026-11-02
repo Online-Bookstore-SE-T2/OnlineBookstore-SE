@@ -14,5 +14,12 @@ async function createListing(req, res) { res.status(201).json({ listing: await l
 async function listMyListings(req, res) { res.json(await listings.myListings(id(req), req.query.page)); }
 async function updateListing(req, res) { res.json({ listing: await listings.updateListing(id(req), req.params.listingId, req.body) }); }
 async function removeListing(req, res) { res.json({ listing: await listings.removeListing(id(req), req.params.listingId) }); }
+async function requestListingRemoval(req, res) {
+  const result = await listings.requestListingRemoval(id(req), req.params.listingId, req.body);
+  res.status(result.created ? 201 : 200).json({ request: result.request });
+}
+async function listMyListingRemovalRequests(req, res) {
+  res.json(await listings.myListingRemovalRequests(id(req), req.query.page));
+}
 
-module.exports = { details, listReviews, getMyReview, createReview, updateReview, listPublicListings, createListing, listMyListings, updateListing, removeListing };
+module.exports = { details, listReviews, getMyReview, createReview, updateReview, listPublicListings, createListing, listMyListings, updateListing, removeListing, requestListingRemoval, listMyListingRemovalRequests };
