@@ -89,6 +89,47 @@ npm run dev:client                   # the SPA still runs from Node and proxies 
 - Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
 - `server/Dockerfile` builds the API image on its own: `docker build -f server/Dockerfile -t online-bookstore-api .` from the repository root.
 
+### Production demonstration deployment
+
+`docker-compose.demo.yml` runs the API, client, MongoDB replica set, daily backup worker and Caddy reverse proxy. Caddy terminates TLS and redirects HTTP to HTTPS; MongoDB and the API are not published directly to the host. The API runs with `NODE_ENV=production` and `PAYMENT_PROVIDER=stripe`, so the HTTP-only simulator is unavailable. Use this stack only with the Stripe test-mode credentials configured for the demonstration.
+
+The public URL is `https://${DEMO_DOMAIN}` (for example, `https://books.example.org` once that hostname is assigned). Set the root `.env` file to the DNS hostname pointing at the server; DNS must resolve before startup, and inbound TCP ports 80 and 443 must be reachable for Caddy to obtain and renew its certificate. The repository does not provision a server or DNS name, so the example hostname is not a live deployment URL.
+
+Create `server/.env` from `server/.env.example` and set a unique `JWT_SECRET`, strong `ADMIN_PASSWORD`, administrator identity, Stripe test keys and SMTP credentials. Do not commit either environment file. Set the required root `.env` value:
+
+```dotenv
+DEMO_DOMAIN=books.example.org
+```
+
+Then start the stack and initialize the administrator and catalog:
+
+```bash
+docker compose -f docker-compose.demo.yml up --build -d
+docker compose -f docker-compose.demo.yml exec api npm run seed:admin
+docker compose -f docker-compose.demo.yml exec api npm run seed:books
+```
+
+Verify the service at `https://${DEMO_DOMAIN}/api/health` and review `docker compose -f docker-compose.demo.yml logs caddy api backup` for certificate, API and backup errors. `seed:demo` is intentionally omitted: it is disabled in production. MongoDB data is retained in the `mongo-data` volume; the backup worker writes an archive at startup and daily at 00:00 UTC to `./backups/` (or `BACKUP_HOST_DIR` if set), retaining seven days of successful backups.
+
+To restore a daily backup, stop writes, restore a selected archive, then start the API again:
+
+```bash
+docker compose -f docker-compose.demo.yml stop api
+docker compose -f docker-compose.demo.yml run --rm --no-deps backup sh -c \
+  'mongorestore --uri="$MONGODB_URI" --archive="/backups/<archive-filename>" --gzip --drop'
+docker compose -f docker-compose.demo.yml start api
+```
+
+To rebuild on a replacement host, clone the repository at the required release/commit, recreate the root `.env` and `server/.env` from the instructions above, and copy the selected daily archive into `./backups` (or the configured `BACKUP_HOST_DIR`). Restore it before bringing up the API and public proxy:
+
+```bash
+docker compose -f docker-compose.demo.yml run --build --rm backup sh -c \
+  'mongorestore --uri="$MONGODB_URI" --archive="/backups/<archive-filename>" --gzip --drop'
+docker compose -f docker-compose.demo.yml up --build -d
+```
+
+The one-off backup service command starts MongoDB and waits for its replica-set health check but does not start the API. A fresh rebuild without a restore can start the full stack directly, then initialize it with the administrator and book seed commands. Preserve the backup directory and Caddy's `caddy-data` volume when moving hosts, and never commit backup archives.
+
 ### Database backups and restore
 
 `docker compose up --build -d` builds and starts the backup service with the API and MongoDB. It writes one compressed `mongodump` archive immediately, then another at midnight UTC each day. Backup files are stored on the host in `./backups` (ignored by Git); files more than 168 hours old are pruned only after a new dump succeeds. Check service status and errors with `docker compose logs backup`. To request an additional backup immediately, run `docker compose run --rm backup node src/scripts/backupDatabase.js`.
