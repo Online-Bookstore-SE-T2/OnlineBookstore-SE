@@ -27,7 +27,6 @@ const {
 } = require('../validation/validators');
 const { isWithinRetention } = require('../models/plugins/softDelete');
 const audit = require('./auditService');
-const orderService = require('./orderService');
 const { recomputeBookRating } = require('./ratingService');
 
 const PAGE_SIZE = 20;
