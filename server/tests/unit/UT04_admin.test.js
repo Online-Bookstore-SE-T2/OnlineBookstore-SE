@@ -59,6 +59,59 @@ describe('UT04 listing and viewing', () => {
   });
 });
 
+describe('UT04 order transaction report', () => {
+  test('returns only the Appendix B transaction fields and is paginated', async () => {
+    const order = data.orders['ORD-S03'];
+    await Order.updateOne(
+      { _id: order._id },
+      { $set: { payment: { provider: 'stripe', transactionRef: 'pi_report_123', status: 'Paid' } } },
+    );
+
+    for (let i = 0; i < 18; i += 1) {
+      const template = await Order.findById(order._id).lean();
+      delete template._id;
+      delete template.__v;
+      await Order.create(template);
+    }
+    await Book.updateOne({ _id: data.books.B05._id }, { $set: { isbn: '9789380000990' } });
+
+    const first = await adminService.listOrderTransactionReport({ page: 1 });
+    const second = await adminService.listOrderTransactionReport({ page: 2 });
+    const row = [...first.items, ...second.items].find((item) => item.orderId === order.id);
+    expect(first).toMatchObject({ page: 1, pageSize: 20, total: 21, totalPages: 2 });
+    expect(first.items).toHaveLength(20);
+    expect(second.items).toHaveLength(1);
+    expect(row).toMatchObject({
+      transactionRef: 'pi_report_123',
+      orderId: order.id,
+      buyerName: 'Anita Rao',
+      sellerName: 'Kiran Hegde',
+      bookTitle: 'Modern Database Systems',
+      isbn: '9789380000053',
+      quantity: 1,
+      orderAmount: 410,
+      paymentMethod: 'stripe',
+      orderStatus: 'Paid',
+      remarks: '-',
+    });
+    expect(Object.keys(row).sort()).toEqual([
+      'bookTitle',
+      'buyerName',
+      'isbn',
+      'orderAmount',
+      'orderId',
+      'orderStatus',
+      'paymentMethod',
+      'quantity',
+      'remarks',
+      'sellerName',
+      'transactionDate',
+      'transactionRef',
+    ]);
+    expect(JSON.stringify(first)).not.toMatch(/email|phone|address|password/i);
+  });
+});
+
 describe('UT04 users, suspension and roles', () => {
   test('suspend and reinstate change the status and are audited', async () => {
     const target = data.users['U-B04'];

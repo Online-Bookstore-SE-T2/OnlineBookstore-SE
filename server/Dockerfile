@@ -1,23 +1,30 @@
-# API tier image (SRS 7, deployment; SRS 6.4, portability). Build from the repository root,
-# because the npm workspace lock file lives there:
-#   docker build -f server/Dockerfile -t online-bookstore-api .
+# Build the React client and package it with the API so the demo uses one HTTPS origin.
+FROM node:20-bookworm-slim AS client-build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY server/package.json server/
+COPY client/package.json client/
+RUN npm ci
+COPY client client
+RUN npm run build -w client
+
 FROM node:20-bookworm-slim
 
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install only the server's runtime dependencies. npm needs every workspace manifest to
-# check the lock file, but nothing from the client is installed.
 COPY package.json package-lock.json ./
 COPY server/package.json server/
 COPY client/package.json client/
 RUN npm ci --workspace server --omit=dev && npm cache clean --force
-
 COPY server/src server/src
+COPY --from=client-build /app/client/dist client/dist
 
 WORKDIR /app/server
 USER node
 EXPOSE 5000
 
-# Configuration comes from the environment (see server/.env.example); no .env is copied in.
+# Configuration comes from the environment; no .env or secret is copied into the image.
 CMD ["node", "src/server.js"]

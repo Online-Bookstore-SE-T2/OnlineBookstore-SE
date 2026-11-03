@@ -14,6 +14,7 @@ const {
   SELLER_REQUEST_STATUS,
   REJECT_REASON_CODES,
   OPEN_ORDER_STATUSES,
+  ORDER_STATUS,
   LISTING_STATUS,
   LISTING_REMOVAL_STATUS,
 } = require('../constants');
@@ -127,6 +128,81 @@ async function listRecords(entity, query = {}) {
     config.model.countDocuments(filter),
   ]);
   return { items, page, pageSize: PAGE_SIZE, total, totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+// REQ-4: return only the names and transaction fields specified by Appendix B.
+async function listOrderTransactionReport(query = {}) {
+  const page = pageNumber(query.page);
+  const offset = (page - 1) * PAGE_SIZE;
+  const [result] = await Order.aggregate([
+    { $match: { deletedAt: null } },
+    { $unwind: '$items' },
+    {
+      $lookup: {
+        from: User.collection.name,
+        localField: 'buyer',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1 } }],
+        as: 'buyer',
+      },
+    },
+    { $unwind: { path: '$buyer', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: User.collection.name,
+        localField: 'items.seller',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1 } }],
+        as: 'seller',
+      },
+    },
+    { $unwind: { path: '$seller', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: Book.collection.name,
+        localField: 'items.book',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, isbn: 1 } }],
+        as: 'book',
+      },
+    },
+    { $unwind: { path: '$book', preserveNullAndEmptyArrays: true } },
+    { $sort: { createdAt: -1, _id: -1, 'items.title': 1 } },
+    {
+      $facet: {
+        items: [
+          { $skip: offset },
+          { $limit: PAGE_SIZE },
+          {
+            $project: {
+              _id: 0,
+              transactionRef: { $ifNull: ['$payment.transactionRef', '-'] },
+              orderId: { $toString: '$_id' },
+              buyerName: { $ifNull: ['$buyer.name', '-'] },
+              sellerName: { $ifNull: ['$seller.name', '-'] },
+              bookTitle: '$items.title',
+              isbn: { $ifNull: ['$items.isbn', { $ifNull: ['$book.isbn', '-'] }] },
+              quantity: '$items.quantity',
+              orderAmount: '$totalAmount',
+              paymentMethod: { $ifNull: ['$payment.provider', '-'] },
+              transactionDate: '$createdAt',
+              orderStatus: '$status',
+              remarks: { $ifNull: ['$payment.failureReason', '-'] },
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ]);
+  const total = result?.total[0]?.count || 0;
+  return {
+    items: result?.items || [],
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  };
 }
 
 async function findRecord(config, id, select) {
@@ -530,10 +606,31 @@ async function renameCategory(admin, id, body = {}) {
   return category;
 }
 
+async function changeOrderStatus(admin, id, body = {}) {
+  if (!Object.values(ORDER_STATUS).includes(body.status)) {
+    const message = 'Choose a valid order status.';
+    throw new AppError(400, message, { status: message });
+  }
+
+  if (mongoose.isValidObjectId(id)) {
+    const storedOrder = await Order.findById(id).select('deletedAt');
+    if (storedOrder?.deletedAt) throw new AppError(409, strings.admin.isDeleted);
+  }
+
+  const { order, previousStatus } = await orderService.adminSetOrderStatus(admin._id, id, body.status);
+  const action = body.status === ORDER_STATUS.CANCELLED ? 'cancel-order' : 'change-order-status';
+  await audit.record(admin, action, target(ENTITIES.orders, order), {
+    from: previousStatus,
+    to: body.status,
+  });
+  return order.populate(ENTITIES.orders.populate);
+}
+
 module.exports = {
   ENTITIES,
   PAGE_SIZE,
   listRecords,
+  listOrderTransactionReport,
   getRecord,
   deleteRecord,
   restoreRecord,
@@ -552,4 +649,5 @@ module.exports = {
   resolveListingRemovalRequest,
   createCategory,
   renameCategory,
+  changeOrderStatus,
 };

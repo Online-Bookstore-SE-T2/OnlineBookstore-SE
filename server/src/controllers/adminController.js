@@ -48,6 +48,10 @@ async function listSellerRequests(req, res) {
   res.json(page(await adminService.listSellerRequests({ page: req.query.page })));
 }
 
+async function listOrderTransactionReport(req, res) {
+  res.json(await adminService.listOrderTransactionReport({ page: req.query.page }));
+}
+
 async function approveSellerRequest(req, res) {
   done(res, await adminService.approveSellerRequest(req.user, req.params.id));
 }
@@ -96,6 +100,10 @@ async function renameCategory(req, res) {
   done(res, await adminService.renameCategory(req.user, req.params.id, req.body));
 }
 
+async function changeOrderStatus(req, res) {
+  done(res, await adminService.changeOrderStatus(req.user, req.params.id, req.body));
+}
+
 // GET /api/admin/audit-log?page=n
 async function auditLog(req, res) {
   const page = Number(req.query.page);
@@ -111,6 +119,7 @@ module.exports = {
   reinstateUser,
   promoteUser,
   listSellerRequests,
+  listOrderTransactionReport,
   approveSellerRequest,
   rejectSellerRequest,
   createBook,
@@ -122,5 +131,6 @@ module.exports = {
   resolveListingRemovalRequest,
   createCategory,
   renameCategory,
+  changeOrderStatus,
   auditLog,
 };

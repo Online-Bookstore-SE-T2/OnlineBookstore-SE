@@ -88,6 +88,7 @@ async function seedMarketplace() {
         book: books[bookKey]._id,
         seller: users[sellerKey]._id,
         title: books[bookKey].title,
+        isbn: books[bookKey].isbn,
         quantity: 1,
         unitPrice: listings[listingKey].price,
       }],

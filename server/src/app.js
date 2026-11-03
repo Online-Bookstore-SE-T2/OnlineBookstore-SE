@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const path = require('path');
 
 const { config } = require('./config/env');
 const { sanitizeRequest } = require('./middleware/sanitize');
@@ -81,6 +82,17 @@ function createApp({
   // Notifications and seller listings.
   app.use('/api/notifications', createNotificationRouter());
   app.use('/api/listings', createSellerListingRouter());
+
+  if (config.env === 'production') {
+    const clientBuildPath = path.resolve(__dirname, '../../client/dist');
+    app.use(express.static(clientBuildPath, { index: false }));
+    app.get('*', (req, res, next) => {
+      if (req.path === '/api' || req.path.startsWith('/api/')) return next();
+      res.sendFile(path.join(clientBuildPath, 'index.html'), (error) => {
+        if (error) next(error);
+      });
+    });
+  }
 
   // Handle unmatched requests and application errors.
   app.use(notFound);

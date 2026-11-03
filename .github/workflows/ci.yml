@@ -1,8 +1,10 @@
-# Lint and run both test suites on every pull request to main, so regressions are caught
-# before review (NFR07, C-5, Test Plan section 5: regression testing).
+# Lint and run both test suites for pull requests and pushes to main; Render deploys only
+# after these GitHub checks pass (NFR07, C-5, Test Plan section 5: regression testing).
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -60,6 +62,9 @@ jobs:
 
       - name: Build client
         run: npm run build -w client
+
+      - name: Build HTTPS demo application image
+        run: docker build -f server/Dockerfile -t online-bookstore-demo .
 
       - name: Build MongoDB backup tools image
         run: docker build -f server/Dockerfile.backup -t online-bookstore-backup .

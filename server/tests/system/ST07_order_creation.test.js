@@ -64,16 +64,21 @@ describe('ST07 Order Creation', () => {
     expect(response.body.order.items[0].quantity).toBe(2);
     expect(response.body.order.items[0].unitPrice).toBe(349);
     expect(response.body.order.items[0].title).toBe(data.books.B01.title);
+    expect(response.body.order.items[0].isbn).toBe(data.books.B01.isbn);
   });
 
-  test('TC-ORDER-10: order item title remains unchanged when the catalog book is edited', async () => {
+  test('TC-ORDER-10: order item title and ISBN remain unchanged when the catalog book is edited', async () => {
     await addCartItems([{ listing: data.listings.L01._id, quantity: 1 }]);
     const response = await placeOrder();
     const orderId = response.body.order.id;
-    await Book.updateOne({ _id: data.books.B01._id }, { $set: { title: 'Updated catalog title' } });
+    await Book.updateOne(
+      { _id: data.books.B01._id },
+      { $set: { title: 'Updated catalog title', isbn: '9789380000990' } },
+    );
 
     const savedOrder = await Order.findById(orderId);
     expect(savedOrder.items[0].title).toBe(data.books.B01.title);
+    expect(savedOrder.items[0].isbn).toBe(data.books.B01.isbn);
   });
 
   test('TC-ORDER-02: decrements listing stock after successful order creation', async () => {
