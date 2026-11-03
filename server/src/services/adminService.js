@@ -13,6 +13,7 @@ const {
   ACCOUNT_STATUS,
   SELLER_REQUEST_STATUS,
   REJECT_REASON_CODES,
+  ORDER_STATUS,
   OPEN_ORDER_STATUSES,
   LISTING_STATUS,
   LISTING_REMOVAL_STATUS,
@@ -27,6 +28,7 @@ const {
 } = require('../validation/validators');
 const { isWithinRetention } = require('../models/plugins/softDelete');
 const audit = require('./auditService');
+const orderService = require('./orderService');
 const { recomputeBookRating } = require('./ratingService');
 
 const PAGE_SIZE = 20;
@@ -488,6 +490,24 @@ async function resolveListingRemovalRequest(admin, id, body = {}) {
   ]);
 }
 
+async function changeOrderStatus(admin, id, body = {}) {
+  const v = new FieldValidator();
+  const status = v.oneOf('status', body.status, Object.values(ORDER_STATUS), {
+    label: strings.labels.orderStatus,
+  });
+  v.throwIfInvalid();
+
+  const { order, previousStatus } = await orderService.adminSetOrderStatus(admin._id, id, status);
+  const cancelled = status === ORDER_STATUS.CANCELLED;
+  await audit.record(
+    admin,
+    cancelled ? 'cancel-order' : 'change-order-status',
+    target(ENTITIES.orders, order),
+    { from: previousStatus, to: status },
+  );
+  return order.populate(ENTITIES.orders.populate);
+}
+
 // ----- Categories (BR-3: only administrators alter the category structure) -----
 
 function categoryName(body) {
@@ -549,6 +569,7 @@ module.exports = {
   reinstateListing,
   listListingRemovalRequests,
   resolveListingRemovalRequest,
+  changeOrderStatus,
   createCategory,
   renameCategory,
 };

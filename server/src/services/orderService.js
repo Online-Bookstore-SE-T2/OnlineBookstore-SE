@@ -213,9 +213,10 @@ async function adminSetOrderStatus(adminId, orderId, nextStatus) {
 
   try {
     await session.withTransaction(async () => {
-      const order = await Order.findOne({ _id: orderId, deletedAt: null }).session(session);
+      const order = await Order.findById(orderId).session(session);
 
       if (!order) throw new AppError(404, 'Order not found.');
+      if (order.deletedAt) throw new AppError(409, 'Deleted orders cannot be changed.');
       if (nextStatus === ORDER_STATUS.PAID) {
         throw new AppError(409, 'Only a confirmed payment can mark an order Paid.');
       }
