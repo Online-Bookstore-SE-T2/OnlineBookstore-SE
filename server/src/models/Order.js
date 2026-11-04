@@ -13,6 +13,7 @@ const orderItemSchema = new mongoose.Schema(
     book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true, maxlength: 300 },
+    isbn: { type: String, trim: true, maxlength: 20 },
     quantity: { type: Number, required: true, min: 1, validate: Number.isInteger },
     unitPrice: { ...money, required: true },
   },

@@ -59,6 +59,26 @@ describe('ST04 console views', () => {
     expect(res.body.items.map((u) => u.name)).toEqual(['Anita Rao']);
     expect((await request(app).get('/api/admin/users?q=anita').set(adminAuth)).status).toBe(404);
   });
+
+  test('TC-ST04-REPORT: the administrator gets a paginated transaction report with names only', async () => {
+    const report = await request(app).get('/api/admin/order-transaction-report?page=1').set(adminAuth);
+    expect(report.status).toBe(200);
+    expect(report.body).toMatchObject({ page: 1, pageSize: 20, total: 3, totalPages: 1 });
+    expect(report.body.items[0]).toEqual(expect.objectContaining({
+      orderId: expect.any(String),
+      buyerName: expect.any(String),
+      sellerName: expect.any(String),
+      bookTitle: expect.any(String),
+      isbn: expect.any(String),
+      quantity: expect.any(Number),
+      orderAmount: expect.any(Number),
+      transactionDate: expect.any(String),
+      orderStatus: expect.any(String),
+    }));
+    expect(JSON.stringify(report.body)).not.toMatch(/email|phone|address|password/i);
+    expect((await request(app).get('/api/admin/order-transaction-report').set(buyerAuth)).status).toBe(403);
+    expect((await request(app).get('/api/admin/order-transaction-report').set(sellerAuth)).status).toBe(403);
+  });
 });
 
 describe('ST04 users and sellers', () => {

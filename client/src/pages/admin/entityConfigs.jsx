@@ -348,6 +348,30 @@ const orders = {
   label: LABELS.orders,
 };
 
+const orderTransactionReport = {
+  id: 'orderTransactionReport',
+  entity: 'order-transaction-report',
+  title: t.tabs.orderTransactionReport,
+  viewable: false,
+  load: ({ page }) => apiRequest(`/admin/order-transaction-report?page=${page}`),
+  columns: [
+    { key: 'transactionRef', label: c.transactionReference, render: (row) => row.transactionRef },
+    { key: 'orderId', label: c.orderId, render: (row) => row.orderId },
+    { key: 'buyerName', label: c.buyer, render: (row) => row.buyerName },
+    { key: 'sellerName', label: c.seller, render: (row) => row.sellerName },
+    { key: 'bookTitle', label: c.bookTitle, render: (row) => row.bookTitle },
+    { key: 'isbn', label: c.isbn, render: (row) => row.isbn },
+    { key: 'quantity', label: c.quantity, render: (row) => row.quantity },
+    { key: 'orderAmount', label: c.total, render: (row) => formatINR(row.orderAmount) },
+    { key: 'paymentMethod', label: c.paymentMethod, render: (row) => row.paymentMethod },
+    { key: 'transactionDate', label: c.transactionDate, render: (row) => formatDateTime(row.transactionDate) },
+    { key: 'orderStatus', label: c.orderStatus, render: (row) => row.orderStatus },
+    { key: 'remarks', label: c.remarks, render: (row) => row.remarks },
+  ],
+  actions: [],
+  label: (row) => `order ${row.orderId.slice(-6)}`,
+};
+
 const audit = {
   id: 'audit',
   entity: 'audit-log',
@@ -365,4 +389,16 @@ const audit = {
   label: (row) => row.id,
 };
 
-export const ADMIN_SECTIONS = [users, sellers, sellerRequests, books, categories, listings, listingRemovalRequests, reviews, orders, audit];
+export const ADMIN_SECTIONS = [
+  users,
+  sellers,
+  sellerRequests,
+  books,
+  categories,
+  listings,
+  listingRemovalRequests,
+  reviews,
+  orders,
+  orderTransactionReport,
+  audit,
+];

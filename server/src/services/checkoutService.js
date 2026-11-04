@@ -227,6 +227,7 @@ async function createOrder(userId, addressId) {
                     book: listing.book._id,
                     seller: listing.seller._id,
                     title: listing.book.title,
+                    isbn: listing.book.isbn,
                     quantity,
                     unitPrice: unitPricePaise / 100,
                 });

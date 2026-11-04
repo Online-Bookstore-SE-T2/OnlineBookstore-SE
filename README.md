@@ -85,7 +85,19 @@ npm run dev:client                   # the SPA still runs from Node and proxies 
 - The stack runs in development mode by default. Production mode refuses plain HTTP and turns off the simulated payment route, so set `NODE_ENV=production` only behind a proxy that terminates TLS.
 - `API_PORT=5050 docker compose up -d` publishes the API on another port. MongoDB is not published to the host, so it never clashes with a local MongoDB.
 - Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
-- `server/Dockerfile` builds the API image on its own: `docker build -f server/Dockerfile -t online-bookstore-api .` from the repository root.
+- `server/Dockerfile` builds the production API and client image from the repository root: `docker build -f server/Dockerfile -t online-bookstore-demo .`.
+
+### HTTPS demonstration deployment (Render + MongoDB Atlas)
+
+`render.yaml` defines one Render web service that serves the production React client and API from the same origin. Render terminates TLS and redirects plain HTTP; the service uses two paid instances in Singapore and only auto-deploys after GitHub checks pass. The service URL is assigned by Render after its first successful deployment and should be recorded here for the evaluation.
+
+1. Connect the repository to Render and create a Blueprint from `render.yaml`.
+2. Create a MongoDB Atlas replica-set cluster in a nearby region on a tier that supports cloud backups. Enable daily snapshots with seven-day retention. Allow the Render service's outbound IPs in the Atlas network access list.
+3. In the Render service's environment settings, provide the Atlas `MONGODB_URI`, Stripe test-mode secret and publishable keys, SMTP host/user/password/from address, and initial `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. These values are prompted as unsynchronized secrets; never put them in the repository or a chat. Render generates `JWT_SECRET`.
+4. After the service starts, use its shell to run `npm run seed:admin` and, if desired, `npm run seed:books`. The demo seed is intentionally disabled in production.
+5. Record the assigned HTTPS URL, then verify `https://<service-url>/api/health`, a Stripe test-mode checkout, and receipt of the SMTP order e-mail.
+
+To restore the hosted database, use Atlas Backup to restore one of the daily snapshots from the previous seven days to a new cluster. Update the Render service's `MONGODB_URI` to that restored cluster, redeploy, and verify the health check plus catalog and order flows. Time the restore and validation; the recovery objective is four hours. Keep the existing local Docker backup procedure below for non-hosted environments.
 
 ### Database backups and restore
 
@@ -113,7 +125,7 @@ npm run test:coverage        # with coverage reports
 
 Server tests use the MongoDB instance at `MONGODB_TEST_URI` (default `mongodb://127.0.0.1:27017`), with a throwaway database per Jest worker. It must be a replica set too, or the cart, checkout, payment and order tests fail with 500s. Give the base URI without a database name or query string.
 
-Every pull request to `main` runs lint, both test suites against MongoDB started as a single-member replica set, the client production build and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`).
+Every pull request to `main` runs lint, both test suites against MongoDB started as a single-member replica set, the client production build, both Docker image builds and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`). The workflow also runs on pushes to `main`; the Render Blueprint is configured to deploy only after GitHub checks pass.
 
 ## Behaviour notes
 
@@ -125,6 +137,7 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 - **Payments**: Stripe test-mode PaymentIntents are verified server-side through the configured gateway; the hosted Payment Element handles card details. The simulator (`POST /api/payments/orders/:orderId/simulate` with `{ "outcome": "success" | "failure" }`) remains available for offline demos and tests, but not in production. A declined or timed-out payment cancels the order and releases its stock in the same transaction (REQ-11); the buyer checks out again to retry.
 - **Order status**: `Placed → Paid → Shipped → Delivered` and pre-shipment cancellation are validated against the transition table. Every status change records its actor and timestamp; sellers can only advance orders containing their listings.
 - **Administrator order changes**: `PATCH /api/admin/orders/:id/status` with `{ "status": ... }` follows its own table (SASD 4.2.4): `Paid → Shipped`, `Shipped → Delivered`, and cancellation from `Placed`, `Paid` or `Shipped`, so only an administrator can cancel after shipping. Cancelling restores stock and marks a paid order `Refund pending`. Administrators can never mark an order `Paid`. Each change is audited and notified, and the actions are on the Orders tab of the console.
+- **Order transaction report**: administrators can open the paginated Order transaction report from the console or request `GET /api/admin/order-transaction-report?page=1`. Each order-item row contains only the Appendix B transaction reference, order ID, buyer and seller names, book title and ISBN, quantity, order amount, payment method, transaction date, status and remarks; e-mail addresses, phone numbers and delivery addresses are not returned. New orders snapshot the ISBN so catalog changes cannot alter historical report rows.
 - **Listing removal disputes (TBD-1)**: a seller cannot remove a listing while a `Placed`, `Paid`, or `Shipped` order refers to it. The seller can submit a reason for administrator review and track the request. An administrator must record a decision note. Approval soft-removes the offer from the catalog and seller listing page but does not change or cancel existing orders; their stored order-item snapshots remain available for fulfilment or cancellation. Rejection leaves the listing unchanged.
 - **E-mail**: post-commit SMTP e-mails use STARTTLS and bounded retries. Seller order notifications are in-app only and expose only the seller's own lines, not the buyer's e-mail.
 - **Database queries**: `mongoose.set('sanitizeFilter', true)` is on (`server/src/config/db.js`), so any query operator written in code (`$gt`, `$in`, `$ne`, ...) must be wrapped in `mongoose.trusted(...)`. Without that the query fails with a `CastError`, which the API reports as a `404`.

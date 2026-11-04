@@ -78,6 +78,20 @@ describe('Administration console', () => {
         createdAt: '2026-08-01T00:00:00.000Z',
       }])],
       'POST /admin/orders/query': () => [200, page([{ id: 'o00000000000ORD004', buyer: { name: 'Anita Rao' }, items: [{ quantity: 1 }], totalAmount: 550, status: 'Cancelled', createdAt: '2026-08-01T00:00:00.000Z' }])],
+      'GET /admin/order-transaction-report?page=1': () => [200, page([{
+        transactionRef: 'pi_demo_123',
+        orderId: 'o00000000000ORD004',
+        buyerName: 'Anita Rao',
+        sellerName: 'Kiran Hegde',
+        bookTitle: 'Learning Data Structures',
+        isbn: '9789380000022',
+        quantity: 1,
+        orderAmount: 550,
+        paymentMethod: 'stripe',
+        transactionDate: '2026-08-01T00:00:00.000Z',
+        orderStatus: 'Paid',
+        remarks: '-',
+      }])],
       'GET /admin/audit-log?page=1': () => [200, page([{ id: 'a1', actor: { name: 'Admin User One' }, action: 'suspend', targetType: 'User', targetLabel: 'Vikram Desai', createdAt: '2026-10-01T10:00:00.000Z' }])],
     });
     await openConsole();
@@ -95,6 +109,7 @@ describe('Administration console', () => {
       ['Listing removal requests', 'The copies were damaged.'],
       ['Reviews', 'Pooja Nambiar'],
       ['Orders', '₹550.00'],
+      ['Order transaction report', 'pi_demo_123'],
       ['Audit log', 'User: Vikram Desai'],
     ];
     for (const [name, text] of expectations) {

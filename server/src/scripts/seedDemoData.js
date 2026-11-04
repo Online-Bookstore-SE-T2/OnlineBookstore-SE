@@ -252,6 +252,7 @@ async function findOrCreateOrder(spec, users, listings, books, created) {
       book: book._id,
       seller: listing.seller,
       title: books[key].title,
+      isbn: book.isbn,
       quantity: 1,
       unitPrice: listing.price,
     };
