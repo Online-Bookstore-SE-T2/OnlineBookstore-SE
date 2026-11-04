@@ -1,0 +1,33 @@
+
+> online-bookstore-server@1.0.0 test
+> jest --runInBand
+
+PASS tests/system/ST04_admin.test.js (27.734 s)
+PASS tests/system/NFR_security_privacy.test.js (6.695 s)
+PASS tests/system/ST05_cart.test.js (9.287 s)
+PASS tests/system/ST09_order_history_cancellation.test.js (8.981 s)
+PASS tests/system/ST02_login_session.test.js (9.049 s)
+PASS tests/system/ST16_reviews_listings.test.js (7.73 s)
+PASS tests/system/ST07_order_creation.test.js (8.407 s)
+PASS tests/system/ST03_profile.test.js (8.43 s)
+PASS tests/system/ST08_payment.test.js (7.84 s)
+PASS tests/unit/UT04_admin.test.js (8.522 s)
+PASS tests/system/ST06_checkout.test.js (7.398 s)
+PASS tests/system/ST10_notifications.test.js (7.556 s)
+PASS tests/system/ST01_registration.test.js (6.501 s)
+PASS tests/unit/UT01_registration.test.js
+PASS tests/unit/UT02_login_session.test.js
+PASS tests/unit/UT08_catalogService.test.js
+PASS tests/unit/UT03_profile.test.js
+PASS tests/unit/UT07_bookDetailsService.test.js
+PASS tests/system/app.test.js
+PASS tests/unit/UT06_searchService.test.js
+PASS tests/unit/validators.test.js
+PASS tests/unit/UT10_catalogController.test.js
+PASS tests/unit/UT09_bookController.test.js
+
+Test Suites: 23 passed, 23 total
+Tests:       286 passed, 286 total
+Snapshots:   0 total
+Time:        158.482 s, estimated 177 s
+Ran all test suites.

@@ -1,0 +1,426 @@
+
+> online-bookstore-server@1.0.0 test
+> jest --runInBand
+
+FAIL tests/system/ST16_reviews_listings.test.js (44.854 s)
+  ● ST16-19 reviews, ratings and seller listings › ST16: only a buyer with a delivered order can post once; aggregate and public review list update
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/ST16_reviews_listings.test.js:8:1)
+
+  ● ST16-19 reviews, ratings and seller listings › ST17: review validation, 30-day edit window and administrator moderation maintain aggregates
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/ST16_reviews_listings.test.js:8:1)
+
+  ● ST16-19 reviews, ratings and seller listings › BR-6: a seller cannot review a book they actively list
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/ST16_reviews_listings.test.js:8:1)
+
+  ● ST16-19 reviews, ratings and seller listings › ST18: seller can create a listing for a catalog ISBN and manage only their listings
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/ST16_reviews_listings.test.js:8:1)
+
+  ● ST16-19 reviews, ratings and seller listings › ST19: open orders block removal; own listing can be removed after the order closes
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/ST16_reviews_listings.test.js:8:1)
+
+
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'dropDatabase')
+
+      14 |
+      15 | async function close() {
+    > 16 |   await mongoose.connection.db.dropDatabase();
+         |                                ^
+      17 |   await disconnectDatabase();
+      18 | }
+      19 |
+
+      at Object.dropDatabase (tests/helpers/db.js:16:32)
+
+FAIL tests/system/NFR_security_privacy.test.js (34.423 s)
+  ● TC-NFR-SEC-03 / TC-NFR-SEC-20: no personal data in logs › request logs record method, path and status only
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-03 / TC-NFR-SEC-20: no personal data in logs › unexpected errors are answered generically and logged without their message
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-03 / TC-NFR-SEC-20: no personal data in logs › database errors are mapped without echoing submitted values
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-04 / NFR10: no route returns a password or hash › register, login, session, profile and admin responses are free of password data
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● transport and request limits (SRS 3.3) › TC-NFR-SEC-23: only the deployed application origin receives a CORS allow header
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● transport and request limits (SRS 3.3) › TC-NFR-SEC-24: a request body over 1 MB is rejected with 413
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● transport and request limits (SRS 3.3) › a body just under 1 MB is accepted for processing
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● transport and request limits (SRS 3.3) › security headers are set and the framework is not advertised
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● transport and request limits (SRS 3.3) › TC-NFR-SEC-17: plain HTTP is redirected (GET) or refused (other methods) when HTTPS is enforced
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-21: secrets stay out of the repository › server/.env is ignored by git and no environment file other than the example is tracked
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-21: secrets stay out of the repository › the client source never references server secrets
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+  ● TC-NFR-SEC-21: secrets stay out of the repository › the client source never references server secrets
+
+    thrown: "Exceeded timeout of 30000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      at _getError (../node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+          at Array.map (<anonymous>)
+
+    Cause:
+        thrown: "Exceeded timeout of 30000 ms for a hook.
+        Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+          20 | // Registers the usual connect / clear / drop lifecycle for a test file.
+          21 | function useTestDatabase() {
+        > 22 |   beforeAll(connect);
+             |   ^
+          23 |   beforeEach(clear);
+          24 |   afterAll(close);
+          25 | }
+
+          at beforeAll (tests/helpers/db.js:22:3)
+          at Object.useTestDatabase (tests/system/NFR_security_privacy.test.js:15:1)
+
+
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'dropDatabase')
+
+      14 |
+      15 | async function close() {
+    > 16 |   await mongoose.connection.db.dropDatabase();
+         |                                ^
+      17 |   await disconnectDatabase();
+      18 | }
+      19 |
+
+      at Object.dropDatabase (tests/helpers/db.js:16:32)

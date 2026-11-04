@@ -4,16 +4,18 @@
   "private": true,
   "description": "REST API tier (Express + MongoDB) of Online Bookstore Review and Catalog",
   "main": "src/server.js",
- "scripts": {
-  "start": "node src/server.js",
-  "dev": "node --watch src/server.js",
-  "backup": "node src/scripts/backupDatabase.js",
- "seed:admin": "node src/scripts/seedAdmin.js",
-  "seed:books": "node src/scripts/seedBooks.js",
-  "seed:demo": "node src/scripts/seedDemoData.js",
-  "test": "jest",
-  "test:coverage": "jest --coverage"
-},  "engines": {
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "backup": "node src/scripts/backupDatabase.js",
+    "seed:admin": "node src/scripts/seedAdmin.js",
+    "seed:books": "node src/scripts/seedBooks.js",
+    "seed:demo": "node src/scripts/seedDemoData.js",
+    "seed:performance": "node src/scripts/seedPerformanceBooks.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "engines": {
     "node": "20.x"
   },
   "dependencies": {

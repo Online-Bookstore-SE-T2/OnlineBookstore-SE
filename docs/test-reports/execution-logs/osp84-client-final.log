@@ -1,0 +1,236 @@
+
+> online-bookstore-client@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /mnt/c/Users/Admin/OnlineBookstore-SE-test/client
+
+ ✓ src/pages/SearchPage.test.jsx (6 tests) 1572ms
+   ✓ Search Books (OSP-9) > loads books when the Search Books page opens  320ms
+   ✓ Search Books (OSP-9) > searches by title and displays matching books  375ms
+ ✓ src/pages/LoginPage.test.jsx (10 tests) 4743ms
+   ✓ Login page > TC-ST02-01: valid credentials store the token and show the account menu  1207ms
+   ✓ Login page > TC-ST02-02: a wrong password shows an error and no token is stored  628ms
+   ✓ Login page > TC-ST02-09: a locked account shows the lock message  650ms
+   ✓ Login page > TC-ST02-07: Log out calls the server, removes the token and returns to the visitor view  358ms
+   ✓ Login page > TC-NFR-SEC-19: credentials are sent in the request body, never in the URL  703ms
+   ✓ Login page > the login form has no accessibility violations  514ms
+stderr | src/components/Layout.test.jsx > application shell (SRS 3.1) > header carries logo, search, cart indicator, account links and Help; footer carries contact and policy links
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/pages/RegisterPage.test.jsx (11 tests) 10809ms
+   ✓ Registration page > TC-ST01-01: valid details create the account and show a confirmation  1637ms
+   ✓ Registration page > TC-ST01-07: invalid e-mail "divya.kamath.testmail.example" shows an inline error on the e-mail field  1110ms
+   ✓ Registration page > TC-ST01-07: invalid e-mail "divya@" shows an inline error on the e-mail field  810ms
+   ✓ Registration page > TC-ST01-07: invalid e-mail "@testmail.example" shows an inline error on the e-mail field  971ms
+   ✓ Registration page > TC-ST01-02: a duplicate e-mail shows "e-mail already registered" beneath the e-mail field  978ms
+   ✓ Registration page > a phone number that is not 10 digits is rejected before sending  610ms
+   ✓ Registration page > a partly filled address asks for the remaining parts  703ms
+   ✓ Registration page > a complete address and phone are sent with the registration  2008ms
+   ✓ Registration page > a network failure shows a form-level error  500ms
+   ✓ Registration page > TC-NFR-QUA-17: the registration form has no accessibility violations, including with errors shown  1238ms
+ ✓ src/pages/profile/ProfilePage.test.jsx (18 tests) 12768ms
+   ✓ Profile page > TC-ST03-11: a visitor is sent to the login page and returned to the profile after logging in  1486ms
+   ✓ Profile page > TC-ST03-02: saving a new name and phone sends them and confirms  686ms
+   ✓ Profile page > TC-ST03-03: an empty name shows an inline error and nothing is sent  337ms
+   ✓ Profile page > a duplicate e-mail from the server is shown on the e-mail field  702ms
+   ✓ Profile page > changing the password shows the server error for a wrong current password, then succeeds  945ms
+   ✓ Profile page > TC-ST03-04: adding an address sends it and lists the result  1171ms
+   ✓ Profile page > TC-ST03-09 / TC-ST03-10: postal code "56A011" shows an inline error  639ms
+   ✓ Profile page > TC-ST03-09 / TC-ST03-10: postal code "5600111" shows an inline error  653ms
+   ✓ Profile page > TC-ST03-09 / TC-ST03-10: postal code "56001" shows an inline error  697ms
+   ✓ Profile page > TC-ST03-08: an address can be edited  695ms
+   ✓ Profile page > TC-NFR-UI-03 / TC-ST03-07: deleting asks for confirmation; Cancel keeps the address, Confirm deletes it  416ms
+   ✓ Profile page > the account menu links to the profile  376ms
+   ✓ Profile page > TC-NFR-QUA-17: the profile page has no accessibility violations, with addresses, form and dialog open  2864ms
+ ✓ src/pages/BookDetailsPage.test.jsx (6 tests) 802ms
+   ✓ View Book Details (OSP-11) > displays book information, price, rating and reviews  433ms
+ ✓ src/pages/admin/AdminConsolePage.test.jsx (15 tests) 9914ms
+   ✓ Administration console > TC-ST04-12: a buyer gets no console link and the console URL shows no admin data  600ms
+   ✓ Administration console > an administrator reaches the console from the account menu  452ms
+   ✓ Administration console > TC-ST04-01: every section loads its records  1149ms
+   ✓ Administration console > tabs can be changed with the arrow keys  469ms
+   ✓ Administration console > TC-ST04-02: suspending a user asks for confirmation, then calls the API and reloads  546ms
+   ✓ Administration console > TC-NFR-UI-03: cancelling a delete changes nothing; confirming deletes  622ms
+   ✓ Administration console > TC-BR5-01: a refused action shows the server reason  395ms
+   ✓ Administration console > TC-ST04-06: categories are added and renamed  1183ms
+   ✓ Administration console > a seller request is rejected only with a reason code  568ms
+   ✓ Administration console > TC-NFR-SAF-06: deleted records are listed on request and can be restored  635ms
+   ✓ Administration console > TC-ST04-08: a record can be viewed in a details dialog  482ms
+   ✓ Administration console > TC-NFR-SEC-19: search terms are sent in the request body, never the URL  633ms
+   ✓ Administration console > TC-NFR-QUA-17: the console has no accessibility violations, including with a dialog open  1667ms
+   ✓ Seller request on the profile > a buyer sends a request with an optional note and then sees it pending  334ms
+stderr | src/components/Layout.test.jsx > application shell (SRS 3.1) > home, help and privacy screens have no accessibility violations
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+stderr | src/components/Layout.test.jsx > application shell (SRS 3.1) > home, help and privacy screens have no accessibility violations
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/components/Layout.test.jsx > application shell (SRS 3.1) > home, help and privacy screens have no accessibility violations
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+stderr | src/components/Layout.test.jsx > application shell (SRS 3.1) > home, help and privacy screens have no accessibility violations
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+ ✓ src/components/Layout.test.jsx (6 tests) 12195ms
+   ✓ application shell (SRS 3.1) > header carries logo, search, cart indicator, account links and Help; footer carries contact and policy links  576ms
+   ✓ application shell (SRS 3.1) > submitting a search navigates to the search route  415ms
+   ✓ application shell (SRS 3.1) > home, help and privacy screens have no accessibility violations  10873ms
+ ✓ src/styles/theme.test.js (16 tests) 11ms
+ ✓ src/pages/BookReviewsPage.test.jsx (3 tests) 740ms
+   ✓ BookReviewsPage usability and accessibility (NFR08, NFR11) > provides labelled review controls and has no axe violations at mobile width  380ms
+ ✓ src/pages/SellerListingsPage.test.jsx (3 tests) 642ms
+   ✓ SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11) > publishes a new listing in no more than five keyboard-accessible steps  396ms
+
+ Test Files  10 passed (10)
+      Tests  94 passed (94)
+   Start at  02:45:00
+   Duration  56.49s (transform 5.87s, setup 88.99s, collect 35.76s, tests 54.20s, environment 109.02s, prepare 19.40s)

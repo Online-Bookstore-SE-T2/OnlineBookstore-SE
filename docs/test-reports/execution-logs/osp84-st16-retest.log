@@ -1,0 +1,17 @@
+
+> online-bookstore-server@1.0.0 test
+> jest --runInBand tests/system/ST16_reviews_listings.test.js
+
+PASS tests/system/ST16_reviews_listings.test.js (20.218 s)
+  ST16-19 reviews, ratings and seller listings
+    ✓ ST16: only a buyer with a delivered order can post once; aggregate and public review list update (1137 ms)
+    ✓ ST17: review validation, 30-day edit window and administrator moderation maintain aggregates (792 ms)
+    ✓ BR-6: a seller cannot review a book they actively list (570 ms)
+    ✓ ST18: seller can create a listing for a catalog ISBN and manage only their listings (599 ms)
+    ✓ ST19: open orders block removal; own listing can be removed after the order closes (570 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        23.042 s, estimated 63 s
+Ran all test suites matching tests/system/ST16_reviews_listings.test.js.
