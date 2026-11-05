@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const { ORDER_STATUS, ORDER_STATUS_TRANSITIONS } = require('../constants');
 const { AppError } = require('../utils/errors');
+const strings = require('../resources/strings');
 const { config } = require('../config/env');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
@@ -16,19 +17,19 @@ async function findBuyerOrder(userId, orderId, session) {
 
 function assertPayable(order) {
   if (order.status === ORDER_STATUS.CANCELLED) {
-    throw new AppError(409, 'Cannot pay for a cancelled order.');
+    throw new AppError(409, strings.payment.cancelledOrder);
   }
   if (order.status === ORDER_STATUS.PAID || order.payment?.status === 'Paid') {
-    throw new AppError(409, 'This order has already been paid.');
+    throw new AppError(409, strings.payment.alreadyPaid);
   }
   if (order.status !== ORDER_STATUS.PLACED) {
-    throw new AppError(409, 'This order cannot be paid in its current state.');
+    throw new AppError(409, strings.payment.unpayableOrder);
   }
 }
 
 function assertTransition(order, nextStatus) {
   if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(nextStatus)) {
-    throw new AppError(409, `An order cannot move from ${order.status} to ${nextStatus}.`);
+    throw new AppError(409, strings.order.invalidTransition(order.status, nextStatus));
   }
 }
 
@@ -51,12 +52,12 @@ async function notifyPaymentFinished(order, previousStatus, succeeded) {
 
 async function createPaymentIntent(userId, orderId) {
   if (config.paymentProvider !== 'stripe') {
-    throw new AppError(404, 'Stripe payments are not enabled.');
+    throw new AppError(404, strings.payment.stripeNotEnabled);
   }
-  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, 'Invalid order ID.');
+  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
 
   const order = await findBuyerOrder(userId, orderId);
-  if (!order) throw new AppError(404, 'Order not found.');
+  if (!order) throw new AppError(404, strings.order.notFound);
   assertPayable(order);
 
   const intent = await paymentGateway.authorise(order);
@@ -71,11 +72,11 @@ async function createPaymentIntent(userId, orderId) {
 
 async function completeStripePayment(userId, orderId, transactionRef, failureRequested = false) {
   if (config.paymentProvider !== 'stripe') {
-    throw new AppError(404, 'Stripe payments are not enabled.');
+    throw new AppError(404, strings.payment.stripeNotEnabled);
   }
-  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, 'Invalid order ID.');
+  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
   if (typeof transactionRef !== 'string' || transactionRef.length > 200) {
-    throw new AppError(400, 'A valid payment reference is required.');
+    throw new AppError(400, strings.payment.validReference);
   }
 
   let intent = await paymentGateway.retrieve(transactionRef);
@@ -85,17 +86,17 @@ async function completeStripePayment(userId, orderId, transactionRef, failureReq
 
   const orderBefore = await findBuyerOrder(userId, orderId);
   if (!orderBefore || orderBefore.payment?.transactionRef !== intent.id) {
-    throw new AppError(404, 'Payment intent not found for this order.');
+    throw new AppError(404, strings.payment.intentNotFound);
   }
   if (intent.metadata?.orderId !== orderBefore.id || intent.metadata?.buyerId !== String(userId)) {
-    throw new AppError(404, 'Payment intent not found for this order.');
+    throw new AppError(404, strings.payment.intentNotFound);
   }
   if (intent.amount !== Math.round(orderBefore.totalAmount * 100) || intent.currency !== 'inr') {
-    throw new AppError(409, 'The payment amount does not match this order.');
+    throw new AppError(409, strings.payment.amountMismatch);
   }
 
   if (!['succeeded', 'requires_payment_method', 'canceled'].includes(intent.status)) {
-    throw new AppError(409, 'The payment is still processing. Check again before retrying.');
+    throw new AppError(409, strings.payment.stillProcessing);
   }
 
   const succeeded = intent.status === 'succeeded';
@@ -106,9 +107,9 @@ async function completeStripePayment(userId, orderId, transactionRef, failureReq
   try {
     await session.withTransaction(async () => {
       const order = await findBuyerOrder(userId, orderId, session);
-      if (!order) throw new AppError(404, 'Order not found.');
+      if (!order) throw new AppError(404, strings.order.notFound);
       if (order.payment?.transactionRef !== intent.id) {
-        throw new AppError(409, 'The payment reference has changed.');
+        throw new AppError(409, strings.payment.referenceChanged);
       }
       if (order.payment.status === 'Paid') {
         updatedOrder = order;
@@ -142,11 +143,11 @@ async function completeStripePayment(userId, orderId, transactionRef, failureReq
 
 async function simulatePayment(userId, orderId, outcome) {
   if (config.env === 'production' || config.paymentProvider !== 'simulator') {
-    throw new AppError(404, 'Payment simulator not found.');
+    throw new AppError(404, strings.payment.simulatorNotFound);
   }
-  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, 'Invalid order ID.');
+  if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
   if (!['success', 'failure'].includes(outcome)) {
-    throw new AppError(400, 'Outcome must be success or failure.');
+    throw new AppError(400, strings.payment.invalidOutcome);
   }
 
   const session = await mongoose.startSession();
@@ -155,7 +156,7 @@ async function simulatePayment(userId, orderId, outcome) {
   try {
     await session.withTransaction(async () => {
       order = await findBuyerOrder(userId, orderId, session);
-      if (!order) throw new AppError(404, 'Order not found.');
+      if (!order) throw new AppError(404, strings.order.notFound);
       assertPayable(order);
       const result = await paymentGateway.authorise(order, { outcome });
       previousStatus = order.status;
@@ -184,7 +185,7 @@ async function simulatePayment(userId, orderId, outcome) {
 
 function getPaymentConfiguration() {
   if (config.paymentProvider === 'stripe' && !config.stripePublishableKey) {
-    throw new AppError(503, 'Stripe sandbox payments are not fully configured.');
+    throw new AppError(503, strings.payment.stripeIncomplete);
   }
   return {
     provider: config.paymentProvider,

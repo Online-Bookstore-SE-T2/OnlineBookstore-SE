@@ -14,14 +14,14 @@ function validateQuantity(quantity) {
 }
 
 function invalidQuantityError() {
-  return new AppError(400, 'Quantity must be a positive whole number.', {
-    quantity: 'Quantity must be a positive whole number.',
+  return new AppError(400, strings.cart.invalidQuantity, {
+    quantity: strings.cart.invalidQuantity,
   });
 }
 
 // SASD 4.3.2: a quantity above the listing's stock is a conflict (409).
 function exceedsStockError(listing) {
-  const message = `Only ${listing.quantity} item(s) are currently available.`;
+  const message = strings.cart.onlyAvailable(listing.quantity);
   return new AppError(409, message, { quantity: message });
 }
 
@@ -36,7 +36,7 @@ function emptyCart(buyerId) {
 
 async function getActiveListing(listingId) {
   if (!validateId(listingId)) {
-    throw new AppError(404, 'Listing not found.');
+    throw new AppError(404, strings.cart.listingNotFound);
   }
 
   const listing = await Listing.findOne({
@@ -54,7 +54,7 @@ async function getActiveListing(listingId) {
     .lean();
 
   if (!listing || !listing.book || listing.book.markedUnavailable) {
-    throw new AppError(404, 'Listing not found.');
+    throw new AppError(404, strings.cart.listingNotFound);
   }
 
   return listing;
