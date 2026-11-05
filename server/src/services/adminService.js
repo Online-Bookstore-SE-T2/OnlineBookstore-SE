@@ -205,6 +205,81 @@ async function listOrderTransactionReport(query = {}) {
   };
 }
 
+// SRS Appendix B: return the catalog and offer fields needed by administrators without
+// projecting seller or buyer contact details into the report.
+async function listCatalogListingReport(query = {}) {
+  const page = pageNumber(query.page);
+  const offset = (page - 1) * PAGE_SIZE;
+  const [result] = await Listing.aggregate([
+    { $match: { deletedAt: null } },
+    {
+      $lookup: {
+        from: Book.collection.name,
+        localField: 'book',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, isbn: 1, title: 1, author: 1, category: 1, averageRating: 1 } }],
+        as: 'book',
+      },
+    },
+    { $unwind: { path: '$book', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: Category.collection.name,
+        localField: 'book.category',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1 } }],
+        as: 'category',
+      },
+    },
+    { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: User.collection.name,
+        localField: 'seller',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1 } }],
+        as: 'seller',
+      },
+    },
+    { $unwind: { path: '$seller', preserveNullAndEmptyArrays: true } },
+    { $sort: { createdAt: -1, _id: -1 } },
+    {
+      $facet: {
+        items: [
+          { $skip: offset },
+          { $limit: PAGE_SIZE },
+          {
+            $project: {
+              _id: 0,
+              listingId: { $toString: '$_id' },
+              isbn: { $ifNull: ['$book.isbn', '-'] },
+              bookTitle: { $ifNull: ['$book.title', '-'] },
+              author: { $ifNull: ['$book.author', '-'] },
+              category: { $ifNull: ['$category.name', '-'] },
+              sellerName: { $ifNull: ['$seller.name', '-'] },
+              condition: 1,
+              unitPrice: '$price',
+              quantityAvailable: '$quantity',
+              listingStatus: '$status',
+              averageRating: { $ifNull: ['$book.averageRating', 0] },
+              remarks: { $ifNull: ['$notes', '-'] },
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ]);
+  const total = result?.total[0]?.count || 0;
+  return {
+    items: result?.items || [],
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  };
+}
+
 async function findRecord(config, id, select) {
   const query = mongoose.isValidObjectId(id) ? config.model.findById(id).populate(config.populate || []) : null;
   const doc = query && (await (select ? query.select(select) : query));
@@ -631,6 +706,7 @@ module.exports = {
   PAGE_SIZE,
   listRecords,
   listOrderTransactionReport,
+  listCatalogListingReport,
   getRecord,
   deleteRecord,
   restoreRecord,
