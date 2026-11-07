@@ -129,6 +129,8 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 
 ## Behaviour notes
 
+- **No-result search suggestions (REQ-6 / FR05):** when a submitted search returns no books, the search page displays a no-results message and suggests available categories linking to the filtered catalog. Covered by `client/src/pages/SearchPage.test.jsx`.
+
 - **Registration and login**: `POST /api/auth/register` answers `201 { token, expiresAt, user }`, so a new account is signed in straight away. `POST /api/auth/login` answers `{ token, expiresAt, user, cart }`, with `cart` shaped as below, so the header cart count needs no second request.
 - **Catalog books**: administrators add books with `POST /api/admin/books` (`isbn`, `title`, `author`, `category`, `price`, optional `description` and `coverImageUrl`) and edit them with `PATCH /api/admin/books/:id`. The ISBN must be a valid ISBN-13, is unique across live and deleted books, and cannot be edited. Both are audited and available from the Books tab of the console.
 
@@ -143,8 +145,8 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 - **E-mail**: post-commit SMTP e-mails use STARTTLS and bounded retries. Seller order notifications are in-app only and expose only the seller's own lines, not the buyer's e-mail.
 - **Database queries**: `mongoose.set('sanitizeFilter', true)` is on (`server/src/config/db.js`), so any query operator written in code (`$gt`, `$in`, `$ne`, ...) must be wrapped in `mongoose.trusted(...)`. Without that the query fails with a `CastError`, which the API reports as a `404`.
 
-## Remaining SRS work
+## SRS delivery and acceptance status
 
-The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were already delivered in merged PRs #96 and #95, respectively. Remaining SRS work includes:
+The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were delivered in merged PRs #96 and #95, respectively.
 
-- Suggested categories when a search finds nothing (REQ-6).
+No-result search category suggestions (REQ-6 / FR05) are also implemented; see the Behaviour notes above. Remaining acceptance activities and unverified requirements are recorded in `docs/test-reports/OSP-84-test-summary-report.md` and `docs/test-reports/requirement-coverage-matrix.md`.
