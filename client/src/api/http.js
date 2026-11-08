@@ -3,12 +3,15 @@ import strings from '../resources/strings.js';
 // The session token is kept in browser storage (SRS 3.2) and sent as a bearer token (SRS 3.3).
 const TOKEN_KEY = 'bookstore.session';
 
+// `code` is the SASD 4.4.1 error code and `correlationId` the id a 500 response returns (SASD 4.4.2).
 export class ApiError extends Error {
-  constructor(status, message, fields) {
+  constructor(status, message, fields, { code, correlationId } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.fields = fields || {};
+    this.code = code || null;
+    this.correlationId = correlationId || null;
   }
 }
 
@@ -58,13 +61,20 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, strings.errors.network);
+    throw new ApiError(0, strings.errors.network, undefined, { code: 'NETWORK_ERROR' });
   }
 
   const data = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && token && unauthorizedHandler) unauthorizedHandler();
-    throw new ApiError(response.status, data?.error?.message || strings.errors.generic, data?.error?.fields);
+    const error = data?.error || {};
+    const message = error.message || strings.errors.generic;
+    throw new ApiError(
+      response.status,
+      error.correlationId ? strings.errors.withReference(message, error.correlationId) : message,
+      error.fields,
+      { code: error.code, correlationId: error.correlationId },
+    );
   }
   return data;
 }

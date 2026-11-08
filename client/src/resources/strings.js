@@ -8,6 +8,8 @@ const strings = {
     network: 'The bookstore could not be reached. Check your connection and try again.',
     generic: 'Something went wrong. Please try again.',
     fixFields: 'Please correct the highlighted fields.',
+    // SASD 4.4.2: an unexpected server error shows the id the user can quote when reporting it.
+    withReference: (message, id) => `${message} Reference: ${id}`,
   },
   forms: {
     optional: '(optional)',

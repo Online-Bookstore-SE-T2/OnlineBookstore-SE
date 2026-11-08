@@ -5,6 +5,7 @@ const path = require('path');
 
 const { config } = require('./config/env');
 const { sanitizeRequest } = require('./middleware/sanitize');
+const { requestId } = require('./middleware/requestId');
 const { requestLogger } = require('./middleware/requestLogger');
 const { enforceHttps } = require('./middleware/https');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
@@ -33,6 +34,9 @@ function createApp({
   const app = express();
 
   app.disable('x-powered-by');
+
+  // First, so every response, including an HTTPS refusal, carries its correlation id (SASD 4.4.2).
+  app.use(requestId);
 
   if (config.env === 'production') {
     app.set('trust proxy', 1);

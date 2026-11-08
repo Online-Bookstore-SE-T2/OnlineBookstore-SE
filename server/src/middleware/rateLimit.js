@@ -1,6 +1,7 @@
 const { rateLimit } = require('express-rate-limit');
 const { config } = require('../config/env');
 const strings = require('../resources/strings');
+const { errorBody } = require('../utils/errors');
 
 // SRS 6.3: authentication endpoints are limited to 10 requests per minute per IP address.
 function createAuthRateLimiter({ limit = config.authRateLimit.limit, windowMs = config.authRateLimit.windowMs } = {}) {
@@ -10,7 +11,7 @@ function createAuthRateLimiter({ limit = config.authRateLimit.limit, windowMs = 
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     handler: (_req, res) => {
-      res.status(429).json({ error: { message: strings.common.tooManyRequests } });
+      res.status(429).json(errorBody(429, strings.common.tooManyRequests));
     },
   });
 }

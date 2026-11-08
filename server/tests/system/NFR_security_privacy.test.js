@@ -84,7 +84,7 @@ describe('TC-NFR-SEC-03 / TC-NFR-SEC-20: no personal data in logs', () => {
         expect(validation.status).toBe(400);
         expect(JSON.stringify(validation.body)).not.toContain('12345');
         expect((await request(app).get('/cast')).status).toBe(404);
-        expect((await request(app).get('/app')).body).toEqual({ error: { message: 'Custom', fields: { field: 'x' } } });
+        expect((await request(app).get('/app')).body).toEqual({ error: { code: 'BAD_REQUEST', message: 'Custom', fields: { field: 'x' } } });
     });
 });
 

@@ -108,6 +108,7 @@ describe('ST02 login and session', () => {
     const correct = await login(app, email);
     expect(correct.status).toBe(429);
     expect(correct.body.error.message).toMatch(/locked for 15 minutes/);
+    expect(correct.body.error.code).toBe('TOO_MANY_ATTEMPTS');
     expect(correct.body.token).toBeUndefined();
   });
 
