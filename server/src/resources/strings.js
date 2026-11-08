@@ -11,6 +11,10 @@ module.exports = {
     httpsRequired: 'This service is only available over HTTPS.',
     tooManyRequests: 'Too many requests. Please wait a minute and try again.',
     concurrentChange: 'This record was changed by another request. Please reload and try again.',
+    serviceUnavailable: 'The service is temporarily unavailable. Please try again shortly.',
+  },
+  monitoring: {
+    invalidDuration: 'Page load time must be a number of milliseconds between 1 and 120000.',
   },
   profile: {
     updated: 'Your profile has been updated.',

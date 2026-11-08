@@ -32,6 +32,9 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      # Monitoring alerts by e-mail (SASD 4.4.3); optional.
+      - key: ALERT_EMAIL
+        sync: false
       - key: ADMIN_NAME
         sync: false
       - key: ADMIN_EMAIL

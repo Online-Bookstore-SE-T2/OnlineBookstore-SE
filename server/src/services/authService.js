@@ -6,6 +6,7 @@ const strings = require('../resources/strings');
 const { AppError } = require('../utils/errors');
 const { FieldValidator, LIMITS } = require('../validation/validators');
 const tokenService = require('./tokenService');
+const { monitor } = require('../monitoring/monitor');
 
 function emailTakenError() {
   return new AppError(409, strings.auth.emailTaken, { email: strings.auth.emailTaken });
@@ -104,12 +105,17 @@ async function loginUser(body = {}) {
   const user = await User.findOne({ email }).select('+passwordHash +failedLoginAttempts +lockUntil');
   if (!user || user.status === ACCOUNT_STATUS.DELETED) {
     await bcrypt.compare(password, await dummyHash());
+    monitor.recordLoginFailure();
     throw invalidCredentials();
   }
-  if (isLocked(user.lockUntil)) throw lockedError();
+  if (isLocked(user.lockUntil)) {
+    monitor.recordLoginFailure();
+    throw lockedError();
+  }
 
   if (!(await bcrypt.compare(password, user.passwordHash))) {
     const nowLocked = await recordFailedAttempt(user._id);
+    monitor.recordLoginFailure({ locked: nowLocked });
     throw nowLocked ? lockedError() : invalidCredentials();
   }
 

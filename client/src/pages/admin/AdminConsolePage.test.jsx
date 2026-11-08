@@ -163,6 +163,35 @@ describe('Administration console', () => {
   });
 
 
+  test('SASD 4.4.3: the Monitoring tab shows each metric against its alert threshold', async () => {
+    const u = userEvent.setup();
+    const metric = (id, unit, value, threshold, windowMinutes, samples, status) => ({ id, unit, value, threshold, windowMinutes, samples, status });
+    setup({
+      'GET /admin/monitoring': () => [200, {
+        instance: 'web-1',
+        ...page([
+          metric('checkoutFailureRate', 'ratio', 0.125, 0.1, 15, 8, 'alert'),
+          metric('searchResponseP95', 'ms', 412.6, 2000, 15, 40, 'ok'),
+          metric('pageLoadP95', 'ms', null, 3000, 15, 0, 'no-data'),
+          metric('dbPoolUtilisation', 'ratio', 0.05, 0.8, 5, null, 'ok'),
+          metric('databaseAvailability', 'checks', 0, 1, 0, null, 'ok'),
+        ]),
+      }],
+    });
+    await openConsole();
+    await u.click(tab('Monitoring'));
+
+    const checkout = (await screen.findByText('Checkout failure rate')).closest('tr');
+    expect(within(checkout).getByText('12.5%')).toBeInTheDocument();
+    expect(within(checkout).getByText('Above 10%')).toBeInTheDocument();
+    expect(within(checkout).getByText('15 min')).toBeInTheDocument();
+    expect(within(checkout).getByText('Alert')).toHaveClass('badge-strong');
+    expect(within(rowFor('Search response time (95th percentile)')).getByText('413 ms')).toBeInTheDocument();
+    expect(within(rowFor('Page load time (95th percentile)')).getByText('Not enough data')).toBeInTheDocument();
+    expect(within(rowFor('Database connection pool use')).getByText('Above 80% for 5 min')).toBeInTheDocument();
+    expect(screen.getByText(/each keeps its own figures/)).toBeInTheDocument();
+  });
+
   test('tabs can be changed with the arrow keys', async () => {
     const u = userEvent.setup();
     setup({ 'POST /admin/books/query': () => [200, page([])], 'GET /admin/seller-requests?page=1': () => [200, page([])] });

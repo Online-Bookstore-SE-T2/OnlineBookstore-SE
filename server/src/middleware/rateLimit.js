@@ -3,8 +3,8 @@ const { config } = require('../config/env');
 const strings = require('../resources/strings');
 const { errorBody } = require('../utils/errors');
 
-// SRS 6.3: authentication endpoints are limited to 10 requests per minute per IP address.
-function createAuthRateLimiter({ limit = config.authRateLimit.limit, windowMs = config.authRateLimit.windowMs } = {}) {
+// A per-IP request limit answering 429 TOO_MANY_ATTEMPTS in the common error shape.
+function createRateLimiter({ limit, windowMs }) {
   return rateLimit({
     windowMs,
     limit,
@@ -16,4 +16,9 @@ function createAuthRateLimiter({ limit = config.authRateLimit.limit, windowMs = 
   });
 }
 
-module.exports = { createAuthRateLimiter };
+// SRS 6.3: authentication endpoints are limited to 10 requests per minute per IP address.
+function createAuthRateLimiter({ limit = config.authRateLimit.limit, windowMs = config.authRateLimit.windowMs } = {}) {
+  return createRateLimiter({ limit, windowMs });
+}
+
+module.exports = { createRateLimiter, createAuthRateLimiter };

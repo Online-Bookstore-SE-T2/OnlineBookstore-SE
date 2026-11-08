@@ -9,6 +9,8 @@ const { requestId } = require('./middleware/requestId');
 const { requestLogger } = require('./middleware/requestLogger');
 const { enforceHttps } = require('./middleware/https');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { monitor } = require('./monitoring/monitor');
+const { createMetricsRouter, readiness } = require('./routes/monitoringRoutes');
 
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
@@ -37,6 +39,8 @@ function createApp({
 
   // First, so every response, including an HTTPS refusal, carries its correlation id (SASD 4.4.2).
   app.use(requestId);
+  // SASD 4.4.3: response status and timing feed the monitoring metrics.
+  app.use(monitor.middleware());
 
   if (config.env === 'production') {
     app.set('trust proxy', 1);
@@ -65,6 +69,8 @@ function createApp({
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
+  app.get('/api/health/ready', readiness);
+  app.use('/api/metrics', createMetricsRouter());
 
   // Authentication, users, and administration.
   app.use('/api/auth', createAuthRouter({ rateLimit: authRateLimit }));

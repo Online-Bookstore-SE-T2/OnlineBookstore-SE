@@ -6,6 +6,7 @@ import App from './App.jsx';
 import '@fontsource/archivo-black';
 import '@fontsource-variable/public-sans';
 import './styles/global.css';
+import { reportPageLoad } from './utils/pageLoad.js';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,3 +15,6 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// SASD 4.4.3 / NFR01-a: report this page load's duration for monitoring.
+reportPageLoad();
