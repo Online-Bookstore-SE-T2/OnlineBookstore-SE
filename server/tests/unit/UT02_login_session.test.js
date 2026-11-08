@@ -117,7 +117,7 @@ describe('UT02 loginUser', () => {
     const user = await createUser('U-B03');
     for (let i = 1; i <= 4; i += 1) expect((await failLogin(user.email)).status).toBe(401);
     const fifth = await failLogin(user.email);
-    expect(fifth.status).toBe(423);
+    expect(fifth.status).toBe(429);
 
     const stored = await User.findById(user.id).select('+failedLoginAttempts +lockUntil');
     expect(stored.failedLoginAttempts).toBe(0);
@@ -126,7 +126,7 @@ describe('UT02 loginUser', () => {
     expect(lockMs).toBeLessThanOrEqual(15 * 60 * 1000);
 
     const correctWhileLocked = await loginUser({ email: user.email, password: PASSWORD }).catch((e) => e);
-    expect(correctWhileLocked.status).toBe(423);
+    expect(correctWhileLocked.status).toBe(429);
   });
 
   test('a success clears the failure count and any expired lock', async () => {

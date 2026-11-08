@@ -66,7 +66,7 @@ describe('Login page', () => {
   test('TC-ST02-09: a locked account shows the lock message', async () => {
     const user = userEvent.setup();
     mockApi({
-      'POST /auth/login': () => [423, { error: { message: 'This account is locked for 15 minutes after five failed log-in attempts.' } }],
+      'POST /auth/login': () => [429, { error: { message: 'This account is locked for 15 minutes after five failed log-in attempts.' } }],
     });
     renderApp('/login');
     await logIn(user);

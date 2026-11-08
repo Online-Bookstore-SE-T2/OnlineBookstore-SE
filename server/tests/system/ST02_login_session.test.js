@@ -104,9 +104,9 @@ describe('ST02 login and session', () => {
     const { email } = USERS['U-B03'];
     for (let i = 0; i < 4; i += 1) await login(app, email, WRONG_PASSWORD);
     const fifth = await login(app, email, WRONG_PASSWORD);
-    expect(fifth.status).toBe(423);
+    expect(fifth.status).toBe(429);
     const correct = await login(app, email);
-    expect(correct.status).toBe(423);
+    expect(correct.status).toBe(429);
     expect(correct.body.error.message).toMatch(/locked for 15 minutes/);
     expect(correct.body.token).toBeUndefined();
   });
@@ -114,7 +114,7 @@ describe('ST02 login and session', () => {
   test('TC-ST02-10: the account is still locked 14 min 30 s after locking', async () => {
     await createUser('U-B03', { lockUntil: new Date(Date.now() + minutes(15) - minutes(14.5)) });
     const res = await login(app, USERS['U-B03'].email);
-    expect(res.status).toBe(423);
+    expect(res.status).toBe(429);
   });
 
   test('TC-ST02-11: the account unlocks 15 min 01 s after locking', async () => {
@@ -130,7 +130,7 @@ describe('ST02 login and session', () => {
     await createUser('U-B02');
     expect((await login(app, USERS['U-B01'].email)).status).toBe(200);
     expect((await login(app, USERS['U-B02'].email)).status).toBe(200);
-    expect((await login(app, USERS['U-B03'].email)).status).toBe(423);
+    expect((await login(app, USERS['U-B03'].email)).status).toBe(429);
   });
 
   test('TC-NFR-SEC-06: a token whose payload was edited to Administrator is rejected', async () => {

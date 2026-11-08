@@ -53,8 +53,9 @@ function invalidCredentials() {
   return new AppError(401, strings.auth.invalidCredentials);
 }
 
+// SASD 4.2.3 / 4.4.1: the five-failure lockout answers 429 TOO_MANY_ATTEMPTS.
 function lockedError() {
-  return new AppError(423, strings.auth.locked);
+  return new AppError(429, strings.auth.locked);
 }
 
 // Hash compared against when the e-mail is unknown, so response time does not reveal
