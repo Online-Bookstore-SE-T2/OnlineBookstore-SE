@@ -47,6 +47,14 @@ export function password(value, label = strings.fields.password) {
   return value ? undefined : strings.validation.required(label);
 }
 
+// A value typed twice, such as a new password. Only checked once the original is present, so a
+// missing password is reported once, on the password field.
+export function confirmation(value, original, label = strings.fields.confirmPassword) {
+  if (!original) return undefined;
+  if (!value) return strings.validation.required(label);
+  return value === original ? undefined : strings.validation.passwordMismatch;
+}
+
 export function phone(value) {
   if (isBlank(value)) return undefined;
   return PHONE_PATTERN.test(String(value).trim()) ? undefined : strings.validation.invalidPhone;
@@ -128,6 +136,7 @@ export function validateRegistration(values) {
     name: requiredText(values.name, strings.fields.name, LIMITS.name),
     email: email(values.email),
     password: password(values.password),
+    confirmPassword: confirmation(values.confirmPassword, values.password),
     phone: phone(values.phone),
     ...address(values.address, { optional: true, prefix: 'address.' }),
   });

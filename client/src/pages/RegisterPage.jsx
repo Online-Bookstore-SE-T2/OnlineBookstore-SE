@@ -7,12 +7,13 @@ import strings from '../resources/strings.js';
 import { focusFirstError, showApiError } from '../utils/forms.js';
 import { validateRegistration } from '../validation/rules.js';
 
-const FIELD_ORDER = ['name', 'email', 'password', 'phone', 'address.line', 'address.city', 'address.state', 'address.postalCode'];
+const FIELD_ORDER = ['name', 'email', 'password', 'confirmPassword', 'phone', 'address.line', 'address.city', 'address.state', 'address.postalCode'];
 const idFor = (field) => `register-${field.replace('.', '-')}`;
 
-const EMPTY = { name: '', email: '', password: '', phone: '', address: { line: '', city: '', state: '', postalCode: '' } };
+const EMPTY = { name: '', email: '', password: '', confirmPassword: '', phone: '', address: { line: '', city: '', state: '', postalCode: '' } };
 
-// REQ-1 (FR01): registration with name, e-mail and password; phone and one address optional.
+// REQ-1 (FR01): registration with name, e-mail and password (typed twice, SASD 4.3.1);
+// phone and one address optional.
 // The new account is signed in straight away and taken where it was heading (SASD 4.3.1).
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -48,6 +49,7 @@ export default function RegisterPage() {
         name: values.name,
         email: values.email,
         password: values.password,
+        confirmPassword: values.confirmPassword,
         ...(values.phone.trim() && { phone: values.phone.trim() }),
         ...(hasAddress && { address: values.address }),
       });
@@ -72,6 +74,8 @@ export default function RegisterPage() {
           value={values.email} onChange={setField('email')} />
         <FormField {...fieldProps('password')} label={strings.fields.password} required type="password"
           autoComplete="new-password" value={values.password} onChange={setField('password')} />
+        <FormField {...fieldProps('confirmPassword')} label={strings.fields.confirmPassword} required type="password"
+          autoComplete="new-password" value={values.confirmPassword} onChange={setField('confirmPassword')} />
         <FormField {...fieldProps('phone')} label={strings.fields.phone} type="tel" inputMode="numeric"
           autoComplete="tel-national" hint={strings.register.phoneHint} value={values.phone} onChange={setField('phone')} />
         <fieldset className="stack">

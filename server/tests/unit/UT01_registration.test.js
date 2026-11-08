@@ -80,10 +80,18 @@ describe('UT01 registerUser', () => {
     await expectRejected(registerUser({ name: '', email: '', password: '' }), 400, ['name', 'email', 'password']);
   });
 
+  test('rejects a missing or mismatched password confirmation on its own field (SASD 4.3.1)', async () => {
+    const mismatch = await expectRejected(registerUser({ ...NEW_USER, confirmPassword: 'Other#2026' }), 400, ['confirmPassword']);
+    expect(mismatch.fields.confirmPassword).toBe('The passwords do not match.');
+    const missing = await expectRejected(registerUser({ ...NEW_USER, confirmPassword: undefined }), 400, ['confirmPassword']);
+    expect(missing.fields.confirmPassword).toBe('Confirm password is required.');
+    expect(await User.countDocuments()).toBe(0);
+  });
+
   test('rejects a duplicate e-mail regardless of letter case', async () => {
     await createUser('U-B01');
     const err = await expectRejected(
-      registerUser({ name: 'Anita Rao', email: 'ANITA.RAO@testmail.example', password: PASSWORD }),
+      registerUser({ name: 'Anita Rao', email: 'ANITA.RAO@testmail.example', password: PASSWORD, confirmPassword: PASSWORD }),
       409,
       ['email'],
     );

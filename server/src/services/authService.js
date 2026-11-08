@@ -19,7 +19,7 @@ function hashPassword(password) {
   return bcrypt.hash(password, config.bcryptRounds);
 }
 
-// REQ-1 (FR01): register a visitor with name, e-mail address and password.
+// REQ-1 (FR01): register a visitor with name, e-mail address and password, typed twice (SASD 4.3.1).
 // Phone number and one delivery address are optional (Appendix B). Only whitelisted fields
 // are read, so a client can never choose its role, ID, status or registration date.
 async function registerUser(body = {}) {
@@ -27,6 +27,10 @@ async function registerUser(body = {}) {
   const name = v.text('name', body.name, { label: strings.labels.name, required: true, max: LIMITS.name });
   const email = v.email('email', body.email);
   const password = v.password('password', body.password);
+  v.confirmation('confirmPassword', body.confirmPassword, password, {
+    label: strings.labels.confirmPassword,
+    message: strings.fields.passwordMismatch,
+  });
   const phone = v.phone('phone', body.phone);
   const address = v.address(body.address, { prefix: 'address.', required: false });
   v.throwIfInvalid();

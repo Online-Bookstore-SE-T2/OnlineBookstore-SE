@@ -56,6 +56,16 @@ describe('common validation module', () => {
     expect(Object.keys(v.errors)).toEqual(['q', 'r']);
   });
 
+  test('a confirmation must equal the original exactly, and is skipped when the original failed', () => {
+    const v = new FieldValidator();
+    const opts = { label: 'Confirm password', message: 'The passwords do not match.' };
+    v.confirmation('same', 'BookTest#2026', 'BookTest#2026', opts);
+    v.confirmation('differs', 'BookTest#2026 ', 'BookTest#2026', opts);
+    v.confirmation('missing', undefined, 'BookTest#2026', opts);
+    v.confirmation('skipped', 'anything', undefined, opts);
+    expect(v.errors).toEqual({ differs: 'The passwords do not match.', missing: 'Confirm password is required.' });
+  });
+
   test('phone requires exactly 10 digits', () => {
     const v = new FieldValidator();
     expect(v.phone('a', '9000000021')).toBe('9000000021');

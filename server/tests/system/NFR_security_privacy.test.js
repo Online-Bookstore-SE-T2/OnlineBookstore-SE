@@ -29,7 +29,7 @@ describe('TC-NFR-SEC-03 / TC-NFR-SEC-20: no personal data in logs', () => {
         const phone = '9876543210';
         const logs = captureConsole();
         try {
-            await request(app).post('/api/auth/register').send({ name: 'Marker User', email, password: marker, phone });
+            await request(app).post('/api/auth/register').send({ name: 'Marker User', email, password: marker, confirmPassword: marker, phone });
             await request(app).post('/api/auth/login').send({ email, password: 'wrong' });
             const login = await request(app).post('/api/auth/login').send({ email, password: marker });
             const auth = bearer(login.body.token);
@@ -97,7 +97,7 @@ describe('TC-NFR-SEC-04 / NFR10: no route returns a password or hash', () => {
         await request(app).post('/api/users/me/seller-request').set(buyerAuth).send({});
 
         const responses = await Promise.all([
-            request(app).post('/api/auth/register').send({ name: 'New User', email: 'new.user@testmail.example', password: PASSWORD }),
+            request(app).post('/api/auth/register').send({ name: 'New User', email: 'new.user@testmail.example', password: PASSWORD, confirmPassword: PASSWORD }),
             request(app).post('/api/auth/login').send({ email: data.users['U-B02'].email, password: PASSWORD }),
             request(app).get('/api/auth/session').set(buyerAuth),
             request(app).get('/api/users/me').set(buyerAuth),

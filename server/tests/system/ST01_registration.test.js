@@ -33,15 +33,15 @@ describe('ST01 registration', () => {
 
   test('a refused registration issues no token', async () => {
     await createUser('U-B01');
-    const duplicate = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD });
-    const invalid = await register({ name: '', email: NEW_USER.email, password: PASSWORD });
+    const duplicate = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD, confirmPassword: PASSWORD });
+    const invalid = await register({ name: '', email: NEW_USER.email, password: PASSWORD, confirmPassword: PASSWORD });
     expect(duplicate.body.token).toBeUndefined();
     expect(invalid.body.token).toBeUndefined();
   });
 
   test('TC-ST01-02 / TC-FLD-08: an already registered e-mail is rejected with "e-mail already registered"', async () => {
     await createUser('U-B01');
-    const res = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD });
+    const res = await register({ name: 'Anita Rao', email: 'anita.rao@testmail.example', password: PASSWORD, confirmPassword: PASSWORD });
     expect(res.status).toBe(409);
     expect(res.body.error.message).toBe('e-mail already registered');
     expect(res.body.error.fields.email).toBe('e-mail already registered');
@@ -49,10 +49,10 @@ describe('ST01 registration', () => {
   });
 
   test.each([
-    ['TC-ST01-03 / TC-FLD-04', { email: NEW_USER.email, password: PASSWORD }, ['name']],
-    ['TC-ST01-03 / TC-FLD-04', { name: '', email: NEW_USER.email, password: PASSWORD }, ['name']],
-    ['TC-ST01-04 / TC-FLD-07', { name: NEW_USER.name, password: PASSWORD }, ['email']],
-    ['TC-ST01-04 / TC-FLD-07', { name: NEW_USER.name, email: '', password: PASSWORD }, ['email']],
+    ['TC-ST01-03 / TC-FLD-04', { email: NEW_USER.email, password: PASSWORD, confirmPassword: PASSWORD }, ['name']],
+    ['TC-ST01-03 / TC-FLD-04', { name: '', email: NEW_USER.email, password: PASSWORD, confirmPassword: PASSWORD }, ['name']],
+    ['TC-ST01-04 / TC-FLD-07', { name: NEW_USER.name, password: PASSWORD, confirmPassword: PASSWORD }, ['email']],
+    ['TC-ST01-04 / TC-FLD-07', { name: NEW_USER.name, email: '', password: PASSWORD, confirmPassword: PASSWORD }, ['email']],
     ['TC-ST01-05 / TC-FLD-11', { name: NEW_USER.name, email: NEW_USER.email }, ['password']],
     ['TC-ST01-05 / TC-FLD-11', { name: NEW_USER.name, email: NEW_USER.email, password: '' }, ['password']],
     ['TC-ST01-06', { name: '', email: '', password: '' }, ['name', 'email', 'password']],
@@ -72,6 +72,44 @@ describe('ST01 registration', () => {
       expect(await User.countDocuments()).toBe(0);
     },
   );
+
+  describe('SASD 4.3.1: the password is typed twice', () => {
+    test('a confirmation that differs is rejected on confirmPassword and creates no account', async () => {
+      const res = await register({ ...NEW_USER, confirmPassword: 'BookTest#2025' });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_FAILED');
+      expect(res.body.error.fields).toEqual({ confirmPassword: 'The passwords do not match.' });
+      expect(res.body.token).toBeUndefined();
+      expect(await User.countDocuments()).toBe(0);
+    });
+
+    test.each([['missing', undefined], ['empty', '']])('a %s confirmation is required', async (_case, confirmPassword) => {
+      const res = await register({ ...NEW_USER, confirmPassword });
+      expect(res.status).toBe(400);
+      expect(res.body.error.fields).toEqual({ confirmPassword: 'Confirm password is required.' });
+    });
+
+    test('the confirmation must match exactly: spaces and letter case count', async () => {
+      for (const confirmPassword of [`${PASSWORD} `, PASSWORD.toLowerCase()]) {
+        const res = await register({ ...NEW_USER, confirmPassword });
+        expect(res.body.error.fields).toHaveProperty('confirmPassword');
+      }
+      expect(await User.countDocuments()).toBe(0);
+    });
+
+    test('without a password, only the password field is reported', async () => {
+      const res = await register({ ...NEW_USER, password: '', confirmPassword: 'anything' });
+      expect(Object.keys(res.body.error.fields)).toEqual(['password']);
+    });
+
+    test('the confirmation is neither stored nor echoed', async () => {
+      const res = await register(NEW_USER);
+      expect(res.status).toBe(201);
+      expect(JSON.stringify(res.body)).not.toContain('confirmPassword');
+      const stored = await User.findOne({ email: NEW_USER.email }).lean();
+      expect(stored).not.toHaveProperty('confirmPassword');
+    });
+  });
 
   test('TC-ST01-08 / TC-FLD-10 / TC-NFR-SEC-01 / TC-NFR-SEC-02: password is stored as a bcrypt hash with cost >= 10', async () => {
     await register(NEW_USER);
