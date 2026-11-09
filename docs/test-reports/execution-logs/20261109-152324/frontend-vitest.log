@@ -1,0 +1,278 @@
+
+> online-bookstore-client@1.0.0 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90m/mnt/c/Users/Admin/OnlineBookstore-SE-test/client[39m
+
+ [32m✓[39m src/pages/SellerListingsPage.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2711[2mms[22m[39m
+   [33m[2m✓[22m[39m SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11)[2m > [22mpublishes a new listing in no more than five keyboard-accessible steps [33m 1199[2mms[22m[39m
+   [33m[2m✓[22m[39m SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11)[2m > [22mexposes labelled controls and passes axe checks at a mobile viewport [33m 551[2mms[22m[39m
+   [33m[2m✓[22m[39m SellerListingsPage usability and accessibility (NFR03, NFR08, NFR11)[2m > [22mrecords an administrator removal request when an open order blocks deletion [33m 697[2mms[22m[39m
+[90mstderr[2m | src/components/Layout.test.jsx[2m > [22m[2mapplication shell (SRS 3.1)[2m > [22m[2mheader carries logo, search, cart indicator, account links and Help; footer carries contact and policy links
+[22m[39mAn update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/pages/admin/AdminConsolePage.test.jsx[2m > [22m[2mAdministration console[2m > [22m[2mTC-ST04-01: every section loads its records
+[22m[39mEach child in a list should have a unique "key" prop.
+
+Check the render method of `EntityPanel`. See https://react.dev/link/warning-keys for more information.
+
+ [32m✓[39m src/pages/LoginPage.test.jsx [2m([22m[2m12 tests[22m[2m)[22m[33m 9945[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mTC-ST02-01: valid credentials store the token and show the account menu [33m 1839[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mSASD 4.2.3: the cart count comes from the login response, without a second request [33m 1304[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22ma restored session fetches the cart count, since there was no login response [33m 719[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mTC-ST02-02: a wrong password shows an error and no token is stored [33m 1016[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mTC-ST02-09: a locked account shows the lock message [33m 988[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22ma stored token is checked with the server and restores the session [33m 319[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mTC-ST02-07: Log out calls the server, removes the token and returns to the visitor view [33m 521[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mthe account menu opens and closes from the keyboard [33m 478[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mTC-NFR-SEC-19: credentials are sent in the request body, never in the URL [33m 921[2mms[22m[39m
+   [33m[2m✓[22m[39m Login page[2m > [22mthe login form has no accessibility violations [33m 1430[2mms[22m[39m
+[90mstderr[2m | src/components/Layout.test.jsx[2m > [22m[2mapplication shell (SRS 3.1)[2m > [22m[2mhome, help and privacy screens have no accessibility violations
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+[90mstderr[2m | src/components/Layout.test.jsx[2m > [22m[2mapplication shell (SRS 3.1)[2m > [22m[2mhome, help and privacy screens have no accessibility violations
+[22m[39mAn update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CatalogPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/pages/RegisterPage.test.jsx [2m([22m[2m11 tests[22m[2m)[22m[33m 16830[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-01 / SASD 4.3.1: valid details create the account and sign the user in straight away [33m 3027[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-06 / TC-NFR-UI-02: empty mandatory fields show inline errors with an icon, and nothing is sent [33m 333[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-07: invalid e-mail "divya.kamath.testmail.example" shows an inline error on the e-mail field [33m 1827[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-07: invalid e-mail "divya@" shows an inline error on the e-mail field [33m 1255[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-07: invalid e-mail "@testmail.example" shows an inline error on the e-mail field [33m 1355[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-ST01-02: a duplicate e-mail shows "e-mail already registered" beneath the e-mail field [33m 1724[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22ma phone number that is not 10 digits is rejected before sending [33m 997[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22ma partly filled address asks for the remaining parts [33m 1005[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22ma complete address and phone are sent with the registration [33m 2453[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22ma network failure shows a form-level error [33m 731[2mms[22m[39m
+   [33m[2m✓[22m[39m Registration page[2m > [22mTC-NFR-QUA-17: the registration form has no accessibility violations, including with errors shown [33m 2111[2mms[22m[39m
+[90mstderr[2m | src/components/Layout.test.jsx[2m > [22m[2mapplication shell (SRS 3.1)[2m > [22m[2mhome, help and privacy screens have no accessibility violations
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+[90mstderr[2m | src/components/Layout.test.jsx[2m > [22m[2mapplication shell (SRS 3.1)[2m > [22m[2mhome, help and privacy screens have no accessibility violations
+[22m[39mError: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17088:49
+    at Object.get (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:11246:23)
+    at _isIconLigature (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:17087:41)
+    at /mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28725:54
+    at Array.some (<anonymous>)
+    at hasRealTextChildren (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28724:35)
+    at Rule.colorContrastMatches [as matches] (/mnt/c/Users/Admin/OnlineBookstore-SE-test/node_modules/axe-core/axe.js:28686:12) [90mundefined[39m
+
+ [32m✓[39m src/components/Layout.test.jsx [2m([22m[2m6 tests[22m[2m)[22m[33m 18775[2mms[22m[39m
+   [33m[2m✓[22m[39m application shell (SRS 3.1)[2m > [22mheader carries logo, search, cart indicator, account links and Help; footer carries contact and policy links [33m 1087[2mms[22m[39m
+   [33m[2m✓[22m[39m application shell (SRS 3.1)[2m > [22msubmitting a search navigates to the search route [33m 607[2mms[22m[39m
+   [33m[2m✓[22m[39m application shell (SRS 3.1)[2m > [22mhome, help and privacy screens have no accessibility violations [33m 16524[2mms[22m[39m
+ [32m✓[39m src/pages/profile/ProfilePage.test.jsx [2m([22m[2m18 tests[22m[2m)[22m[33m 20574[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-11: a visitor is sent to the login page and returned to the profile after logging in [33m 2278[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-01: shows the stored name, e-mail and phone [33m 406[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-02: saving a new name and phone sends them and confirms [33m 1181[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-03: an empty name shows an inline error and nothing is sent [33m 791[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22ma duplicate e-mail from the server is shown on the e-mail field [33m 1078[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mchanging the password shows the server error for a wrong current password, then succeeds [33m 1348[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-04: adding an address sends it and lists the result [33m 1840[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-09 / TC-ST03-10: postal code "56A011" shows an inline error [33m 1470[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-09 / TC-ST03-10: postal code "5600111" shows an inline error [33m 1017[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-09 / TC-ST03-10: postal code "56001" shows an inline error [33m 902[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-06: with five addresses saved, adding another is disabled and the limit is explained [33m 343[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-ST03-08: an address can be edited [33m 886[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22manother address can be made the default [33m 331[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-NFR-UI-03 / TC-ST03-07: deleting asks for confirmation; Cancel keeps the address, Confirm deletes it [33m 696[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mfocus stays inside the confirmation dialog when tabbing [33m 606[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22ma suspended account sees a banner and cannot submit changes [33m 369[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mthe account menu links to the profile [33m 559[2mms[22m[39m
+   [33m[2m✓[22m[39m Profile page[2m > [22mTC-NFR-QUA-17: the profile page has no accessibility violations, with addresses, form and dialog open [33m 4465[2mms[22m[39m
+ [32m✓[39m src/pages/admin/AdminConsolePage.test.jsx [2m([22m[2m20 tests[22m[2m)[22m[33m 25465[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-ST04-12: a buyer gets no console link and the console URL shows no admin data [33m 861[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22man administrator reaches the console from the account menu [33m 1037[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-ST04-01: every section loads its records [33m 2415[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22man administrator records a decision note when resolving a listing removal request [33m 2045[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mtabs can be changed with the arrow keys [33m 907[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-ST04-02: suspending a user asks for confirmation, then calls the API and reloads [33m 800[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-NFR-UI-03: cancelling a delete changes nothing; confirming deletes [33m 1248[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-BR5-01: a refused action shows the server reason [33m 913[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-ST04-06: categories are added and renamed [33m 1298[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mBR-4: an administrator adds a catalog book; client and server errors appear on the fields [33m 3231[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22man administrator edits a book: the form starts from its details and the ISBN is not editable [33m 1225[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mSASD 4.2.4: the Orders tab offers only the allowed moves, and cancelling asks first [33m 1071[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22ma seller request is rejected only with a reason code [33m 683[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-NFR-SAF-06: deleted records are listed on request and can be restored [33m 703[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-ST04-08: a record can be viewed in a details dialog [33m 607[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-NFR-SEC-19: search terms are sent in the request body, never the URL [33m 1080[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-NFR-QUA-17: the console has no accessibility violations, including with a dialog open [33m 2208[2mms[22m[39m
+   [33m[2m✓[22m[39m Administration console[2m > [22mTC-NFR-QUA-17: the book form has no accessibility violations, including with errors shown [33m 2293[2mms[22m[39m
+   [33m[2m✓[22m[39m Seller request on the profile[2m > [22ma buyer sends a request with an optional note and then sees it pending [33m 491[2mms[22m[39m
+   [33m[2m✓[22m[39m Seller request on the profile[2m > [22ma rejected request shows the reason and allows a new request; sellers do not see the card [33m 340[2mms[22m[39m
+ [32m✓[39m src/pages/BookReviewsPage.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[33m 4262[2mms[22m[39m
+   [33m[2m✓[22m[39m BookReviewsPage usability and accessibility (NFR08, NFR11)[2m > [22mprovides labelled review controls and has no axe violations at mobile width [33m 1312[2mms[22m[39m
+   [33m[2m✓[22m[39m BookReviewsPage usability and accessibility (NFR08, NFR11)[2m > [22mposts a review using only keyboard controls [33m 811[2mms[22m[39m
+   [33m[2m✓[22m[39m BookReviewsPage usability and accessibility (NFR08, NFR11)[2m > [22mcreates a review and edits it through the delivered book review page [33m 1848[2mms[22m[39m
+ [32m✓[39m src/pages/CatalogPage.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2363[2mms[22m[39m
+   [33m[2m✓[22m[39m Catalog URL state (OSP-80)[2m > [22mrestores filters, sorting and pagination from the URL [33m 539[2mms[22m[39m
+   [33m[2m✓[22m[39m Catalog URL state (OSP-80)[2m > [22mupdates the URL when filters change and resets pagination [33m 740[2mms[22m[39m
+   [33m[2m✓[22m[39m Catalog URL state (OSP-80)[2m > [22mupdates the URL when navigating between pages [33m 622[2mms[22m[39m
+   [33m[2m✓[22m[39m Catalog URL state (OSP-80)[2m > [22mclears all catalog query parameters [33m 454[2mms[22m[39m
+ [32m✓[39m src/pages/SearchPage.test.jsx [2m([22m[2m6 tests[22m[2m)[22m[33m 2875[2mms[22m[39m
+   [33m[2m✓[22m[39m Search Books (OSP-9)[2m > [22mloads books when the Search Books page opens [33m 497[2mms[22m[39m
+   [33m[2m✓[22m[39m Search Books (OSP-9)[2m > [22msearches by title and displays matching books [33m 593[2mms[22m[39m
+   [33m[2m✓[22m[39m Search Books (OSP-9)[2m > [22msearches by author [33m 469[2mms[22m[39m
+   [33m[2m✓[22m[39m Search Books (OSP-9)[2m > [22msearches by ISBN [33m 485[2mms[22m[39m
+   [33m[2m✓[22m[39m Search Books (OSP-9)[2m > [22mshows a message when no books match the search [33m 623[2mms[22m[39m
+ [32m✓[39m src/pages/CheckoutPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1267[2mms[22m[39m
+   [33m[2m✓[22m[39m checkout page[2m > [22mflags unavailable stock inline and prevents order placement [33m 882[2mms[22m[39m
+   [33m[2m✓[22m[39m checkout page[2m > [22mrequires a saved delivery address and links to address management [33m 379[2mms[22m[39m
+ [32m✓[39m src/pages/BookDetailsPage.test.jsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1065[2mms[22m[39m
+   [33m[2m✓[22m[39m View Book Details (OSP-11)[2m > [22mdisplays book information, price, rating and reviews [33m 561[2mms[22m[39m
+ [32m✓[39m src/pages/NotificationsPage.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 743[2mms[22m[39m
+   [33m[2m✓[22m[39m lists the related order and marks a notification as read [33m 737[2mms[22m[39m
+ [32m✓[39m src/pages/OrderPages.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 565[2mms[22m[39m
+   [33m[2m✓[22m[39m SellerOrdersPage[2m > [22mshows delivery details without buyer email and advances through the order transitions [33m 559[2mms[22m[39m
+ [32m✓[39m src/styles/theme.test.js [2m([22m[2m29 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m src/pages/OrderReviewLink.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 335[2mms[22m[39m
+   [33m[2m✓[22m[39m review link after delivery[2m > [22mshows the review link after delivery and hides it before delivery [33m 331[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[32m125 passed[39m[22m[90m (125)[39m
+[2m   Start at [22m 15:34:11
+[2m   Duration [22m 131.66s[2m (transform 9.10s, setup 200.49s, collect 65.52s, tests 107.82s, environment 279.01s, prepare 44.59s)[22m

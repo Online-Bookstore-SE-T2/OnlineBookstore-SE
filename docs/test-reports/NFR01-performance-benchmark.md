@@ -144,3 +144,26 @@ that 95% of read requests complete within 800 ms under 200 concurrent users.
 
 The performance task is not yet fully accepted. Further targeted
 investigation and the outstanding acceptance measurements are required.
+
+---
+
+## 10. Additional API smoke checks – 9 November 2026
+
+The running local API was checked after the automated test execution.
+
+| Endpoint | HTTP status | Observed response time |
+|---|---:|---:|
+| GET /api/health | 200 | 18.4 ms |
+| GET /api/books?page=1 | 200 | 62.2 ms |
+| GET /api/books/search?q=technology&page=1 | 200 | 61.8 ms |
+
+These values represent one request per endpoint and are recorded only as
+smoke-check observations. They must not be interpreted as sequential
+benchmark statistics or evidence of meeting the 200-concurrent-user target.
+
+Browser rendering and checkout confirmation remain unmeasured. Browser
+automation packages (Playwright and Puppeteer) were not installed in the
+inspected project environment.
+
+The previously recorded concurrent benchmark remains the applicable
+load-test evidence. NFR01 is not yet fully satisfied.

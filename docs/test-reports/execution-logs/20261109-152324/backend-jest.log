@@ -1,0 +1,171 @@
+
+> online-bookstore-server@1.0.0 test
+> jest --runInBand
+
+PASS tests/system/ST04_admin.test.js (96.001 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/orderService.js:255:46)
+          at async Promise.all (index 2)
+      at Object.adminSetOrderStatus (src/services/orderService.js:248:3)
+      at Object.changeOrderStatus (src/services/adminService.js:620:37)
+      at changeOrderStatus (src/controllers/adminController.js:104:13)
+
+PASS tests/system/ST02_login_session.test.js (28.443 s)
+PASS tests/system/NFR_security_privacy.test.js (24.662 s)
+PASS tests/system/ST09_order_history_cancellation.test.js (35.874 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/orderService.js:193:46)
+
+PASS tests/system/ST16_reviews_listings.test.js (30.068 s)
+PASS tests/system/ST03_profile.test.js (30.254 s)
+PASS tests/system/ST01_registration.test.js (24.002 s)
+PASS tests/system/ST07_order_creation.test.js (30.477 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/checkoutService.js:289:52)
+
+PASS tests/system/ST05_cart.test.js (30.337 s)
+PASS tests/unit/UT04_admin.test.js (30.072 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/orderService.js:255:46)
+          at async Promise.all (index 2)
+      at Object.adminSetOrderStatus (src/services/orderService.js:248:3)
+      at Object.changeOrderStatus (src/services/adminService.js:620:37)
+      at Object.<anonymous> (tests/unit/UT04_admin.test.js:392:5)
+
+PASS tests/unit/UT06_searchService.test.js (12.045 s)
+PASS tests/system/ST08_payment.test.js (27.17 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/paymentService.js:46:29)
+      at Object.simulatePayment (src/services/paymentService.js:181:3)
+      at simulatePayment (src/controllers/paymentController.js:8:19)
+
+PASS tests/system/ST14_seller_orders.test.js (24.86 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/orderService.js:123:46)
+          at async Promise.all (index 1)
+      at Object.advanceSellerOrder (src/services/orderService.js:119:3)
+      at advanceSellerOrder (src/controllers/orderController.js:40:17)
+
+PASS tests/system/ST06_checkout.test.js (26.798 s)
+PASS tests/system/ST16_review_flow.test.js (22.133 s)
+  ● Console
+
+    console.warn
+      SMTP is not configured; order e-mails are disabled.
+
+      85 |   if (!isConfigured()) {
+      86 |     if (!warnedMissingConfiguration) {
+    > 87 |       console.warn('SMTP is not configured; order e-mails are disabled.');
+         |               ^
+      88 |       warnedMissingConfiguration = true;
+      89 |     }
+      90 |     return;
+
+      at warn (src/services/emailService.js:87:15)
+      at Object.deliver [as dispatchOrderEvent] (src/services/emailService.js:113:10)
+      at dispatchOrderEvent (src/services/checkoutService.js:289:52)
+
+PASS tests/system/ST10_notifications.test.js (25.948 s)
+PASS tests/unit/UT02_login_session.test.js (15.864 s)
+PASS tests/unit/UT03_profile.test.js (15.853 s)
+PASS tests/unit/UT01_registration.test.js (14.081 s)
+PASS tests/system/app.test.js (19.511 s)
+PASS tests/unit/UT08_catalogService.test.js (12.366 s)
+PASS tests/system/seedDemoData.test.js (15.868 s)
+PASS tests/unit/UT07_bookDetailsService.test.js (12.253 s)
+PASS tests/unit/emailService.test.js
+PASS tests/unit/validators.test.js
+PASS tests/unit/backupDatabase.test.js
+PASS tests/unit/paymentGateway.test.js
+PASS tests/unit/UT10_catalogController.test.js
+PASS tests/unit/UT09_bookController.test.js
+
+Test Suites: 29 passed, 29 total
+Tests:       329 passed, 329 total
+Snapshots:   0 total
+Time:        625.428 s, estimated 982 s
+Ran all test suites.

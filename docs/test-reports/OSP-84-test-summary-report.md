@@ -139,3 +139,48 @@ require separate evidence.
 - requirement-coverage-matrix.md
 - execution-logs/ (captured command output, where available)
 - NFR01-performance-benchmark.md (existing performance evidence)
+
+---
+
+## 12. Additional execution – 9 November 2026
+
+A fresh automated execution was completed on 9 November 2026.
+
+Execution evidence: `execution-logs/20261109-152324/`
+
+| Test activity | Result | Status |
+|---|---:|---|
+| Backend Jest suites | 29/29 passed | PASS |
+| Backend test cases | 329/329 passed | PASS |
+| Frontend Vitest files | 15/15 passed | PASS |
+| Frontend test cases | 125/125 passed | PASS |
+| Combined automated test cases | 454/454 passed | PASS |
+| Frontend production build | Successful; 99 modules transformed | PASS |
+| Git diff whitespace check | Passed | PASS |
+
+Backend execution duration: approximately 625.428 seconds.
+Frontend test duration: approximately 131.66 seconds.
+Frontend production build duration: approximately 11.33 seconds.
+
+The combined total is 454 passing test cases across 44 backend suites/frontend test files, with no reported failures in this execution.
+
+### API smoke checks
+
+The running local API was checked separately:
+
+| Endpoint | HTTP status | Observed response time |
+|---|---:|---:|
+| GET /api/health | 200 | 18.4 ms |
+| GET /api/books?page=1 | 200 | 62.2 ms |
+| GET /api/books/search?q=technology&page=1 | 200 | 61.8 ms |
+
+These are individual smoke-check observations, not statistically representative benchmarks or concurrent-load results.
+
+### Remaining acceptance limitations
+
+- Browser rendering has not been measured. Playwright and Puppeteer were not installed in the inspected environment.
+- Checkout confirmation timing remains unmeasured.
+- The previously recorded 200-concurrent-user NFR01 target remains unmet.
+- Manual UAT, cross-browser checks, and any required sandbox payment/notification verification still need separate evidence.
+
+This execution strengthens automated functional-test evidence but does not establish complete acceptance of all SRS criteria.
