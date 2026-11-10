@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Alert from '../components/Alert.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { apiRequest } from '../api/http.js';
@@ -71,8 +71,8 @@ export function OrderDetailPage({ confirmation = false }) {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
-  const location = useLocation();
-  const [notice, setNotice] = useState(location.state?.notice || '');
+  // Notices passed with navigation are shown once by Layout; this holds the page's own messages.
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
