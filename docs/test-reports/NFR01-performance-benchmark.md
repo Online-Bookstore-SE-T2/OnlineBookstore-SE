@@ -216,5 +216,31 @@ test and fails the NFR01 800 ms concurrency target. The overall NFR01 task is
 not yet fully accepted: browser rendering and checkout timing remain
 unmeasured, and search optimization still needs implementation and validation.
 
+The performance task is not yet fully accepted. Further targeted
+investigation and the outstanding acceptance measurements are required.
+
+---
+
+## 11. Additional API smoke checks – 9 November 2026
+
+The running local API was checked after the automated test execution.
+
+| Endpoint | HTTP status | Observed response time |
+|---|---:|---:|
+| GET /api/health | 200 | 18.4 ms |
+| GET /api/books?page=1 | 200 | 62.2 ms |
+| GET /api/books/search?q=technology&page=1 | 200 | 61.8 ms |
+
+These values represent one request per endpoint and are recorded only as
+smoke-check observations. They must not be interpreted as sequential
+benchmark statistics or evidence of meeting the 200-concurrent-user target.
+
+Browser rendering and checkout confirmation remain unmeasured. Browser
+automation packages (Playwright and Puppeteer) were not installed in the
+inspected project environment.
+
+The previously recorded concurrent benchmark remains the applicable
+load-test evidence. NFR01 is not yet fully satisfied.
+
 All measurements in this report are local development results. They are not
 a claim of production performance or a completed acceptance sign-off.
