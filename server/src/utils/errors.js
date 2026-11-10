@@ -15,6 +15,7 @@ const ERROR_CODES = Object.freeze({
   // Statuses the delivered system uses that the SASD 4.4.1 table does not list.
   410: 'GONE',
   413: 'PAYLOAD_TOO_LARGE',
+  502: 'BAD_GATEWAY',
   503: 'SERVICE_UNAVAILABLE',
 });
 

@@ -64,7 +64,7 @@ describe('UT04 order transaction report', () => {
     const order = data.orders['ORD-S03'];
     await Order.updateOne(
       { _id: order._id },
-      { $set: { payment: { provider: 'stripe', transactionRef: 'pi_report_123', status: 'Paid' } } },
+      { $set: { payment: { provider: 'razorpay', transactionRef: 'order_report123', status: 'Paid' } } },
     );
 
     for (let i = 0; i < 18; i += 1) {
@@ -82,7 +82,7 @@ describe('UT04 order transaction report', () => {
     expect(first.items).toHaveLength(20);
     expect(second.items).toHaveLength(1);
     expect(row).toMatchObject({
-      transactionRef: 'pi_report_123',
+      transactionRef: 'order_report123',
       orderId: order.id,
       buyerName: 'Anita Rao',
       sellerName: 'Kiran Hegde',
@@ -90,7 +90,7 @@ describe('UT04 order transaction report', () => {
       isbn: '9789380000053',
       quantity: 1,
       orderAmount: 410,
-      paymentMethod: 'stripe',
+      paymentMethod: 'razorpay',
       orderStatus: 'Paid',
       remarks: '-',
     });

@@ -50,9 +50,14 @@ async function notifyPaymentFinished(order, previousStatus, succeeded) {
   }
 }
 
+// The browser needs the Razorpay order id, amount and currency to open Checkout.
+function intentFor(gatewayOrder) {
+  return { transactionRef: gatewayOrder.id, amount: gatewayOrder.amount, currency: gatewayOrder.currency };
+}
+
 async function createPaymentIntent(userId, orderId) {
-  if (config.paymentProvider !== 'stripe') {
-    throw new AppError(404, strings.payment.stripeNotEnabled);
+  if (config.paymentProvider !== 'razorpay') {
+    throw new AppError(404, strings.payment.gatewayNotEnabled);
   }
   if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
 
@@ -60,46 +65,101 @@ async function createPaymentIntent(userId, orderId) {
   if (!order) throw new AppError(404, strings.order.notFound);
   assertPayable(order);
 
-  const intent = await paymentGateway.authorise(order);
-  order.payment = {
-    provider: 'stripe',
-    transactionRef: intent.id,
-    status: 'Pending',
-  };
-  await order.save();
-  return { clientSecret: intent.client_secret, transactionRef: intent.id };
+  // One Razorpay order per bookstore order: a retry reuses it instead of opening another.
+  if (order.payment?.provider === 'razorpay' && order.payment.transactionRef) {
+    return intentFor(await paymentGateway.retrieveOrder(order.payment.transactionRef));
+  }
+
+  const gatewayOrder = await paymentGateway.authorise(order);
+  // Record it only if no concurrent request (a second tab, a double click) recorded one first.
+  const claimed = await Order.updateOne(
+    { _id: order._id, buyer: userId, status: ORDER_STATUS.PLACED, 'payment.transactionRef': null },
+    { $set: { payment: { provider: 'razorpay', transactionRef: gatewayOrder.id, status: 'Pending' } } },
+  );
+  if (claimed.modifiedCount !== 1) {
+    const current = await findBuyerOrder(userId, orderId);
+    if (current?.payment?.provider === 'razorpay' && current.payment.transactionRef) {
+      return intentFor(await paymentGateway.retrieveOrder(current.payment.transactionRef));
+    }
+    throw new AppError(409, strings.payment.unpayableOrder);
+  }
+  return intentFor(gatewayOrder);
 }
 
-async function completeStripePayment(userId, orderId, transactionRef, failureRequested = false) {
-  if (config.paymentProvider !== 'stripe') {
-    throw new AppError(404, strings.payment.stripeNotEnabled);
+const GATEWAY_ORDER_ID = /^order_[A-Za-z0-9]{6,40}$/;
+const GATEWAY_PAYMENT_ID = /^pay_[A-Za-z0-9]{6,40}$/;
+
+// Settles an order from the gateway's own records. The browser's success callback is only a
+// hint: its signature is checked, and the outcome is read from Razorpay with the key secret.
+async function completeGatewayPayment(userId, orderId, details = {}) {
+  const { transactionRef, paymentId, signature, failure = false } = details;
+  if (config.paymentProvider !== 'razorpay') {
+    throw new AppError(404, strings.payment.gatewayNotEnabled);
   }
   if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
-  if (typeof transactionRef !== 'string' || transactionRef.length > 200) {
+  if (typeof transactionRef !== 'string' || !GATEWAY_ORDER_ID.test(transactionRef)) {
     throw new AppError(400, strings.payment.validReference);
   }
-
-  let intent = await paymentGateway.retrieve(transactionRef);
-  if (failureRequested && intent.status !== 'succeeded' && intent.status !== 'canceled') {
-    intent = await paymentGateway.cancel(transactionRef);
+  if (Boolean(paymentId) !== Boolean(signature)) {
+    throw new AppError(400, strings.payment.paymentDetailsTogether);
+  }
+  if (paymentId) {
+    if (typeof paymentId !== 'string' || !GATEWAY_PAYMENT_ID.test(paymentId)) {
+      throw new AppError(400, strings.payment.validReference);
+    }
+    if (!paymentGateway.verifySignature(transactionRef, paymentId, signature)) {
+      throw new AppError(400, strings.payment.invalidSignature);
+    }
   }
 
   const orderBefore = await findBuyerOrder(userId, orderId);
-  if (!orderBefore || orderBefore.payment?.transactionRef !== intent.id) {
+  if (!orderBefore || orderBefore.payment?.provider !== 'razorpay' || orderBefore.payment.transactionRef !== transactionRef) {
     throw new AppError(404, strings.payment.intentNotFound);
   }
-  if (intent.metadata?.orderId !== orderBefore.id || intent.metadata?.buyerId !== String(userId)) {
+
+  const gatewayOrder = await paymentGateway.retrieveOrder(transactionRef);
+  if (gatewayOrder.notes?.orderId !== orderBefore.id || gatewayOrder.notes?.buyerId !== String(userId)) {
     throw new AppError(404, strings.payment.intentNotFound);
   }
-  if (intent.amount !== Math.round(orderBefore.totalAmount * 100) || intent.currency !== 'inr') {
+  const expectedPaise = paymentGateway.toPaise(orderBefore.totalAmount);
+  if (gatewayOrder.amount !== expectedPaise || gatewayOrder.currency !== 'INR') {
     throw new AppError(409, strings.payment.amountMismatch);
   }
 
-  if (!['succeeded', 'requires_payment_method', 'canceled'].includes(intent.status)) {
-    throw new AppError(409, strings.payment.stillProcessing);
+  const payments = (await paymentGateway.listOrderPayments(transactionRef))
+    .slice()
+    .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+
+  // A payment that reaches an order already cancelled (and its stock released) is refunded,
+  // so the buyer is never charged for an order that will not be fulfilled.
+  if (orderBefore.status === ORDER_STATUS.CANCELLED) {
+    const captured = payments.filter((p) => p.status === 'captured');
+    if (captured.length === 0) throw new AppError(409, strings.payment.cancelledOrder);
+    if (orderBefore.payment.status !== 'Refunded') {
+      for (const payment of captured) {
+        await paymentGateway.refundPayment(payment.id, { orderId: orderBefore.id });
+      }
+      orderBefore.payment.status = 'Refunded';
+      orderBefore.payment.failureReason = strings.payment.refundedAfterCancel;
+      await orderBefore.save();
+    }
+    throw new AppError(409, strings.payment.refundedAfterCancel);
   }
 
-  const succeeded = intent.status === 'succeeded';
+  let paid = payments.find((p) => p.status === 'captured');
+  if (!paid) {
+    const authorised = payments.find((p) => p.status === 'authorized');
+    if (authorised) paid = await paymentGateway.capturePayment(authorised.id, expectedPaise, 'INR');
+  }
+  if (paid && (paid.amount !== expectedPaise || paid.currency !== 'INR')) {
+    throw new AppError(409, strings.payment.amountMismatch);
+  }
+  if (!paid && !failure) {
+    throw new AppError(409, strings.payment.noCompletedPayment);
+  }
+
+  const succeeded = Boolean(paid);
+  const failureReason = payments.find((p) => p.status === 'failed')?.error_description || 'Payment was not completed.';
   const session = await mongoose.startSession();
   let updatedOrder;
   let previousStatus;
@@ -108,7 +168,7 @@ async function completeStripePayment(userId, orderId, transactionRef, failureReq
     await session.withTransaction(async () => {
       const order = await findBuyerOrder(userId, orderId, session);
       if (!order) throw new AppError(404, strings.order.notFound);
-      if (order.payment?.transactionRef !== intent.id) {
+      if (order.payment?.transactionRef !== transactionRef) {
         throw new AppError(409, strings.payment.referenceChanged);
       }
       if (order.payment.status === 'Paid') {
@@ -125,7 +185,7 @@ async function completeStripePayment(userId, orderId, transactionRef, failureReq
       } else {
         assertTransition(order, ORDER_STATUS.CANCELLED);
         order.payment.status = 'Failed';
-        order.payment.failureReason = intent.last_payment_error?.message || 'Payment was not completed.';
+        order.payment.failureReason = failureReason;
         await releaseOrderStock(order, session);
         order.status = ORDER_STATUS.CANCELLED;
       }
@@ -184,18 +244,18 @@ async function simulatePayment(userId, orderId, outcome) {
 }
 
 function getPaymentConfiguration() {
-  if (config.paymentProvider === 'stripe' && !config.stripePublishableKey) {
-    throw new AppError(503, strings.payment.stripeIncomplete);
+  if (config.paymentProvider === 'razorpay' && !config.razorpayKeyId) {
+    throw new AppError(503, strings.payment.gatewayIncomplete);
   }
   return {
     provider: config.paymentProvider,
-    publishableKey: config.paymentProvider === 'stripe' ? config.stripePublishableKey : null,
+    keyId: config.paymentProvider === 'razorpay' ? config.razorpayKeyId : null,
   };
 }
 
 module.exports = {
   createPaymentIntent,
-  completeStripePayment,
+  completeGatewayPayment,
   simulatePayment,
   getPaymentConfiguration,
 };
