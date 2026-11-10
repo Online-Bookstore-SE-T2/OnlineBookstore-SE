@@ -6,7 +6,7 @@ const {
   requireRole,
   requireWriteAccess,
 } = require('../middleware/auth');
-const { ROLES } = require('../constants');
+const { ROLES, PURCHASING_ROLES } = require('../constants');
 
 function createOrderRouter() {
   const router = express.Router();
@@ -26,13 +26,13 @@ function createOrderRouter() {
     asyncHandler(orderController.advanceSellerOrder)
   );
 
-  router.get('/', requireRole(ROLES.BUYER), asyncHandler(orderController.listOrders));
+  router.get('/', requireRole(...PURCHASING_ROLES), asyncHandler(orderController.listOrders));
 
-  router.get('/:orderId', requireRole(ROLES.BUYER), asyncHandler(orderController.getOrder));
+  router.get('/:orderId', requireRole(...PURCHASING_ROLES), asyncHandler(orderController.getOrder));
 
   router.post(
     '/:orderId/cancel',
-    requireRole(ROLES.BUYER),
+    requireRole(...PURCHASING_ROLES),
     requireWriteAccess,
     asyncHandler(orderController.cancelOrder)
   );

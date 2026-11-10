@@ -67,6 +67,7 @@ module.exports = {
     invalidQuantity: 'Quantity must be a positive whole number.',
     onlyAvailable: (quantity) => `Only ${quantity} item(s) are currently available.`,
     listingNotFound: 'Listing not found.',
+    ownListing: 'You cannot buy your own listing.',
   },
   checkout: {
     validDeliveryAddress: 'A valid saved delivery address is required.',

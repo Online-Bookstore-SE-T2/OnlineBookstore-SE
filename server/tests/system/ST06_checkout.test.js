@@ -101,10 +101,32 @@ describe('ST06 Checkout Validation', () => {
     expect(res.status).toBe(401);
   });
 
-  test('TC-CHECKOUT-06: prevents sellers from checking out as buyers', async () => {
+
+  async function giveSellerAnAddress() {
+    const seller = await User.findById(data.users['U-S01']._id);
+    seller.addresses.push({ line: '8, Gandhi Street, T Nagar', city: 'Chennai', state: 'Tamil Nadu', postalCode: '600017' });
+    await seller.save();
+    return seller.addresses[0]._id.toString();
+  }
+
+  // BR-2 / D-08: an approved seller keeps buyer privileges and can buy from other sellers.
+  test('TC-CHECKOUT-06: an approved seller can check out another seller’s listing', async () => {
+    const sellerAddressId = await giveSellerAnAddress();
+    await Cart.create({ buyer: data.users['U-S01']._id, items: [{ listing: data.listings.L08._id, quantity: 1 }] });
+
     const res = await request(app)
       .post('/api/checkout/validate')
       .set(sellerAuth)
+      .send({ addressId: sellerAddressId });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('TC-CHECKOUT-06b: an administrator still cannot check out', async () => {
+    const adminAuth = bearer(await tokenFor(app, data.users.A01));
+    const res = await request(app)
+      .post('/api/checkout/validate')
+      .set(adminAuth)
       .send({ addressId });
 
     expect(res.status).toBe(403);

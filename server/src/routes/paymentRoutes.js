@@ -6,13 +6,13 @@ const {
     requireRole,
     requireWriteAccess,
 } = require('../middleware/auth');
-const { ROLES } = require('../constants');
+const { PURCHASING_ROLES } = require('../constants');
 
 function createPaymentRouter() {
     const router = express.Router();
 
     router.use(authenticate);
-    router.use(requireRole(ROLES.BUYER));
+    router.use(requireRole(...PURCHASING_ROLES));
     router.use(requireWriteAccess);
 
     router.get('/config', asyncHandler(paymentController.getConfiguration));

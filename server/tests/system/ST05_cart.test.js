@@ -192,6 +192,25 @@ describe('ST05 Shopping Cart', () => {
         expect(res.body.cart.items).toEqual([]);
     });
 
+    // D-08: a seller may add other sellers' listings but not their own.
+    test('TC-CART-13: a seller cannot add their own listing to the cart', async() => {
+        const sellerAuth = bearer(await tokenFor(app, data.users['U-S01']));
+
+        const own = await request(app)
+            .post('/api/cart/items')
+            .set(sellerAuth)
+            .send({ listingId: data.listings.L01.id, quantity: 1 });
+        expect(own.status).toBe(409);
+        expect(JSON.stringify(own.body)).toMatch(/own listing/i);
+
+        const other = await request(app)
+            .post('/api/cart/items')
+            .set(sellerAuth)
+            .send({ listingId: data.listings.L08.id, quantity: 1 });
+        expect(other.status).toBe(200);
+        expect(other.body.cart.items).toHaveLength(1);
+    });
+
     test('TC-CART-11: unauthenticated users cannot access the cart', async() => {
         const res = await request(app)
             .get('/api/cart');

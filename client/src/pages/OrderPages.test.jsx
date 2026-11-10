@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SellerOrdersPage } from './OrderPages.jsx';
-import { advanceSellerOrder, listSellerOrders } from '../api/orders.js';
+import { OrderDetailPage, SellerOrdersPage } from './OrderPages.jsx';
+import { advanceSellerOrder, cancelOrder, getOrder, listSellerOrders } from '../api/orders.js';
 
 vi.mock('../api/orders.js', () => ({
   advanceSellerOrder: vi.fn(),
@@ -62,4 +62,60 @@ describe('SellerOrdersPage', () => {
     expect(await screen.findByText('Delivered')).toBeInTheDocument();
   });
 
+});
+
+// D-03 / TC-NFR-UI-03: cancelling an order is destructive, so it must be confirmed first.
+describe('OrderDetailPage cancellation', () => {
+  const placed = {
+    id: 'order-777',
+    status: 'Placed',
+    createdAt: '2026-11-10T10:00:00.000Z',
+    items: [{ listing: 'listing-1', title: 'The Silent Orchard', quantity: 1, unitPrice: 349 }],
+    deliveryCharge: 0,
+    totalAmount: 349,
+    deliveryAddress: { line: 'Flat 12', city: 'Bengaluru', state: 'Karnataka', postalCode: '560011' },
+    statusHistory: [],
+  };
+
+  function renderDetail() {
+    return render(
+      <MemoryRouter initialEntries={['/orders/order-777']}>
+        <Routes>
+          <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getOrder.mockResolvedValue(placed);
+    cancelOrder.mockResolvedValue({ ...placed, status: 'Cancelled' });
+  });
+
+  it('asks for confirmation, and "Keep order" leaves the order untouched', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('order-777');
+    expect(screen.getByRole('button', { name: 'Keep order' })).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: 'Keep order' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(cancelOrder).not.toHaveBeenCalled();
+  });
+
+  it('cancels the order only after the user confirms', async () => {
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Cancel order' }));
+    await user.click(await screen.findByRole('button', { name: 'Yes, cancel order' }));
+
+    await waitFor(() => expect(cancelOrder).toHaveBeenCalledWith('order-777'));
+    expect(await screen.findByText(/Order cancelled/)).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
 });

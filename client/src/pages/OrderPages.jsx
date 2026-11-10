@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Alert from '../components/Alert.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { apiRequest } from '../api/http.js';
 import {
   advanceSellerOrder,
@@ -75,6 +76,7 @@ export function OrderDetailPage({ confirmation = false }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(location.state?.notice || '');
   const [busy, setBusy] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -113,6 +115,7 @@ export function OrderDetailPage({ confirmation = false }) {
       setError(requestError.message);
     } finally {
       setBusy(false);
+      setConfirmingCancel(false);
     }
   }
 
@@ -174,7 +177,18 @@ export function OrderDetailPage({ confirmation = false }) {
           </ol>
         ) : <p className="muted">Status history is unavailable for this older order.</p>}
         {!canCancel && <p className="muted">Cancellation is no longer possible after an order has shipped, or after it is delivered or already cancelled.</p>}
-        {canCancel && <button className="btn btn-secondary" type="button" disabled={busy} onClick={onCancel}>{busy ? 'Cancelling...' : 'Cancel order'}</button>}
+        {canCancel && <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => setConfirmingCancel(true)}>{busy ? 'Cancelling...' : 'Cancel order'}</button>}
+        {confirmingCancel && (
+          <ConfirmDialog
+            title="Cancel this order?"
+            message={`Order ${order.id} will be cancelled and the reserved stock released.${order.status === 'Paid' ? ' The payment will be marked for refund.' : ''} This cannot be undone.`}
+            confirmLabel={busy ? 'Cancelling...' : 'Yes, cancel order'}
+            cancelLabel="Keep order"
+            busy={busy}
+            onConfirm={onCancel}
+            onCancel={() => setConfirmingCancel(false)}
+          />
+        )}
         {order.status === 'Placed' && order.payment?.provider === 'stripe' && order.payment.status === 'Pending' && (
           <button className="btn btn-secondary" type="button" disabled={busy} onClick={checkPaymentStatus}>
             {busy ? 'Checking...' : 'Check payment status'}

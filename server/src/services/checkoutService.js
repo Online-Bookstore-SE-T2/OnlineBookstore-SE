@@ -4,7 +4,7 @@ const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const {
     LISTING_STATUS,
-    ROLES,
+    PURCHASING_ROLES,
     ORDER_STATUS,
 } = require('../constants');
 const { AppError } = require('../utils/errors');
@@ -63,7 +63,7 @@ async function validateCheckout(userId, addressId) {
         throw new AppError(401, strings.checkout.invalidSession);
     }
 
-    if (user.role !== ROLES.BUYER) {
+    if (!PURCHASING_ROLES.includes(user.role)) {
         throw new AppError(403, strings.checkout.buyersOnlyCheckout);
     }
 
@@ -152,7 +152,7 @@ async function createOrder(userId, addressId) {
                 throw new AppError(401, strings.checkout.invalidSession);
             }
 
-            if (user.role !== ROLES.BUYER) {
+            if (!PURCHASING_ROLES.includes(user.role)) {
                 throw new AppError(403, strings.checkout.buyersOnlyPlaceOrders);
             }
 
@@ -194,6 +194,10 @@ async function createOrder(userId, addressId) {
                         409,
                         strings.checkout.cartItemUnavailable
                     );
+                }
+
+                if (String(listing.seller._id) === String(user._id)) {
+                    throw new AppError(409, strings.cart.ownListing);
                 }
 
                 const unitPricePaise = Math.round(listing.price * 100);

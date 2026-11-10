@@ -35,7 +35,7 @@ export default function App() {
           <Route
             path="checkout"
             element={
-              <RequireAuth roles={['Buyer']}>
+              <RequireAuth roles={['Buyer', 'Seller']}>
                 <CheckoutPage />
               </RequireAuth>
             }
@@ -43,7 +43,7 @@ export default function App() {
           <Route
             path="orders"
             element={
-              <RequireAuth roles={['Buyer']}>
+              <RequireAuth roles={['Buyer', 'Seller']}>
                 <OrderHistoryPage />
               </RequireAuth>
             }
@@ -51,7 +51,7 @@ export default function App() {
           <Route
             path="orders/:orderId/confirmation"
             element={
-              <RequireAuth roles={['Buyer']}>
+              <RequireAuth roles={['Buyer', 'Seller']}>
                 <OrderDetailPage confirmation />
               </RequireAuth>
             }
@@ -59,7 +59,7 @@ export default function App() {
           <Route
             path="orders/:orderId"
             element={
-              <RequireAuth roles={['Buyer']}>
+              <RequireAuth roles={['Buyer', 'Seller']}>
                 <OrderDetailPage />
               </RequireAuth>
             }

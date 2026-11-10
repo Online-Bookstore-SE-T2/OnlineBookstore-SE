@@ -183,6 +183,12 @@ async function addItem(buyerId, listingId, quantity = 1) {
   }
 
   const listing = await getActiveListing(listingId);
+
+  // D-08: a seller may buy from other sellers but never from themselves.
+  if (String(listing.seller?._id ?? listing.seller) === String(buyerId)) {
+    throw new AppError(409, strings.cart.ownListing);
+  }
+
   const cart = await getOrCreateCart(buyerId);
 
   const existingItem = cart.items.find(
