@@ -35,3 +35,26 @@ Database: MongoDB 7
 
 The execution-logs directory contains captured command output when the
 corresponding temporary log files were available at the time of collection.
+
+---
+
+## 9 November 2026 – Additional automated execution
+
+Evidence directory: `execution-logs/20261109-152324/`
+
+- Backend Jest: 29 suites passed; 329 tests passed.
+- Frontend Vitest: 15 files passed; 125 tests passed.
+- Combined automated tests: 454 passed.
+- Frontend production build: passed; 99 modules transformed.
+- `git diff --check`: passed.
+- Backend duration: approximately 625.428 seconds.
+- Frontend test duration: approximately 131.66 seconds.
+- Production build duration: approximately 11.33 seconds.
+
+API smoke checks:
+- Health endpoint: HTTP 200, 18.4 ms.
+- Catalog endpoint: HTTP 200, 62.2 ms.
+- Search endpoint: HTTP 200, 61.8 ms.
+
+These API timings are individual observations, not concurrent-load benchmarks.
+See `execution-logs/20261109-152324/` for captured execution output.
