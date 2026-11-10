@@ -244,3 +244,30 @@ load-test evidence. NFR01 is not yet fully satisfied.
 
 All measurements in this report are local development results. They are not
 a claim of production performance or a completed acceptance sign-off.
+---
+
+## 12. Additional search load test – 10 November 2026
+
+A separate 30-second search load test was executed against
+`GET /api/books/search?q=technology` using autocannon with 200 concurrent
+connections.
+
+| Metric | Result |
+|---|---:|
+| Concurrent connections | 200 |
+| Duration | 30 seconds |
+| Successful HTTP 200 responses | 1,011 |
+| Other HTTP status codes | None reported |
+| Average throughput | 33.71 requests/second |
+| Average latency | 5,444 ms |
+| Median latency | 5,375 ms |
+| 97.5th-percentile latency | 7,627 ms |
+| Maximum latency | 9,106 ms |
+| Total test time reported | 31.62 seconds |
+| Data received | 10.3 MB |
+
+The test confirms that search remains significantly slower than the
+800 ms read-request target under high concurrency. The test used 200
+concurrent connections; it does not establish that 200 distinct
+authenticated users were simulated. These results are local development
+measurements and do not represent production capacity.
