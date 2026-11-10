@@ -60,10 +60,11 @@ function makeIsbn13(number) {
 }
 
 function makeBook(number, categoryId) {
-  const book = {
   const categoryIndex = number % CATEGORIES.length;
   const topicIndex = Math.floor(number / CATEGORIES.length) % TOPICS.length;
   const authorIndex = number % AUTHORS.length;
+
+  const book = {
 
   return {
     isbn: makeIsbn13(number),

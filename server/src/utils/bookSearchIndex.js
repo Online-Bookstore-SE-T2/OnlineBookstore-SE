@@ -19,7 +19,10 @@ function buildBookSearchIndex(book = {}) {
 }
 
 function getSearchTrigrams(text) {
-  if (typeof text !== 'string' || !/^[\x00-\x7F]+$/.test(text)) {
+  if (
+    typeof text !== 'string' ||
+    Array.from(text).some((character) => character.charCodeAt(0) > 0x7f)
+  ) {
     return null;
   }
 
