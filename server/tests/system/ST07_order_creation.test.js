@@ -212,10 +212,36 @@ describe('ST07 Order Creation', () => {
     expect(response.status).toBe(401);
   });
 
-  test('TC-ORDER-08: prevents sellers from creating buyer orders', async () => {
-    const response = await placeOrder(sellerAuth);
 
-    expect(response.status).toBe(403);
+  async function giveSellerAnAddress() {
+    const seller = await User.findById(data.users['U-S01']._id);
+    seller.addresses.push({ line: '8, Gandhi Street, T Nagar', city: 'Chennai', state: 'Tamil Nadu', postalCode: '600017' });
+    await seller.save();
+    return seller.addresses[0]._id.toString();
+  }
+
+  // BR-2 / D-08: a seller can place an order with another seller and then see it under /orders.
+  test('TC-ORDER-08: an approved seller can buy another seller’s listing and see the order', async () => {
+    const sellerAddressId = await giveSellerAnAddress();
+    await Cart.create({ buyer: data.users['U-S01']._id, items: [{ listing: data.listings.L08._id, quantity: 1 }] });
+
+    const response = await placeOrder(sellerAuth, sellerAddressId);
+    expect(response.status).toBe(201);
+
+    const history = await request(app).get('/api/orders').set(sellerAuth);
+    expect(history.status).toBe(200);
+    expect(JSON.stringify(history.body)).toContain(data.books.B07.title);
+  });
+
+  test('TC-ORDER-08b: a seller cannot buy their own listing and stock is unchanged', async () => {
+    const sellerAddressId = await giveSellerAnAddress();
+    await Cart.create({ buyer: data.users['U-S01']._id, items: [{ listing: data.listings.L01._id, quantity: 1 }] });
+
+    const response = await placeOrder(sellerAuth, sellerAddressId);
+    expect(response.status).toBe(409);
+    expect(JSON.stringify(response.body)).toMatch(/own listing/i);
+    expect((await Listing.findById(data.listings.L01._id)).quantity).toBe(5);
+    expect(await Order.countDocuments({ buyer: data.users['U-S01']._id })).toBe(0);
   });
 
   test('TC-ORDER-09: rejects an invalid delivery address', async () => {

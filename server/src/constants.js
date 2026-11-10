@@ -6,6 +6,9 @@ const ROLES = Object.freeze({
   ADMINISTRATOR: 'Administrator',
 });
 
+// D-08 / BR-2: an approved seller keeps every buyer privilege, so both roles may purchase.
+const PURCHASING_ROLES = Object.freeze([ROLES.BUYER, ROLES.SELLER]);
+
 // Appendix B: Account Status is Active, Suspended or Deleted.
 const ACCOUNT_STATUS = Object.freeze({
   ACTIVE: 'Active',
@@ -71,6 +74,7 @@ const LISTING_REMOVAL_STATUS = Object.freeze({
 
 module.exports = {
   ROLES,
+  PURCHASING_ROLES,
   ACCOUNT_STATUS,
   REJECT_REASON_CODES,
   SELLER_REQUEST_STATUS,
