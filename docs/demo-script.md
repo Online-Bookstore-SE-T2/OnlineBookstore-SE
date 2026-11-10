@@ -10,7 +10,7 @@ This script runs the whole system in about 20 minutes: browsing, registration, s
 | --- | --- | --- |
 | Start | `docker compose up --build -d`, or `npm run dev:server` and `npm run dev:client` against a replica-set MongoDB | Already running at the service URL |
 | Data | `npm run seed:books -w server` then `npm run seed:demo -w server` | `seed:admin` and `seed:books` only. Create the buyer and seller accounts live during the demo (step 2), or the night before |
-| Payments | Simulator buttons on the checkout page | Stripe test mode, card `4242 4242 4242 4242` (any future date and CVC); `4000 0000 0000 0002` is declined |
+| Payments | Simulator buttons on the checkout page | Razorpay test mode: card `4111 1111 1111 1111` (any future expiry and CVV) or UPI `success@razorpay`; UPI `failure@razorpay` fails |
 | Shows HTTPS (NFR05) | No | Yes: point at the padlock and the HTTP-to-HTTPS redirect |
 
 A good compromise is to run steps 1–9 locally and finish with step 10 on the deployed site.
@@ -52,7 +52,7 @@ Open two browser windows: an ordinary one for the buyer and seller, and a privat
 
 1. Add *Gardens of the Monsoon* to the cart. The header cart count updates. Open the cart and change the quantity: going over the stock is refused.
 2. Click **Checkout**. Choose the saved address, check the summary, and click **Place order and pay**.
-3. Choose **Simulate declined payment** (or the declined Stripe card). The order page says *Payment failed and the reserved stock was released.*, and the order is *Cancelled* (REQ-11).
+3. Choose **Simulate declined payment** (or a failed Razorpay test payment, then close the Razorpay window). The order page says *Payment failed and the reserved stock was released.*, and the order is *Cancelled* (REQ-11).
 4. Check out again and choose **Simulate successful payment**. The confirmation page appears, the order shows *Paid* under **Orders**, and a notification arrives under **Notifications** (REQ-15).
 
 ### 4. Cancel an order (1 min): SRS 6.2
@@ -93,7 +93,7 @@ Open two browser windows: an ordinary one for the buyer and seller, and a privat
 
 1. Open the Render URL over plain `http://` to show the redirect to HTTPS.
 2. Show `/api/health/ready` answering `{"status":"ok","database":"up"}`, and the **Uptime** workflow runs in GitHub Actions once `DEMO_URL` is set.
-3. If time allows, place a Stripe test-mode order with `4242 4242 4242 4242` and show the order e-mail arriving (REQ-15, #99).
+3. If time allows, place a Razorpay test-mode order with card `4111 1111 1111 1111` and show the order e-mail arriving (REQ-15, #99).
 
 ## If something goes wrong
 
