@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Alert from '../components/Alert.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { apiRequest } from '../api/http.js';
@@ -69,12 +69,10 @@ export function OrderHistoryPage() {
 
 export function OrderDetailPage({ confirmation = false }) {
   const { orderId } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState(location.state?.notice || '');
+  // Notices passed with navigation are shown once by Layout; this holds the page's own messages.
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
@@ -82,19 +80,7 @@ export function OrderDetailPage({ confirmation = false }) {
     let active = true;
     async function load() {
       try {
-        const paymentIntentId = searchParams.get('payment_intent');
-        let current;
-        if (paymentIntentId) {
-          const result = await apiRequest(`/payments/orders/${encodeURIComponent(orderId)}/confirm`, {
-            method: 'POST',
-            body: { transactionRef: paymentIntentId },
-          });
-          current = result.order;
-          window.dispatchEvent(new Event('notifications-updated'));
-          navigate(location.pathname, { replace: true, state: { confirmed: current.status === 'Paid' } });
-        } else {
-          current = await getOrder(orderId);
-        }
+        const current = await getOrder(orderId);
         if (active) setOrder(current);
       } catch (requestError) {
         if (active) setError(requestError.message);
@@ -102,7 +88,7 @@ export function OrderDetailPage({ confirmation = false }) {
     }
     load();
     return () => { active = false; };
-  }, [orderId, location.pathname, navigate, searchParams]);
+  }, [orderId]);
 
   async function onCancel() {
     setBusy(true);
@@ -189,7 +175,7 @@ export function OrderDetailPage({ confirmation = false }) {
             onCancel={() => setConfirmingCancel(false)}
           />
         )}
-        {order.status === 'Placed' && order.payment?.provider === 'stripe' && order.payment.status === 'Pending' && (
+        {order.status === 'Placed' && order.payment?.provider === 'razorpay' && order.payment.status === 'Pending' && (
           <button className="btn btn-secondary" type="button" disabled={busy} onClick={checkPaymentStatus}>
             {busy ? 'Checking...' : 'Check payment status'}
           </button>

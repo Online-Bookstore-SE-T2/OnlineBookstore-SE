@@ -44,9 +44,10 @@ describe('error codes (SASD 4.4.1)', () => {
     [500, 'INTERNAL_ERROR'],
     [410, 'GONE'],
     [413, 'PAYLOAD_TOO_LARGE'],
+    [502, 'BAD_GATEWAY'],
     [503, 'SERVICE_UNAVAILABLE'],
     [418, 'BAD_REQUEST'],
-    [502, 'INTERNAL_ERROR'],
+    [504, 'INTERNAL_ERROR'],
   ])('status %i maps to %s', (status, code) => {
     expect(errorCodeFor(status)).toBe(code);
     expect(new AppError(status, 'x').code).toBe(code);

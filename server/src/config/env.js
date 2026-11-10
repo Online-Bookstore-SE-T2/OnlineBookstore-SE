@@ -30,8 +30,9 @@ const config = {
     password: process.env.ADMIN_PASSWORD,
   },
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  // Razorpay test-mode keys (Dashboard → Test Mode → API Keys). The key id is public; the secret stays on the server.
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
   // SASD 4.4.3: optional address that receives monitoring alerts by e-mail.
   alertEmail: process.env.ALERT_EMAIL,
   smtp: {
@@ -45,14 +46,15 @@ const config = {
 
 function assertServerConfig() {
   const missing = ['mongoUri', 'jwtSecret'].filter((key) => !config[key]);
-  if (!['simulator', 'stripe'].includes(config.paymentProvider)) {
-    missing.push('PAYMENT_PROVIDER must be simulator or stripe');
+  if (!['simulator', 'razorpay'].includes(config.paymentProvider)) {
+    missing.push('PAYMENT_PROVIDER must be simulator or razorpay');
   }
-  if (config.env === 'production' && config.paymentProvider !== 'stripe') {
-    missing.push('PAYMENT_PROVIDER=stripe');
+  if (config.env === 'production' && config.paymentProvider !== 'razorpay') {
+    missing.push('PAYMENT_PROVIDER=razorpay');
   }
-  if (config.paymentProvider === 'stripe' && !config.stripeSecretKey) {
-    missing.push('STRIPE_SECRET_KEY');
+  if (config.paymentProvider === 'razorpay') {
+    if (!config.razorpayKeyId) missing.push('RAZORPAY_KEY_ID');
+    if (!config.razorpayKeySecret) missing.push('RAZORPAY_KEY_SECRET');
   }
   if (missing.length > 0) {
     throw new Error(`Missing required environment configuration: ${missing.join(', ')}`);

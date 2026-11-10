@@ -38,11 +38,15 @@ async function createIntent(req, res) {
 }
 
 async function completeIntent(req, res) {
-    const order = await paymentService.completeStripePayment(
+    const order = await paymentService.completeGatewayPayment(
         getUserId(req),
         req.params.orderId,
-        req.body.transactionRef,
-        req.body.failure === true,
+        {
+            transactionRef: req.body.transactionRef,
+            paymentId: req.body.paymentId,
+            signature: req.body.signature,
+            failure: req.body.failure === true,
+        },
     );
     markOutcome(res, order);
     res.status(200).json({ order });

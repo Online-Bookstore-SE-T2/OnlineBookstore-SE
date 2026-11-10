@@ -13,14 +13,14 @@ services:
       - key: NODE_ENV
         value: production
       - key: PAYMENT_PROVIDER
-        value: stripe
+        value: razorpay
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: STRIPE_SECRET_KEY
+      - key: RAZORPAY_KEY_ID
         sync: false
-      - key: STRIPE_PUBLISHABLE_KEY
+      - key: RAZORPAY_KEY_SECRET
         sync: false
       - key: SMTP_HOST
         sync: false

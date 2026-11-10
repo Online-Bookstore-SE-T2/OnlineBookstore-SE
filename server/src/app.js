@@ -47,7 +47,19 @@ function createApp({
     app.use(enforceHttps);
   }
 
-  app.use(helmet());
+  // Razorpay Checkout loads its script from checkout.razorpay.com and opens its form in an
+  // iframe from api.razorpay.com; netbanking and some card checks open a pop-up window.
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
+        frameSrc: ["'self'", 'https://api.razorpay.com'],
+        connectSrc: ["'self'", 'https://api.razorpay.com', 'https://lumberjack.razorpay.com'],
+        imgSrc: ["'self'", 'data:', 'https://cdn.razorpay.com'],
+      },
+    },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  }));
 
   // Restrict cross-origin requests to the configured client origin.
   app.use(
