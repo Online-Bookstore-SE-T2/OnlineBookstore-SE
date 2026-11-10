@@ -87,7 +87,7 @@ describe('Administration console', () => {
         isbn: '9789380000022',
         quantity: 1,
         orderAmount: 550,
-        paymentMethod: 'stripe',
+        paymentMethod: 'razorpay',
         transactionDate: '2026-08-01T00:00:00.000Z',
         orderStatus: 'Paid',
         remarks: '-',

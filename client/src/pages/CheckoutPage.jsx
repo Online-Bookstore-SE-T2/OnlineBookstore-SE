@@ -1,76 +1,95 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { apiRequest } from '../api/http.js';
+import { loadRazorpay } from '../api/razorpay.js';
+import { useAuth } from '../auth/AuthContext.jsx';
 import { removeCartItem } from '../api/cart.js';
 import Alert from '../components/Alert.jsx';
 
-function StripePaymentForm({ order, clientSecret, publishableKey, onPaid, onFailed }) {
-  const stripePromise = useMemo(() => loadStripe(publishableKey), [publishableKey]);
-  return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <StripePaymentFields order={order} onPaid={onPaid} onFailed={onFailed} />
-    </Elements>
-  );
-}
-
-function StripePaymentFields({ order, onPaid, onFailed }) {
-  const stripe = useStripe();
-  const elements = useElements();
+// REQ-11: pay through Razorpay Checkout (test mode). A failed attempt keeps the Razorpay window
+// open so the buyer can retry; closing it after a failure cancels the order and releases stock.
+// Closing it without trying leaves the order waiting for payment.
+function RazorpayPayment({ order, intent, keyId, user, onPaid, onFailed }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const lastFailure = useRef('');
+  const settled = useRef(false);
 
-  async function submitPayment(event) {
-    event.preventDefault();
-    if (!stripe || !elements || busy) return;
+  async function openCheckout() {
+    if (busy) return;
     setBusy(true);
     setError('');
-    const result = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required',
-      confirmParams: {
-        return_url: `${window.location.origin}/orders/${order.id}/confirmation`,
-      },
-    });
-    const intent = result.paymentIntent;
-    if (result.error) {
-      try {
-        await onFailed(order.id, order.payment.transactionRef);
-      } catch {
-        setError(`${result.error.message} Payment status could not be confirmed; check your order before retrying.`);
-        setBusy(false);
-        return;
-      }
-      setError(result.error.message || 'Payment was not completed.');
+    let Razorpay;
+    try {
+      Razorpay = await loadRazorpay();
+    } catch (loadError) {
+      setError(loadError.message);
       setBusy(false);
       return;
     }
-    if (intent?.id) {
-      try {
-        await onPaid(order.id, intent.id);
-      } catch (confirmationError) {
-        setError(confirmationError.message || 'Payment confirmation is still pending. Check your order shortly.');
-        setBusy(false);
-      }
-    }
+
+    const checkout = new Razorpay({
+      key: keyId,
+      order_id: intent.transactionRef,
+      amount: intent.amount,
+      currency: intent.currency,
+      name: 'Online Bookstore',
+      description: `Order ${order.id}`,
+      prefill: { name: user?.name || '', email: user?.email || '', contact: user?.phone || '' },
+      theme: { color: '#ffd23f' },
+      handler: async (response) => {
+        settled.current = true;
+        try {
+          await onPaid(order.id, {
+            transactionRef: response.razorpay_order_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          });
+        } catch (confirmationError) {
+          setError(confirmationError.message || 'Payment confirmation is still pending. Check your order shortly.');
+          setBusy(false);
+        }
+      },
+      modal: {
+        ondismiss: async () => {
+          if (settled.current) return;
+          if (!lastFailure.current) {
+            setBusy(false);
+            return;
+          }
+          settled.current = true;
+          try {
+            await onFailed(order.id, intent.transactionRef);
+          } catch {
+            setError(`${lastFailure.current} Payment status could not be confirmed; check your order before retrying.`);
+            setBusy(false);
+          }
+        },
+      },
+    });
+    checkout.on('payment.failed', (response) => {
+      lastFailure.current = response?.error?.description || 'Payment was not completed.';
+      setError(`${lastFailure.current} Try again in the Razorpay window, or close it to cancel the order.`);
+    });
+    checkout.open();
   }
 
   return (
-    <form className="card stack" onSubmit={submitPayment}>
-      <h2>Secure payment</h2>
-      <PaymentElement />
+    <section className="card stack" aria-labelledby="secure-payment-title">
+      <h2 id="secure-payment-title">Secure payment</h2>
+      <p>Pay INR {(intent.amount / 100).toFixed(2)} with a card, UPI or netbanking.</p>
       {error && <Alert type="error">{error}</Alert>}
-      <button className="btn" type="submit" disabled={!stripe || busy}>
-        {busy ? 'Processing payment...' : 'Pay securely'}
+      <button className="btn" type="button" disabled={busy} onClick={openCheckout}>
+        {busy ? 'Waiting for Razorpay...' : 'Pay with Razorpay'}
       </button>
-      <p className="muted">Card details are entered directly with Stripe and never sent to this bookstore.</p>
-    </form>
+      <p className="muted">Payment details are entered directly with Razorpay and never sent to this bookstore.</p>
+    </section>
   );
 }
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [addresses, setAddresses] = useState([]);
   const [addressId, setAddressId] = useState('');
   const [summary, setSummary] = useState(null);
@@ -125,10 +144,10 @@ export default function CheckoutPage() {
     }
   }, [addressId, refreshSummary]);
 
-  async function onPaid(orderId, transactionRef) {
+  async function onPaid(orderId, payment) {
     const result = await apiRequest(`/payments/orders/${orderId}/confirm`, {
       method: 'POST',
-      body: { transactionRef },
+      body: payment,
     });
     window.dispatchEvent(new Event('notifications-updated'));
     navigate(`/orders/${orderId}/confirmation`, { state: { confirmed: true } });
@@ -168,7 +187,7 @@ export default function CheckoutPage() {
       });
       setOrder(created.order);
       window.dispatchEvent(new Event('notifications-updated'));
-      if (paymentConfig.provider === 'stripe') {
+      if (paymentConfig.provider === 'razorpay') {
         try {
           const payment = await apiRequest(`/payments/orders/${created.order.id}/intent`, { method: 'POST' });
           setIntent(payment.intent);
@@ -222,11 +241,12 @@ export default function CheckoutPage() {
         <h1>Complete your payment</h1>
         <p>Order <Link to={`/orders/${order.id}`}>{order.id}</Link> · INR {Number(order.totalAmount).toFixed(2)}</p>
         {error && <Alert type="error">{error}</Alert>}
-        {paymentConfig.provider === 'stripe' && intent && order.status === 'Placed' && (
-          <StripePaymentForm
-            order={{ ...order, payment: { ...order.payment, transactionRef: intent.transactionRef } }}
-            clientSecret={intent.clientSecret}
-            publishableKey={paymentConfig.publishableKey}
+        {paymentConfig.provider === 'razorpay' && intent && order.status === 'Placed' && (
+          <RazorpayPayment
+            order={order}
+            intent={intent}
+            keyId={paymentConfig.keyId}
+            user={user}
             onPaid={onPaid}
             onFailed={onFailed}
           />
