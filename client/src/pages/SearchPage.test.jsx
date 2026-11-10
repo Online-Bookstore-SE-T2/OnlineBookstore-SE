@@ -298,3 +298,23 @@ describe('Search Books (OSP-9)', () => {
     );
   });
 });
+// D-01 / TC-ST06-01: the search API returns `id` (not `_id`); result links must still open the book.
+describe('Search result links', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('links each result to its book page when the API returns `id`', async () => {
+    const rest = { ...book };
+    delete rest._id;
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      response(mockSearchResponse([{ ...rest, id: 'book-9' }]))
+    );
+
+    renderSearchPage();
+
+    const link = await screen.findByRole('link', { name: 'The Silent Orchard' });
+    expect(link).toHaveAttribute('href', '/books/book-9');
+    expect(link.getAttribute('href')).not.toContain('undefined');
+  });
+});

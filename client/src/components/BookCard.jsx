@@ -29,7 +29,7 @@ export default function BookCard({ book, showIsbn = false }) {
       <div className="book-card-body">
         {category && <span className="tag">{category}</span>}
         <h3 className="book-card-title">
-          <Link to={`/books/${book._id}`}>{book.title}</Link>
+          <Link to={`/books/${book._id ?? book.id}`}>{book.title}</Link>
         </h3>
         <p className="book-card-author">{book.author || 'Unknown'}</p>
         {showIsbn && book.isbn && (

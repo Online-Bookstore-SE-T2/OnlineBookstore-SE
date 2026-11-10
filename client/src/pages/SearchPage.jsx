@@ -193,7 +193,7 @@ export function SearchPage() {
             ) : (
               <div className="book-grid book-grid-wide">
                 {results.items.map((book) => (
-                  <BookCard key={book._id} book={book} showIsbn />
+                  <BookCard key={book._id ?? book.id} book={book} showIsbn />
                 ))}
               </div>
             )}
