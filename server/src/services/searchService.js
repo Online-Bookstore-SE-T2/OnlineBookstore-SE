@@ -1,4 +1,5 @@
 const { Book, Category } = require('../models');
+const { getSearchTrigrams } = require('../utils/bookSearchIndex');
 
 const PAGE_SIZE = 20;
 
@@ -27,6 +28,7 @@ function transformCategory(category) {
 function transformBook(book) {
   const { _id, category, ...fields } = book;
   delete fields.__v;
+  delete fields.searchNgrams;
 
   return {
     ...fields,
@@ -70,17 +72,30 @@ async function searchBooks(query = {}) {
 
   const pattern = new RegExp(escapeRegex(searchText), 'i');
 
-  filter.$or = [
-    { title: pattern },
-    { author: pattern },
-    { isbn: pattern },
-  ];
+  const exactSearchFilter = {
+    $or: [
+      { title: pattern },
+      { author: pattern },
+      { isbn: pattern },
+    ],
+  };
+
+  // Use indexed trigrams for ASCII queries of at least three characters.
+  // Short and non-ASCII queries retain the original regex-only search path.
+  const trigrams = getSearchTrigrams(searchText);
+
+  const candidateFilter = trigrams
+    ? { ...filter, searchNgrams: { $all: trigrams } }
+    : filter;
 
   const skip = (page - 1) * PAGE_SIZE;
 
-  // Retrieve the page and exact result count in one aggregation.
+  // Narrow candidates first, then preserve exact substring matching.
+  // The facet still returns the page and exact total in one aggregation.
   const [result] = await Book.aggregate([
-    { $match: filter },
+    { $match: candidateFilter },
+    { $match: exactSearchFilter },
+    { $project: { searchNgrams: 0 } },
     {
       $facet: {
         items: [

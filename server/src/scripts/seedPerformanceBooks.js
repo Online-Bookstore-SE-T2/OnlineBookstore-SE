@@ -2,6 +2,7 @@ const { config, assertServerConfig } = require('../config/env');
 const { connectDatabase, disconnectDatabase } = require('../config/db');
 const Book = require('../models/Book');
 const Category = require('../models/Category');
+const { buildBookSearchIndex } = require('../utils/bookSearchIndex');
 
 const TARGET_COUNT = 5000;
 const FIRST_NUMBER = 100001;
@@ -59,6 +60,7 @@ function makeIsbn13(number) {
 }
 
 function makeBook(number, categoryId) {
+  const book = {
   const categoryIndex = number % CATEGORIES.length;
   const topicIndex = Math.floor(number / CATEGORIES.length) % TOPICS.length;
   const authorIndex = number % AUTHORS.length;
@@ -76,6 +78,8 @@ function makeBook(number, categoryId) {
     averageRating: Number((1 + (number % 41) / 10).toFixed(1)),
     reviewCount: number % 250,
   };
+
+  return { ...book, ...buildBookSearchIndex(book) };
 }
 
 async function seedPerformanceBooks() {
