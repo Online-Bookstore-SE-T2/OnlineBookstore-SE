@@ -1,6 +1,6 @@
 // ST04 - REQ-4 (FR15) administration console API, plus BR-3, BR-5 and SRS 6.2 safety cases.
 const request = require('supertest');
-const { User, AuditLog, Review, Book } = require('../../src/models');
+const { User, AuditLog, Review, Book, Listing } = require('../../src/models');
 const { testApp } = require('../helpers/app');
 const { useTestDatabase } = require('../helpers/db');
 const { seedMarketplace } = require('../helpers/fixtures');
@@ -78,6 +78,46 @@ describe('ST04 console views', () => {
     expect(JSON.stringify(report.body)).not.toMatch(/email|phone|address|password/i);
     expect((await request(app).get('/api/admin/order-transaction-report').set(buyerAuth)).status).toBe(403);
     expect((await request(app).get('/api/admin/order-transaction-report').set(sellerAuth)).status).toBe(403);
+  });
+
+  test('TC-ST04-CATALOG-REPORT: the administrator gets the paginated catalog and listing report without seller contact details', async () => {
+    await Book.updateOne({ _id: data.books.B01._id }, { $set: { averageRating: 4.5 } });
+    await Listing.updateOne({ _id: data.listings.L01._id }, { $set: { notes: 'First edition in excellent condition.' } });
+
+    const report = await request(app).get('/api/admin/catalog-listing-report?page=1').set(adminAuth);
+    expect(report.status).toBe(200);
+    expect(report.body).toMatchObject({ page: 1, pageSize: 20, total: 5, totalPages: 1 });
+    const row = report.body.items.find((item) => item.listingId === data.listings.L01.id);
+    expect(row).toMatchObject({
+      isbn: '9789380000015',
+      bookTitle: 'The Silent Orchard',
+      author: 'Meera Iyer',
+      category: 'Fiction',
+      sellerName: 'Kiran Hegde',
+      condition: 'New',
+      unitPrice: 349,
+      quantityAvailable: 5,
+      listingStatus: 'Active',
+      averageRating: 4.5,
+      remarks: 'First edition in excellent condition.',
+    });
+    expect(Object.keys(row).sort()).toEqual([
+      'listingId',
+      'isbn',
+      'bookTitle',
+      'author',
+      'category',
+      'sellerName',
+      'condition',
+      'unitPrice',
+      'quantityAvailable',
+      'listingStatus',
+      'averageRating',
+      'remarks',
+    ].sort());
+    expect(JSON.stringify(report.body)).not.toMatch(/email|phone|address|password/i);
+    expect((await request(app).get('/api/admin/catalog-listing-report').set(buyerAuth)).status).toBe(403);
+    expect((await request(app).get('/api/admin/catalog-listing-report').set(sellerAuth)).status).toBe(403);
   });
 });
 

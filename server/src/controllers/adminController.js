@@ -52,6 +52,10 @@ async function listOrderTransactionReport(req, res) {
   res.json(await adminService.listOrderTransactionReport({ page: req.query.page }));
 }
 
+async function listCatalogListingReport(req, res) {
+  res.json(await adminService.listCatalogListingReport({ page: req.query.page }));
+}
+
 async function approveSellerRequest(req, res) {
   done(res, await adminService.approveSellerRequest(req.user, req.params.id));
 }
@@ -120,6 +124,7 @@ module.exports = {
   promoteUser,
   listSellerRequests,
   listOrderTransactionReport,
+  listCatalogListingReport,
   approveSellerRequest,
   rejectSellerRequest,
   createBook,

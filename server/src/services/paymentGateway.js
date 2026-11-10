@@ -2,12 +2,13 @@ const Stripe = require('stripe');
 const { randomUUID } = require('crypto');
 const { config } = require('../config/env');
 const { AppError } = require('../utils/errors');
+const strings = require('../resources/strings');
 
 let stripeClient;
 
 function stripe() {
   if (config.paymentProvider !== 'stripe' || !config.stripeSecretKey) {
-    throw new AppError(503, 'Stripe sandbox payments are not configured.');
+    throw new AppError(503, strings.payment.stripeNotConfigured);
   }
   if (!stripeClient) stripeClient = new Stripe(config.stripeSecretKey);
   return stripeClient;

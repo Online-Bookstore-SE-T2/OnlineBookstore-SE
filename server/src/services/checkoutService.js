@@ -8,16 +8,17 @@ const {
     ORDER_STATUS,
 } = require('../constants');
 const { AppError } = require('../utils/errors');
+const strings = require('../resources/strings');
 
 function getAddress(user, addressId) {
     if (!mongoose.isValidObjectId(addressId)) {
-        throw new AppError(400, 'A valid saved delivery address is required.');
+        throw new AppError(400, strings.checkout.validDeliveryAddress);
     }
 
     const address = user.addresses.id(addressId);
 
     if (!address) {
-        throw new AppError(404, 'Saved delivery address not found.');
+        throw new AppError(404, strings.checkout.savedAddressNotFound);
     }
 
     return address;
@@ -27,7 +28,7 @@ async function getBuyerCart(userId, session) {
     const cart = await Cart.findOne({ buyer: userId }).session(session);
 
     if (!cart || cart.items.length === 0) {
-        throw new AppError(400, 'Your cart is empty.');
+        throw new AppError(400, strings.checkout.cartEmpty);
     }
 
     return cart;
@@ -35,24 +36,24 @@ async function getBuyerCart(userId, session) {
 
 async function validateCheckout(userId, addressId) {
     if (!mongoose.isValidObjectId(addressId)) {
-        throw new AppError(400, 'A valid saved delivery address is required.');
+        throw new AppError(400, strings.checkout.validDeliveryAddress);
     }
 
     const user = await User.findById(userId);
 
     if (!user) {
-        throw new AppError(401, 'User session is invalid.');
+        throw new AppError(401, strings.checkout.invalidSession);
     }
 
     if (user.role !== ROLES.BUYER) {
-        throw new AppError(403, 'Only buyers can check out.');
+        throw new AppError(403, strings.checkout.buyersOnlyCheckout);
     }
 
     const address = getAddress(user, addressId);
     const cart = await Cart.findOne({ buyer: userId });
 
     if (!cart || cart.items.length === 0) {
-        throw new AppError(400, 'Your cart is empty.');
+        throw new AppError(400, strings.checkout.cartEmpty);
     }
 
     const items = [];
@@ -76,7 +77,7 @@ async function validateCheckout(userId, addressId) {
         }
 
         if (!Number.isSafeInteger(cartItem.quantity) || cartItem.quantity < 1) {
-            throw new AppError(409, 'A cart item has invalid quantity data.');
+            throw new AppError(409, strings.checkout.invalidCartQuantityData);
         }
 
         const available = listing.quantity >= cartItem.quantity;
@@ -87,7 +88,7 @@ async function validateCheckout(userId, addressId) {
         if (available) totalPaise += subtotalPaise;
 
         if (!Number.isSafeInteger(totalPaise)) {
-            throw new AppError(400, 'The order total is too large.');
+            throw new AppError(400, strings.checkout.totalTooLarge);
         }
 
         items.push({
@@ -130,11 +131,11 @@ async function createOrder(userId, addressId) {
             const user = await User.findById(userId).session(session);
 
             if (!user) {
-                throw new AppError(401, 'User session is invalid.');
+                throw new AppError(401, strings.checkout.invalidSession);
             }
 
             if (user.role !== ROLES.BUYER) {
-                throw new AppError(403, 'Only buyers can place orders.');
+                throw new AppError(403, strings.checkout.buyersOnlyPlaceOrders);
             }
 
             const address = getAddress(user, addressId);
@@ -151,7 +152,7 @@ async function createOrder(userId, addressId) {
                 ) {
                     throw new AppError(
                         409,
-                        'A cart item has an invalid quantity.'
+                        strings.checkout.invalidCartQuantity
                     );
                 }
 
@@ -173,7 +174,7 @@ async function createOrder(userId, addressId) {
                 ) {
                     throw new AppError(
                         409,
-                        'A cart item is no longer available.'
+                        strings.checkout.cartItemUnavailable
                     );
                 }
 
@@ -184,7 +185,7 @@ async function createOrder(userId, addressId) {
                 ) {
                     throw new AppError(
                         409,
-                        'A listing has an invalid price.'
+                        strings.checkout.invalidListingPrice
                     );
                 }
 
@@ -209,7 +210,7 @@ async function createOrder(userId, addressId) {
                 if (!updatedListing) {
                     throw new AppError(
                         409,
-                        'Stock changed or is insufficient. Please review your cart.'
+                        strings.checkout.stockChanged
                     );
                 }
 
@@ -218,7 +219,7 @@ async function createOrder(userId, addressId) {
                 if (!Number.isSafeInteger(totalPaise)) {
                     throw new AppError(
                         400,
-                        'The order total is too large.'
+                        strings.checkout.totalTooLarge
                     );
                 }
 
@@ -267,7 +268,7 @@ async function createOrder(userId, addressId) {
                           if (cartResult.matchedCount !== 1) {
                 throw new AppError(
                     409,
-                    'The cart changed. Please try again.'
+                    strings.checkout.cartChanged
                 );
             }
 

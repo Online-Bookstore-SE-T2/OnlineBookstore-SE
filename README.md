@@ -129,6 +129,8 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 
 ## Behaviour notes
 
+- **No-result search suggestions (REQ-6 / FR05):** when a submitted search returns no books, the search page displays a no-results message and suggests available categories linking to the filtered catalog. Covered by `client/src/pages/SearchPage.test.jsx`.
+
 - **Registration and login**: `POST /api/auth/register` answers `201 { token, expiresAt, user }`, so a new account is signed in straight away. `POST /api/auth/login` answers `{ token, expiresAt, user, cart }`, with `cart` shaped as below, so the header cart count needs no second request.
 - **Catalog books**: administrators add books with `POST /api/admin/books` (`isbn`, `title`, `author`, `category`, `price`, optional `description` and `coverImageUrl`) and edit them with `PATCH /api/admin/books/:id`. The ISBN must be a valid ISBN-13, is unique across live and deleted books, and cannot be edited. Both are audited and available from the Books tab of the console.
 
@@ -138,12 +140,13 @@ Every pull request to `main` runs lint, both test suites against MongoDB started
 - **Order status**: `Placed → Paid → Shipped → Delivered` and pre-shipment cancellation are validated against the transition table. Every status change records its actor and timestamp; sellers can only advance orders containing their listings.
 - **Administrator order changes**: `PATCH /api/admin/orders/:id/status` with `{ "status": ... }` follows its own table (SASD 4.2.4): `Paid → Shipped`, `Shipped → Delivered`, and cancellation from `Placed`, `Paid` or `Shipped`, so only an administrator can cancel after shipping. Cancelling restores stock and marks a paid order `Refund pending`. Administrators can never mark an order `Paid`. Each change is audited and notified, and the actions are on the Orders tab of the console.
 - **Order transaction report**: administrators can open the paginated Order transaction report from the console or request `GET /api/admin/order-transaction-report?page=1`. Each order-item row contains only the Appendix B transaction reference, order ID, buyer and seller names, book title and ISBN, quantity, order amount, payment method, transaction date, status and remarks; e-mail addresses, phone numbers and delivery addresses are not returned. New orders snapshot the ISBN so catalog changes cannot alter historical report rows.
+- **Catalog and Listing Report**: administrators can open the paginated report from the console or request `GET /api/admin/catalog-listing-report?page=1`. It includes listing ID, ISBN, book title, author, category, seller name, condition, unit price, available quantity, listing status, average rating and remarks; seller contact details are not returned.
 - **Listing removal disputes (TBD-1)**: a seller cannot remove a listing while a `Placed`, `Paid`, or `Shipped` order refers to it. The seller can submit a reason for administrator review and track the request. An administrator must record a decision note. Approval soft-removes the offer from the catalog and seller listing page but does not change or cancel existing orders; their stored order-item snapshots remain available for fulfilment or cancellation. Rejection leaves the listing unchanged.
 - **E-mail**: post-commit SMTP e-mails use STARTTLS and bounded retries. Seller order notifications are in-app only and expose only the seller's own lines, not the buyer's e-mail.
 - **Database queries**: `mongoose.set('sanitizeFilter', true)` is on (`server/src/config/db.js`), so any query operator written in code (`$gt`, `$in`, `$ne`, ...) must be wrapped in `mongoose.trusted(...)`. Without that the query fails with a `CastError`, which the API reports as a `404`.
 
-## Remaining SRS work
+## SRS delivery and acceptance status
 
-The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were already delivered in merged PRs #96 and #95, respectively. Remaining SRS work includes:
+The linked sprint issues for checkout, order tracking, seller fulfillment, notifications, e-mail and sandbox payment are implemented. Daily backup/restore and demo seeding were delivered in merged PRs #96 and #95, respectively.
 
-- Suggested categories when a search finds nothing (REQ-6).
+No-result search category suggestions (REQ-6 / FR05) are also implemented; see the Behaviour notes above. Remaining acceptance activities and unverified requirements are recorded in `docs/test-reports/OSP-84-test-summary-report.md` and `docs/test-reports/requirement-coverage-matrix.md`.

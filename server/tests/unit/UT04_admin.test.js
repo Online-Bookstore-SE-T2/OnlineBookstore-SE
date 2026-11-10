@@ -112,6 +112,62 @@ describe('UT04 order transaction report', () => {
   });
 });
 
+describe('UT04 catalog and listing report', () => {
+  test('returns only the Appendix B listing fields, excludes deleted listings and is paginated', async () => {
+    await Book.updateOne({ _id: data.books.B01._id }, { $set: { averageRating: 4.5 } });
+    await Listing.updateOne({ _id: data.listings.L01._id }, { $set: { notes: 'First edition in excellent condition.' } });
+    await Listing.updateOne({ _id: data.listings.L08._id }, { $set: { deletedAt: new Date() } });
+
+    for (let i = 0; i < 17; i += 1) {
+      await Listing.create({
+        book: data.books.B01._id,
+        seller: data.users['U-S01']._id,
+        condition: i % 2 === 0 ? 'New' : 'Good',
+        price: 250 + i,
+        quantity: i + 1,
+      });
+    }
+
+    const first = await adminService.listCatalogListingReport({ page: 1 });
+    const second = await adminService.listCatalogListingReport({ page: 2 });
+    const row = [...first.items, ...second.items].find((item) => item.listingId === data.listings.L01.id);
+
+    expect(first).toMatchObject({ page: 1, pageSize: 20, total: 21, totalPages: 2 });
+    expect(first.items).toHaveLength(20);
+    expect(second.items).toHaveLength(1);
+    expect(row).toMatchObject({
+      listingId: data.listings.L01.id,
+      isbn: '9789380000015',
+      bookTitle: 'The Silent Orchard',
+      author: 'Meera Iyer',
+      category: 'Fiction',
+      sellerName: 'Kiran Hegde',
+      condition: 'New',
+      unitPrice: 349,
+      quantityAvailable: 5,
+      listingStatus: 'Active',
+      averageRating: 4.5,
+      remarks: 'First edition in excellent condition.',
+    });
+    expect(Object.keys(row).sort()).toEqual([
+      'listingId',
+      'isbn',
+      'bookTitle',
+      'author',
+      'category',
+      'sellerName',
+      'condition',
+      'unitPrice',
+      'quantityAvailable',
+      'listingStatus',
+      'averageRating',
+      'remarks',
+    ].sort());
+    expect(first.items.some((item) => item.listingId === data.listings.L08.id)).toBe(false);
+    expect(JSON.stringify(first) + JSON.stringify(second)).not.toMatch(/email|phone|address|password/i);
+  });
+});
+
 describe('UT04 users, suspension and roles', () => {
   test('suspend and reinstate change the status and are audited', async () => {
     const target = data.users['U-B04'];

@@ -372,6 +372,29 @@ const orderTransactionReport = {
   label: (row) => `order ${row.orderId.slice(-6)}`,
 };
 
+const catalogListingReport = {
+  id: 'catalogListingReport',
+  entity: 'catalog-listing-report',
+  title: t.tabs.catalogListingReport,
+  viewable: false,
+  load: ({ page }) => apiRequest(`/admin/catalog-listing-report?page=${page}`),
+  columns: [
+    { key: 'listingId', label: c.listingId, render: (row) => row.listingId },
+    { key: 'isbn', label: c.isbn, render: (row) => row.isbn },
+    { key: 'bookTitle', label: c.bookTitle, render: (row) => row.bookTitle },
+    { key: 'author', label: c.author, render: (row) => row.author },
+    { key: 'category', label: c.category, render: (row) => row.category },
+    { key: 'sellerName', label: c.seller, render: (row) => row.sellerName },
+    { key: 'condition', label: c.condition, render: (row) => row.condition },
+    { key: 'unitPrice', label: c.unitPrice, render: (row) => formatINR(row.unitPrice) },
+    { key: 'quantityAvailable', label: c.quantityAvailable, render: (row) => row.quantityAvailable },
+    { key: 'listingStatus', label: c.listingStatus, render: (row) => row.listingStatus },
+    { key: 'averageRating', label: c.averageRating, render: (row) => row.averageRating },
+    { key: 'remarks', label: c.remarks, render: (row) => row.remarks },
+  ],
+  actions: [],
+};
+
 const audit = {
   id: 'audit',
   entity: 'audit-log',
@@ -400,5 +423,6 @@ export const ADMIN_SECTIONS = [
   reviews,
   orders,
   orderTransactionReport,
+  catalogListingReport,
   audit,
 ];

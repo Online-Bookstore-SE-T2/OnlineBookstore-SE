@@ -13,6 +13,7 @@ const {
   characterCount,
 } = require('../validation/validators');
 const { AppError } = require('../utils/errors');
+const strings = require('../resources/strings');
 
 function validate(body, partial = false) {
   const values = {};
@@ -26,8 +27,8 @@ function validate(body, partial = false) {
       if (!isMoney(body.price) || body.price <= 0) {
         throw new AppError(
           400,
-          'Price must be a positive INR amount with at most two decimals.',
-          { price: 'Enter a valid price.' }
+          strings.listing.positivePrice,
+          { price: strings.listing.validPrice }
         );
       }
 
@@ -39,8 +40,8 @@ function validate(body, partial = false) {
       ) {
         throw new AppError(
           400,
-          'Quantity must be a whole number greater than zero when creating a listing.',
-          { quantity: 'Enter a valid quantity.' }
+          strings.listing.validQuantity,
+          { quantity: strings.listing.enterValidQuantity }
         );
       }
 
@@ -49,8 +50,8 @@ function validate(body, partial = false) {
       if (!LISTING_CONDITIONS.includes(body.condition)) {
         throw new AppError(
           400,
-          'Choose a valid book condition.',
-          { condition: 'Choose a valid condition.' }
+          strings.listing.validCondition,
+          { condition: strings.listing.chooseValidCondition }
         );
       }
 
@@ -67,8 +68,8 @@ function validate(body, partial = false) {
         if (typeof body.notes !== 'string') {
           throw new AppError(
             400,
-            'Notes must be text.',
-            { notes: 'Enter text.' }
+            strings.listing.notesMustBeText,
+            { notes: strings.listing.enterNotesText }
           );
         }
 
@@ -77,8 +78,8 @@ function validate(body, partial = false) {
         if (characterCount(values.notes) > 500) {
           throw new AppError(
             400,
-            'Notes must be at most 500 characters.',
-            { notes: 'Notes must be at most 500 characters.' }
+            strings.listing.notesTooLong,
+            { notes: strings.listing.notesTooLong }
           );
         }
       }
@@ -92,8 +93,8 @@ async function createListing(sellerId, body = {}) {
   if (!isValidIsbn13(body.isbn)) {
     throw new AppError(
       400,
-      'Enter a valid ISBN-13.',
-      { isbn: 'Enter a valid ISBN-13.' }
+      strings.listing.invalidIsbn,
+      { isbn: strings.listing.invalidIsbn }
     );
   }
 
@@ -106,7 +107,7 @@ async function createListing(sellerId, body = {}) {
   if (!book) {
     throw new AppError(
       404,
-      'That ISBN is not an available book in the catalog.'
+      strings.listing.isbnUnavailable
     );
   }
 
@@ -149,7 +150,7 @@ async function myListings(sellerId, page = 1) {
 
 async function publicListings(bookId) {
   if (!mongoose.isValidObjectId(bookId)) {
-    throw new AppError(404, 'Book not found.');
+    throw new AppError(404, strings.listing.bookNotFound);
   }
 
   const book = await Book.findOne({
@@ -159,7 +160,7 @@ async function publicListings(bookId) {
   });
 
   if (!book) {
-    throw new AppError(404, 'Book not found.');
+    throw new AppError(404, strings.listing.bookNotFound);
   }
 
   const listings = await Listing.find({
@@ -176,7 +177,7 @@ async function publicListings(bookId) {
 
 async function ownedListing(sellerId, id) {
   if (!mongoose.isValidObjectId(id)) {
-    throw new AppError(404, 'Listing not found.');
+    throw new AppError(404, strings.listing.notFound);
   }
 
   const listing = await Listing.findOne({
@@ -186,7 +187,7 @@ async function ownedListing(sellerId, id) {
   });
 
   if (!listing) {
-    throw new AppError(404, 'Listing not found.');
+    throw new AppError(404, strings.listing.notFound);
   }
 
   return listing;
@@ -214,7 +215,7 @@ async function removeListing(sellerId, id) {
   if (openOrder) {
     throw new AppError(
       409,
-      'This listing is tied to an open order. Submit an administrator removal request from your listings page.'
+      strings.listing.tiedToOpenOrder
     );
   }
 
@@ -228,15 +229,15 @@ async function removeListing(sellerId, id) {
 async function requestListingRemoval(sellerId, id, body = {}) {
   const listing = await ownedListing(sellerId, id);
   if (typeof body.reason !== 'string' || !body.reason.trim()) {
-    throw new AppError(400, 'Explain why this listing should be removed.', {
-      reason: 'A reason is required.',
+    throw new AppError(400, strings.listing.removalReasonRequired, {
+      reason: strings.listing.reasonRequired,
     });
   }
 
   const reason = sanitizeText(body.reason);
   if (characterCount(reason) > 1000) {
-    throw new AppError(400, 'The removal reason must be at most 1,000 characters.', {
-      reason: 'The removal reason must be at most 1,000 characters.',
+    throw new AppError(400, strings.listing.reasonTooLong, {
+      reason: strings.listing.reasonTooLong,
     });
   }
 
@@ -247,7 +248,7 @@ async function requestListingRemoval(sellerId, id, body = {}) {
   }).select('_id');
 
   if (openOrders.length === 0) {
-    throw new AppError(409, 'This listing can be removed directly because no open orders remain.');
+    throw new AppError(409, strings.listing.canRemoveDirectly);
   }
 
   const existing = await ListingRemovalRequest.findOne({

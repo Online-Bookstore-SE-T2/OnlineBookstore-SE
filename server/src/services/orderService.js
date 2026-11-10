@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Order, Listing, User } = require('../models');
 const { ORDER_STATUS, ORDER_STATUS_TRANSITIONS, ADMIN_ORDER_STATUS_TRANSITIONS } = require('../constants');
 const { AppError } = require('../utils/errors');
+const strings = require('../resources/strings');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 
@@ -13,7 +14,7 @@ async function releaseOrderStock(order, session) {
     if (!listing) {
       throw new AppError(
         409,
-        'A listing for this order no longer exists.'
+        strings.order.listingMissing
       );
     }
 
@@ -35,7 +36,7 @@ async function getBuyerOrders(userId) {
 
 async function getBuyerOrder(userId, orderId) {
   if (!mongoose.isValidObjectId(orderId)) {
-    throw new AppError(400, 'Invalid order ID.');
+    throw new AppError(400, strings.order.invalidId);
   }
 
   const order = await Order.findOne({
@@ -48,7 +49,7 @@ async function getBuyerOrder(userId, orderId) {
     .populate('statusHistory.actor', 'name');
 
   if (!order) {
-    throw new AppError(404, 'Order not found.');
+    throw new AppError(404, strings.order.notFound);
   }
 
   return order;
@@ -79,10 +80,10 @@ async function getSellerOrders(userId) {
 
 async function advanceSellerOrder(userId, orderId, nextStatus) {
   if (!mongoose.isValidObjectId(orderId)) {
-    throw new AppError(400, 'Invalid order ID.');
+    throw new AppError(400, strings.order.invalidId);
   }
   if (![ORDER_STATUS.SHIPPED, ORDER_STATUS.DELIVERED].includes(nextStatus)) {
-    throw new AppError(400, 'Sellers may only mark orders Shipped or Delivered.');
+    throw new AppError(400, strings.order.sellerStatusRestriction);
   }
 
   const session = await mongoose.startSession();
@@ -97,9 +98,9 @@ async function advanceSellerOrder(userId, orderId, nextStatus) {
         deletedAt: null,
       }).session(session);
 
-      if (!order) throw new AppError(404, 'Order not found.');
+      if (!order) throw new AppError(404, strings.order.notFound);
       if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(nextStatus)) {
-        throw new AppError(409, `An order cannot move from ${order.status} to ${nextStatus}.`);
+        throw new AppError(409, strings.order.invalidTransition(order.status, nextStatus));
       }
 
       previousStatus = order.status;
@@ -128,7 +129,7 @@ async function advanceSellerOrder(userId, orderId, nextStatus) {
 
 async function cancelBuyerOrder(userId, orderId) {
   if (!mongoose.isValidObjectId(orderId)) {
-    throw new AppError(400, 'Invalid order ID.');
+    throw new AppError(400, strings.order.invalidId);
   }
 
   const session = await mongoose.startSession();
@@ -144,14 +145,14 @@ async function cancelBuyerOrder(userId, orderId) {
       }).session(session);
 
       if (!order) {
-        throw new AppError(404, 'Order not found.');
+        throw new AppError(404, strings.order.notFound);
       }
 
       // SRS 6.2: a buyer may cancel only before the order reaches Shipped.
       if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(ORDER_STATUS.CANCELLED)) {
         throw new AppError(
           409,
-          'Only orders that have not yet shipped can be cancelled.'
+          strings.order.cannotCancelShipped
         );
       }
 
@@ -204,7 +205,7 @@ async function cancelBuyerOrder(userId, orderId) {
 // The buyer is notified of every change, and the sellers of a cancellation.
 async function adminSetOrderStatus(adminId, orderId, nextStatus) {
   if (!mongoose.isValidObjectId(orderId)) {
-    throw new AppError(400, 'Invalid order ID.');
+    throw new AppError(400, strings.order.invalidId);
   }
 
   const session = await mongoose.startSession();
@@ -215,12 +216,12 @@ async function adminSetOrderStatus(adminId, orderId, nextStatus) {
     await session.withTransaction(async () => {
       const order = await Order.findOne({ _id: orderId, deletedAt: null }).session(session);
 
-      if (!order) throw new AppError(404, 'Order not found.');
+      if (!order) throw new AppError(404, strings.order.notFound);
       if (nextStatus === ORDER_STATUS.PAID) {
-        throw new AppError(409, 'Only a confirmed payment can mark an order Paid.');
+        throw new AppError(409, strings.order.paidRequiresConfirmedPayment);
       }
       if (!ADMIN_ORDER_STATUS_TRANSITIONS[order.status]?.includes(nextStatus)) {
-        throw new AppError(409, `An order cannot move from ${order.status} to ${nextStatus}.`);
+        throw new AppError(409, strings.order.invalidTransition(order.status, nextStatus));
       }
 
       previousStatus = order.status;

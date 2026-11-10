@@ -92,6 +92,20 @@ describe('Administration console', () => {
         orderStatus: 'Paid',
         remarks: '-',
       }])],
+      'GET /admin/catalog-listing-report?page=1': () => [200, page([{
+        listingId: 'listing-01',
+        isbn: '9789380000015',
+        bookTitle: 'The Silent Orchard',
+        author: 'Meera Iyer',
+        category: 'Fiction',
+        sellerName: 'Kiran Hegde',
+        condition: 'New',
+        unitPrice: 349,
+        quantityAvailable: 5,
+        listingStatus: 'Active',
+        averageRating: 4.5,
+        remarks: 'First edition in excellent condition.',
+      }])],
       'GET /admin/audit-log?page=1': () => [200, page([{ id: 'a1', actor: { name: 'Admin User One' }, action: 'suspend', targetType: 'User', targetLabel: 'Vikram Desai', createdAt: '2026-10-01T10:00:00.000Z' }])],
     });
     await openConsole();
@@ -110,6 +124,7 @@ describe('Administration console', () => {
       ['Reviews', 'Pooja Nambiar'],
       ['Orders', '₹550.00'],
       ['Order transaction report', 'pi_demo_123'],
+      ['Catalog and Listing Report', 'First edition in excellent condition.'],
       ['Audit log', 'User: Vikram Desai'],
     ];
     for (const [name, text] of expectations) {
