@@ -96,6 +96,37 @@ describe('UT06 - Book search service', () => {
     expect(result.totalPages).toBe(1);
   });
 
+  test('supports partial title substring searches', async () => {
+    const result = await searchBooks({ q: 'JavaScr' });
+
+    expect(result.total).toBe(1);
+    expect(result.items[0].title).toBe('Learning JavaScript');
+    expect(result.items[0]).not.toHaveProperty('searchNgrams');
+  });
+
+  test('preserves short-query fallback searches', async () => {
+    const result = await searchBooks({ q: 'An' });
+
+    expect(result.items.map((book) => book.title)).toContain(
+      'Learning JavaScript'
+    );
+  });
+
+  test('preserves non-ASCII fallback searches', async () => {
+    await Book.create({
+      title: 'ಕನ್ನಡ ಪುಸ್ತಕ',
+      author: 'ಕುವೆಂಪು',
+      isbn: '9789380000145',
+      category: category._id,
+      price: 200,
+    });
+
+    const result = await searchBooks({ q: 'ಪುಸ್ತಕ' });
+
+    expect(result.total).toBe(1);
+    expect(result.items[0].title).toBe('ಕನ್ನಡ ಪುಸ್ತಕ');
+  });
+
   test('does not return soft-deleted books', async () => {
     await Book.findOneAndUpdate(
       { isbn: '9789380000107' },

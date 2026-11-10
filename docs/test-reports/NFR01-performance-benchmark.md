@@ -191,12 +191,9 @@ requests.
    diagnostic, but disabling it does not resolve the search bottleneck.
 4. A normal MongoDB text index is not a drop-in replacement: it changes the
    current substring matching semantics and may change how terms are matched.
-5. The next search optimization should be evaluated as a separate, tested
-   design. A persisted normalized n-gram candidate index is one possible
-   approach for preserving substring matching; it would require a backfill
-   for existing books, write-path maintenance for new/updated books, indexes,
-   and tests for title/author/ISBN, case-insensitivity, literal input,
-   unavailable/soft-deleted records, pagination, and exact counts.
+5. A persisted trigram candidate index has now been implemented, backfilled,
+   and tested. Its implementation and benchmark results are documented in
+   Section 13.
 6. Do not remove the exact count, change search semantics, or deploy an
    unverified index strategy solely to improve this benchmark.
 
@@ -204,8 +201,8 @@ The existing `deletedAt` TTL index must retain its expiry configuration.
 
 ## 9. Outstanding verification
 
-- Implement and benchmark a search optimization that preserves existing
-  title, author, ISBN, case-insensitive substring, and pagination behavior.
+- Further tune the indexed search path to meet the NFR01 800 ms read target
+  under 200 concurrent connections.
 - Re-run controlled mixed and isolated concurrency tests after the change.
 - Measure actual browser catalog/search rendering.
 - Measure checkout confirmation latency.
@@ -215,11 +212,11 @@ The existing `deletedAt` TTL index must retain its expiry configuration.
 ## 10. Conclusion
 
 Sequential catalog and search requests are fast in the local test, and the
-catalog compound index improves the catalog query plan. However, the current
-search implementation is the dominant bottleneck in the 200-request isolated
-test and fails the NFR01 800 ms concurrency target. The overall NFR01 task is
-not yet fully accepted: browser rendering and checkout timing remain
-unmeasured, and search optimization still needs implementation and validation.
+catalog compound index improves the catalog query plan. The original search
+bottleneck has been substantially reduced through the indexed substring-search
+optimization described in Section 13. However, the 800 ms concurrent-read
+target remains unmet, and browser rendering and checkout timing remain
+unmeasured. Overall NFR01 acceptance is therefore still outstanding.
 
 The performance task is not yet fully accepted. Further targeted
 investigation and the outstanding acceptance measurements are required.
@@ -276,3 +273,88 @@ The test confirms that search remains significantly slower than the
 concurrent connections; it does not establish that 200 distinct
 authenticated users were simulated. These results are local development
 measurements and do not represent production capacity.
+
+
+## 13. Indexed substring-search optimization – 10 November 2026
+
+### Implementation
+
+A persisted trigram candidate index was added to the Book model.
+
+- Search n-grams are generated from title, author, and ISBN.
+- A model save hook refreshes the index when searchable fields change.
+- The performance seeder explicitly generates n-grams for bulk-inserted books.
+- A backfill processed and updated all 5,101 existing book records.
+- MongoDB index: `searchNgrams_1`.
+- ASCII queries of at least three characters use indexed trigram candidates.
+  The original escaped, case-insensitive substring regex is then applied
+  to preserve exact search semantics.
+- Short and non-ASCII queries retain the original regex-only fallback.
+- The existing exact count, pagination, sorting, and result transformation
+  were retained.
+
+### Validation
+
+| Check | Result |
+|---|---:|
+| Existing books processed by backfill | 5,101 |
+| Existing books updated | 5,101 |
+| MongoDB query plan | IXSCAN using `searchNgrams_1` |
+| Example `technology` candidates examined | 500 |
+| Example index keys examined | 500 |
+| Example documents examined | 500 |
+| Updated search-service tests | 11/11 passed |
+| Full backend suite before adding the three new regression tests | 331/331 passed |
+
+The example query-plan result reduces candidate documents from 5,101 to
+500 before exact substring verification. This is an example query, not a
+claim that every search term has the same selectivity.
+
+The three additional search tests cover partial title matching, short-query
+fallback, and Kannada/non-ASCII fallback.
+
+### 200-concurrent search API load tests
+
+Endpoint: `GET /api/books/search?q=technology`
+
+All results below are local development measurements.
+
+| Metric | Original baseline | Post-change run 1 | Post-change run 2 |
+|---|---:|---:|---:|
+| Concurrent connections | 200 | 200 | 200 |
+| Duration | 30 s | 30 s | 30 s |
+| HTTP 200 responses | 1,011 | 5,271 | 4,724 |
+| Timeouts | Not reported | 121 | No timeout reported |
+| Average latency | 5,444 ms | 897.16 ms | 1,244.54 ms |
+| Median latency | 5,375 ms | 844 ms | 1,199 ms |
+| 97.5th-percentile latency | 7,627 ms | 1,431 ms | 1,625 ms |
+| 99th-percentile latency | Not recorded | 1,774 ms | 1,814 ms |
+| Maximum latency | 9,106 ms | 9,879 ms | 8,593 ms |
+| Average throughput | 33.71 req/s | 175.70 req/s | 157.47 req/s |
+
+An intermediate repeat reported 17 timeouts, but its latency and throughput
+tables were not retained, so it is not included as a complete benchmark run.
+
+The two complete post-change runs show substantially higher throughput and
+lower average and median latency than the original baseline. The results
+also vary between runs, so the first result should not be treated as a
+guaranteed steady-state measurement.
+
+### Acceptance status and remaining work
+
+The NFR01 requirement that 95% of reads complete below 800 ms under
+200 concurrent users is **not met**. Both complete post-change runs have
+median latency above 800 ms. The reported Autocannon tables provide the
+97.5th percentile, not an exact P95 measurement.
+
+The following work remains outstanding:
+
+- Further tune search performance and repeat controlled load tests.
+- Run final mixed catalog/search concurrency tests.
+- Measure browser catalog and search rendering.
+- Measure checkout confirmation latency.
+- Complete the agreed acceptance suite and requirement-coverage review.
+
+The optimization is implemented and validated, but the overall NFR01 task
+is not yet fully accepted. These measurements do not represent production
+performance.

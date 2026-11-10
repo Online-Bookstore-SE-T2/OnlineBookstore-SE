@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { isValidIsbn13, isMoney } = require('../validation/validators');
 const { toJSONPlugin } = require('./plugins/toJSON');
 const { softDeletePlugin } = require('./plugins/softDelete');
+const { buildBookSearchIndex } = require('../utils/bookSearchIndex');
 
 // Minimal shared model holding the fields the SRS names for a catalog book (REQ-5, REQ-8,
 // REQ-17, SRS 6.5). The catalog slice owns and extends it.
@@ -23,6 +24,7 @@ const bookSchema = new mongoose.Schema(
     markedUnavailable: { type: Boolean, default: false },
     averageRating: { type: Number, min: 0, max: 5, default: 0 },
     reviewCount: { type: Number, min: 0, default: 0 },
+    searchNgrams: { type: [String], default: [], select: false },
   },
   { timestamps: true },
 );
@@ -32,6 +34,18 @@ bookSchema.index({ title: 1 });
 bookSchema.index({ author: 1 });
 bookSchema.index({ category: 1 });
 bookSchema.index({ deletedAt: 1, title: 1, _id: 1 });
+bookSchema.index({ searchNgrams: 1 });
+
+bookSchema.pre('save', function updateBookSearchIndex() {
+  if (
+    this.isNew ||
+    this.isModified('title') ||
+    this.isModified('author') ||
+    this.isModified('isbn')
+  ) {
+    Object.assign(this, buildBookSearchIndex(this));
+  }
+});
 
 bookSchema.plugin(softDeletePlugin);
 bookSchema.plugin(toJSONPlugin);
