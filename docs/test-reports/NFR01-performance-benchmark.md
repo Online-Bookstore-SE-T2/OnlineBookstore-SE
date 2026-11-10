@@ -138,11 +138,16 @@ For the query term `technology` on the 5,000-book performance dataset:
 | Search result find (first page) | 20 | 4,520 | 4,520 | 50 ms |
 | Matching count | 500 | 5,000 | 5,000 | 23 ms |
 
-The find plan used the compound `deletedAt/title/_id` index to preserve
-sort order, but the case-insensitive substring predicates were evaluated
-against thousands of candidate documents. The count operation used the
-`deletedAt` index and fetched all 5,000 active documents before counting
-the 500 matches.
+The recorded explain figures above are separate diagnostic explains
+of the find and count operations. They are not a direct explain of the
+current application pipeline. The current `searchService.js` implementation
+builds one aggregation pipeline: it applies the active-book and substring
+`$match`, then uses `$facet` to produce the sorted/paginated page and exact
+count from the matched stream. This avoids issuing a separate application
+count query, but it does not make the case-insensitive substring predicates
+selective: the search still has to examine a broad set of active books.
+No post-change explain or benchmark has yet established that this pipeline
+meets the NFR01 latency targets.
 
 Field-specific explains showed the same broad-scan pattern: author and ISBN
 queries each examined 5,000 keys/documents when the tested term had no
