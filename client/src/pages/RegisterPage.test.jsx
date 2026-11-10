@@ -35,7 +35,7 @@ describe('Registration page', () => {
     const user = userEvent.setup();
     const spy = registerApi();
     renderApp('/register');
-    await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026' });
+    await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026', 'Confirm password': 'BookTest#2026' });
     await submit(user);
 
     expect(await screen.findByText('Welcome, Divya Kamath. Your account has been created and you are logged in.')).toBeInTheDocument();
@@ -48,6 +48,7 @@ describe('Registration page', () => {
       name: 'Divya Kamath',
       email: 'divya.kamath@testmail.example',
       password: 'BookTest#2026',
+      confirmPassword: 'BookTest#2026',
     });
   });
 
@@ -74,7 +75,7 @@ describe('Registration page', () => {
       const user = userEvent.setup();
       const spy = mockApi({});
       renderApp('/register');
-      await fill(user, { Name: 'Divya Kamath', 'E-mail address': email, Password: 'BookTest#2026' });
+      await fill(user, { Name: 'Divya Kamath', 'E-mail address': email, Password: 'BookTest#2026', 'Confirm password': 'BookTest#2026' });
       await submit(user);
       expect(screen.getByText('Enter a valid e-mail address.')).toBeInTheDocument();
       expect(spy).not.toHaveBeenCalled();
@@ -90,7 +91,7 @@ describe('Registration page', () => {
       ],
     });
     renderApp('/register');
-    await fill(user, { Name: 'Anita Rao', 'E-mail address': 'anita.rao@testmail.example', Password: 'BookTest#2026' });
+    await fill(user, { Name: 'Anita Rao', 'E-mail address': 'anita.rao@testmail.example', Password: 'BookTest#2026', 'Confirm password': 'BookTest#2026' });
     await submit(user);
 
     const emailInput = screen.getByLabelText(/^E-mail address/);
@@ -99,11 +100,52 @@ describe('Registration page', () => {
     expect(emailInput).toHaveFocus();
   });
 
+  test('SASD 4.3.1: a confirmation that differs is shown on the confirm field, focused, and nothing is sent', async () => {
+    const user = userEvent.setup();
+    const spy = mockApi({});
+    renderApp('/register');
+    await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026', 'Confirm password': 'BookTest#2025' });
+    await submit(user);
+
+    const confirm = screen.getByLabelText(/^Confirm password/);
+    expect(confirm).toHaveAttribute('type', 'password');
+    expect(confirm).toHaveAttribute('autocomplete', 'new-password');
+    expect(confirm).toHaveAttribute('aria-invalid', 'true');
+    expect(document.getElementById(confirm.getAttribute('aria-describedby'))).toHaveTextContent('The passwords do not match.');
+    expect(confirm).toHaveFocus();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('a password without its confirmation asks for the confirmation', async () => {
+    const user = userEvent.setup();
+    const spy = mockApi({});
+    renderApp('/register');
+    await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026' });
+    await submit(user);
+    expect(screen.getByText('Confirm password is required.')).toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('a server mismatch error is shown beneath the confirm field', async () => {
+    const user = userEvent.setup();
+    mockApi({
+      'POST /auth/register': () => [400, {
+        error: { code: 'VALIDATION_FAILED', message: 'Some fields are invalid.', fields: { confirmPassword: 'The passwords do not match.' } },
+      }],
+    });
+    renderApp('/register');
+    await fill(user, { Name: 'Divya Kamath', 'E-mail address': 'divya.kamath@testmail.example', Password: 'BookTest#2026', 'Confirm password': 'BookTest#2026' });
+    await submit(user);
+    const confirm = screen.getByLabelText(/^Confirm password/);
+    expect(await screen.findByText('The passwords do not match.')).toBeInTheDocument();
+    expect(confirm).toHaveAttribute('aria-invalid', 'true');
+  });
+
   test('a phone number that is not 10 digits is rejected before sending', async () => {
     const user = userEvent.setup();
     const spy = mockApi({});
     renderApp('/register');
-    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x', 'Phone number': '90000abc21' });
+    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x', 'Confirm password': 'x', 'Phone number': '90000abc21' });
     await submit(user);
     expect(screen.getByText('Phone number must be exactly 10 digits.')).toBeInTheDocument();
     expect(spy).not.toHaveBeenCalled();
@@ -113,7 +155,7 @@ describe('Registration page', () => {
     const user = userEvent.setup();
     const spy = mockApi({});
     renderApp('/register');
-    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x', Address: 'House 44, Temple Road' });
+    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x', 'Confirm password': 'x', Address: 'House 44, Temple Road' });
     await submit(user);
     expect(screen.getByText('City is required.')).toBeInTheDocument();
     expect(screen.getByText('State is required.')).toBeInTheDocument();
@@ -129,6 +171,7 @@ describe('Registration page', () => {
       Name: 'Divya Kamath',
       'E-mail address': 'divya.kamath@testmail.example',
       Password: 'BookTest#2026',
+      'Confirm password': 'BookTest#2026',
       'Phone number': '9000000099',
       Address: 'Flat 12, Lakeview Apartments',
       City: 'Bengaluru',
@@ -147,7 +190,7 @@ describe('Registration page', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'));
     renderApp('/register');
-    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x' });
+    await fill(user, { Name: 'A', 'E-mail address': 'a@b.example', Password: 'x', 'Confirm password': 'x' });
     await submit(user);
     expect(await screen.findByRole('alert')).toHaveTextContent('could not be reached');
   });

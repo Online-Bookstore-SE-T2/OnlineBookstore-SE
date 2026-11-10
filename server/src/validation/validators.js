@@ -143,6 +143,17 @@ class FieldValidator {
     return value;
   }
 
+  // A value the user types twice, such as a new password. It is only checked once the original
+  // passed, so a missing password is reported once, on the password field.
+  confirmation(field, value, original, { label, message }) {
+    if (original === undefined) return;
+    if (isAbsent(value) || value === '') {
+      this.addError(field, strings.fields.required(label));
+      return;
+    }
+    if (value !== original) this.addError(field, message);
+  }
+
   // Digit-only codes such as phone numbers and postal codes.
   digits(field, value, { label, required = false, pattern, message }) {
     if (isAbsent(value) || value === '') {

@@ -1,0 +1,38 @@
+# SASD 4.4.3 / NFR05: service availability. Every 15 minutes, checks that the demonstration
+# site serves the app and that its API can reach the database. A first failure is retried a
+# minute later; two consecutive failed checks fail the run, which GitHub e-mails to the
+# maintainers. Set the repository variable DEMO_URL (e.g. https://online-bookstore-demo.onrender.com)
+# to turn it on; without it the job is skipped.
+name: Uptime
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: ${{ vars.DEMO_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the site and its database, twice if needed
+        env:
+          DEMO_URL: ${{ vars.DEMO_URL }}
+        run: |
+          check() {
+            curl --fail --silent --show-error --max-time 20 --output /dev/null "$DEMO_URL/" &&
+            curl --fail --silent --show-error --max-time 20 "$DEMO_URL/api/health/ready"
+          }
+          if check; then echo; echo "Up."; exit 0; fi
+          echo "::warning::First check of $DEMO_URL failed; checking again in 60 seconds."
+          sleep 60
+          if check; then echo; echo "Up on the second check."; exit 0; fi
+          echo "::error::$DEMO_URL failed two consecutive checks (SASD 4.4.3, NFR05)."
+          exit 1

@@ -395,6 +395,42 @@ const catalogListingReport = {
   actions: [],
 };
 
+// SASD 4.4.3: the monitoring metrics with their alert thresholds (read only).
+const m = t.monitoring;
+function formatMetric(unit, value) {
+  if (value === null || value === undefined) return '-';
+  if (unit === 'ratio') return `${Number((value * 100).toFixed(1))}%`;
+  if (unit === 'ms') return `${Math.round(value)} ms`;
+  return String(value);
+}
+
+const monitoring = {
+  id: 'monitoring',
+  entity: 'monitoring',
+  title: t.tabs.monitoring,
+  viewable: false,
+  emptyMessage: m.empty,
+  load: () => apiRequest('/admin/monitoring'),
+  toolbar: () => <p className="muted">{m.note}</p>,
+  columns: [
+    { key: 'metric', label: c.metric, render: (row) => m.metrics[row.id] || row.id },
+    { key: 'value', label: c.value, render: (row) => formatMetric(row.unit, row.value) },
+    {
+      key: 'threshold',
+      label: c.threshold,
+      render: (row) => (row.id === 'dbPoolUtilisation' ? m.sustained : m.above)(formatMetric(row.unit, row.threshold)),
+    },
+    { key: 'window', label: c.window, render: (row) => (row.windowMinutes ? m.minutes(row.windowMinutes) : '-') },
+    { key: 'samples', label: c.samples, render: (row) => (row.samples === null ? '-' : row.samples) },
+    {
+      key: 'status',
+      label: c.status,
+      render: (row) => <span className={row.status === 'alert' ? 'badge badge-strong' : 'badge'}>{m.status[row.status]}</span>,
+    },
+  ],
+  actions: [],
+};
+
 const audit = {
   id: 'audit',
   entity: 'audit-log',
@@ -424,5 +460,6 @@ export const ADMIN_SECTIONS = [
   orders,
   orderTransactionReport,
   catalogListingReport,
+  monitoring,
   audit,
 ];

@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const { config } = require('../config/env');
+const { monitor } = require('../monitoring/monitor');
 
 const RETRY_DELAYS_MS = [1000, 2000, 4000, 8000];
 let transport;
@@ -90,29 +91,40 @@ async function deliver(event, order, recipient) {
     return;
   }
 
-  const content = eventContent(event, order);
+  const delivered = await sendWithRetries({ from: config.smtp.from, to: recipient.email, ...eventContent(event, order) }, 'Order');
+  // SASD 4.4.3: the mailer swallows failures by design, so each one that is final is counted.
+  if (!delivered) monitor.recordEmailFailure();
+}
+
+// Sends one message, retrying transient SMTP failures. Resolves false when it is never delivered.
+async function sendWithRetries(message, kind) {
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      await sendWithTimeout({
-        from: config.smtp.from,
-        to: recipient.email,
-        ...content,
-      });
-      return;
+      await sendWithTimeout(message);
+      return true;
     } catch (error) {
       if (!isTransient(error) || attempt === RETRY_DELAYS_MS.length) {
-        console.error('Order e-mail delivery failed:', error.message);
-        return;
+        console.error(`${kind} e-mail delivery failed:`, error.message);
+        return false;
       }
       await delay(RETRY_DELAYS_MS[attempt]);
     }
   }
+  return false;
+}
+
+// SASD 4.4.3: a monitoring alert sent to the operator address (ALERT_EMAIL), when one is set.
+// Its own failures are not counted, so a broken mailer cannot raise alerts about its alerts.
+async function sendOperationalAlert(subject, text) {
+  if (!config.alertEmail || !isConfigured()) return false;
+  return sendWithRetries({ from: config.smtp.from, to: config.alertEmail, subject, text }, 'Alert');
 }
 
 function dispatchOrderEvent(event, order, recipient) {
   return deliver(event, order, recipient).catch((error) => {
     console.error('Unexpected order e-mail delivery failure:', error.message);
+    monitor.recordEmailFailure();
   });
 }
 
-module.exports = { dispatchOrderEvent };
+module.exports = { dispatchOrderEvent, sendOperationalAlert };

@@ -1,6 +1,7 @@
+const { randomUUID } = require('crypto');
 const mongoose = require('mongoose');
 const strings = require('../resources/strings');
-const { AppError } = require('../utils/errors');
+const { AppError, errorBody } = require('../utils/errors');
 
 function notFound(_req, _res, next) {
     next(new AppError(404, strings.common.notFound));
@@ -18,62 +19,49 @@ function mongooseFieldErrors(err) {
     return fields;
 }
 
-function errorHandler(err, _req, res, _next) {
+// SASD 4.4.1: the single place that turns a thrown error into a response, so every endpoint
+// reports the same condition with the same status, code and body shape.
+function errorHandler(err, req, res, _next) {
+    const send = (status, message, details) => res.status(status).json(errorBody(status, message, details));
+
     // Handle application errors first.
     if (err instanceof AppError) {
-        return res.status(err.status).json({
-            error: {
-                message: err.message,
-                ...(err.fields && { fields: err.fields }),
-            },
-        });
+        return send(err.status, err.message, { code: err.code, fields: err.fields });
     }
 
     if (err.type === 'entity.too.large') {
-        return res.status(413).json({
-            error: { message: strings.common.payloadTooLarge },
-        });
+        return send(413, strings.common.payloadTooLarge);
     }
 
     if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({
-            error: { message: strings.common.malformedJson },
-        });
+        return send(400, strings.common.malformedJson);
     }
 
     if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(400).json({
-            error: {
-                message: strings.common.validationFailed,
-                fields: mongooseFieldErrors(err),
-            },
-        });
+        return send(400, strings.common.validationFailed, { fields: mongooseFieldErrors(err) });
     }
 
     if (err instanceof mongoose.Error.CastError) {
-        return res.status(404).json({
-            error: { message: strings.common.notFound },
-        });
+        return send(404, strings.common.notFound);
     }
 
     if (err instanceof mongoose.Error.VersionError) {
-        return res.status(409).json({
-            error: { message: strings.common.concurrentChange },
-        });
+        return send(409, strings.common.concurrentChange);
     }
 
+    // SASD 4.4.2: the stack stays in the server log, keyed by the correlation id that the
+    // response returns, so a user's report can be matched to this entry.
+    const correlationId = req.id || randomUUID();
     const frames = (err.stack || '')
         .split('\n')
         .slice(1, 4)
         .join('\n');
 
     console.error(
-        `[error] ${err.name || 'Error'}${err.code ? ` code=${err.code}` : ''}\n${frames}`
+        `[error] ${err.name || 'Error'}${err.code ? ` code=${err.code}` : ''} correlationId=${correlationId}\n${frames}`
     );
 
-    return res.status(500).json({
-        error: { message: strings.common.serverError },
-    });
+    return send(500, strings.common.serverError, { correlationId });
 }
 
 module.exports = { notFound, errorHandler };

@@ -27,7 +27,8 @@ const ADDRESSES = {
   'ADDR-6': { line: '17, Canal Road, Ernakulam', city: 'Kochi', state: 'Kerala', postalCode: '682001' },
 };
 
-const NEW_USER = { name: 'Divya Kamath', email: 'divya.kamath@testmail.example', password: PASSWORD };
+// A registration body (SASD 4.3.1), with the password typed twice.
+const NEW_USER = { name: 'Divya Kamath', email: 'divya.kamath@testmail.example', password: PASSWORD, confirmPassword: PASSWORD };
 
 let cachedHash;
 async function passwordHash() {

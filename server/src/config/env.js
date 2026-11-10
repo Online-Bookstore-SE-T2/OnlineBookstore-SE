@@ -32,6 +32,8 @@ const config = {
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  // SASD 4.4.3: optional address that receives monitoring alerts by e-mail.
+  alertEmail: process.env.ALERT_EMAIL,
   smtp: {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,

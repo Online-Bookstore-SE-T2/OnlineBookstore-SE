@@ -1,6 +1,7 @@
 const adminService = require('../services/adminService');
 const auditService = require('../services/auditService');
 const strings = require('../resources/strings');
+const { monitor } = require('../monitoring/monitor');
 
 function page(result) {
   return { ...result, items: result.items.map((doc) => doc.toJSON()) };
@@ -46,6 +47,11 @@ async function promoteUser(req, res) {
 // GET /api/admin/seller-requests?page=n
 async function listSellerRequests(req, res) {
   res.json(page(await adminService.listSellerRequests({ page: req.query.page })));
+}
+
+// SASD 4.4.3: the monitoring metrics of this instance, with each one's threshold and status.
+function monitoring(_req, res) {
+  res.json(monitor.snapshot());
 }
 
 async function listOrderTransactionReport(req, res) {
@@ -124,6 +130,7 @@ module.exports = {
   promoteUser,
   listSellerRequests,
   listOrderTransactionReport,
+  monitoring,
   listCatalogListingReport,
   approveSellerRequest,
   rejectSellerRequest,

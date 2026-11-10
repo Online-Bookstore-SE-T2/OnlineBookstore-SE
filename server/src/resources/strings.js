@@ -11,6 +11,10 @@ module.exports = {
     httpsRequired: 'This service is only available over HTTPS.',
     tooManyRequests: 'Too many requests. Please wait a minute and try again.',
     concurrentChange: 'This record was changed by another request. Please reload and try again.',
+    serviceUnavailable: 'The service is temporarily unavailable. Please try again shortly.',
+  },
+  monitoring: {
+    invalidDuration: 'Page load time must be a number of milliseconds between 1 and 120000.',
   },
   profile: {
     updated: 'Your profile has been updated.',
@@ -142,6 +146,7 @@ module.exports = {
     mustBeText: (label) => `${label} must be text.`,
     notAllowed: (label) => `${label} is not one of the allowed values.`,
     invalidEmail: 'Enter a valid e-mail address.',
+    passwordMismatch: 'The passwords do not match.',
     invalidPhone: 'Phone number must be exactly 10 digits.',
     invalidPostalCode: 'Postal code must be exactly 6 digits.',
     invalidIsbn: 'Enter a valid ISBN-13, including its check digit.',
@@ -152,6 +157,7 @@ module.exports = {
     name: 'Name',
     email: 'E-mail address',
     password: 'Password',
+    confirmPassword: 'Confirm password',
     currentPassword: 'Current password',
     newPassword: 'New password',
     phone: 'Phone number',

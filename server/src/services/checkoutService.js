@@ -9,6 +9,24 @@ const {
 } = require('../constants');
 const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
+const { monitor } = require('../monitoring/monitor');
+
+// SASD 4.4.3: order commitment is measured, so aborted transactions (risks R-1, R-2) show up
+// before a buyer reports them. Refusals that write nothing (bad address, empty cart) are not aborts.
+async function measuredTransaction(session, work) {
+    let attempts = 0;
+    try {
+        await session.withTransaction(async() => {
+            attempts += 1;
+            await work();
+        });
+        monitor.recordOrderCommit('committed', { attempts });
+    } catch (error) {
+        const rejected = error instanceof AppError && error.status !== 409;
+        monitor.recordOrderCommit(rejected ? 'rejected' : 'aborted', { attempts });
+        throw error;
+    }
+}
 
 function getAddress(user, addressId) {
     if (!mongoose.isValidObjectId(addressId)) {
@@ -127,7 +145,7 @@ async function createOrder(userId, addressId) {
     let createdOrder;
 
     try {
-        await session.withTransaction(async() => {
+        await measuredTransaction(session, async() => {
             const user = await User.findById(userId).session(session);
 
             if (!user) {

@@ -14,6 +14,7 @@ function createAdminRouter() {
   router.get('/audit-log', route(admin.auditLog));
   router.get('/seller-requests', route(admin.listSellerRequests));
   router.get('/order-transaction-report', route(admin.listOrderTransactionReport));
+  router.get('/monitoring', admin.monitoring);
   router.get('/catalog-listing-report', route(admin.listCatalogListingReport));
   router.get('/listing-removal-requests', route(admin.listListingRemovalRequests));
   router.post('/listing-removal-requests/:id/resolve', write, route(admin.resolveListingRemovalRequest));

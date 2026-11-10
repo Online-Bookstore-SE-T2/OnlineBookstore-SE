@@ -6,6 +6,7 @@ const strings = require('../resources/strings');
 const { AppError } = require('../utils/errors');
 const { FieldValidator, LIMITS } = require('../validation/validators');
 const tokenService = require('./tokenService');
+const { monitor } = require('../monitoring/monitor');
 
 function emailTakenError() {
   return new AppError(409, strings.auth.emailTaken, { email: strings.auth.emailTaken });
@@ -19,7 +20,7 @@ function hashPassword(password) {
   return bcrypt.hash(password, config.bcryptRounds);
 }
 
-// REQ-1 (FR01): register a visitor with name, e-mail address and password.
+// REQ-1 (FR01): register a visitor with name, e-mail address and password, typed twice (SASD 4.3.1).
 // Phone number and one delivery address are optional (Appendix B). Only whitelisted fields
 // are read, so a client can never choose its role, ID, status or registration date.
 async function registerUser(body = {}) {
@@ -27,6 +28,10 @@ async function registerUser(body = {}) {
   const name = v.text('name', body.name, { label: strings.labels.name, required: true, max: LIMITS.name });
   const email = v.email('email', body.email);
   const password = v.password('password', body.password);
+  v.confirmation('confirmPassword', body.confirmPassword, password, {
+    label: strings.labels.confirmPassword,
+    message: strings.fields.passwordMismatch,
+  });
   const phone = v.phone('phone', body.phone);
   const address = v.address(body.address, { prefix: 'address.', required: false });
   v.throwIfInvalid();
@@ -53,8 +58,9 @@ function invalidCredentials() {
   return new AppError(401, strings.auth.invalidCredentials);
 }
 
+// SASD 4.2.3 / 4.4.1: the five-failure lockout answers 429 TOO_MANY_ATTEMPTS.
 function lockedError() {
-  return new AppError(423, strings.auth.locked);
+  return new AppError(429, strings.auth.locked);
 }
 
 // Hash compared against when the e-mail is unknown, so response time does not reveal
@@ -99,12 +105,17 @@ async function loginUser(body = {}) {
   const user = await User.findOne({ email }).select('+passwordHash +failedLoginAttempts +lockUntil');
   if (!user || user.status === ACCOUNT_STATUS.DELETED) {
     await bcrypt.compare(password, await dummyHash());
+    monitor.recordLoginFailure();
     throw invalidCredentials();
   }
-  if (isLocked(user.lockUntil)) throw lockedError();
+  if (isLocked(user.lockUntil)) {
+    monitor.recordLoginFailure();
+    throw lockedError();
+  }
 
   if (!(await bcrypt.compare(password, user.passwordHash))) {
     const nowLocked = await recordFailedAttempt(user._id);
+    monitor.recordLoginFailure({ locked: nowLocked });
     throw nowLocked ? lockedError() : invalidCredentials();
   }
 
