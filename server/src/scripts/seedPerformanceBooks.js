@@ -65,8 +65,6 @@ function makeBook(number, categoryId) {
   const authorIndex = number % AUTHORS.length;
 
   const book = {
-
-  return {
     isbn: makeIsbn13(number),
     title: `${CATEGORIES[categoryIndex]}: ${TOPICS[topicIndex]} Volume ${number}`,
     author: AUTHORS[authorIndex],
