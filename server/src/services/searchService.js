@@ -15,7 +15,8 @@ function pageNumber(value) {
 function transformCategory(category) {
   if (!category) return category;
 
-  const { _id, __v, ...fields } = category;
+  const { _id, ...fields } = category;
+  delete fields.__v;
 
   return {
     ...fields,
@@ -24,7 +25,8 @@ function transformCategory(category) {
 }
 
 function transformBook(book) {
-  const { _id, __v, category, ...fields } = book;
+  const { _id, category, ...fields } = book;
+  delete fields.__v;
 
   return {
     ...fields,
@@ -32,7 +34,6 @@ function transformBook(book) {
     id: _id.toString(),
   };
 }
-
 async function searchBooks(query = {}) {
   const page = pageNumber(query.page);
 
