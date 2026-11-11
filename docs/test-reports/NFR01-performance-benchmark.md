@@ -358,3 +358,72 @@ The following work remains outstanding:
 The optimization is implemented and validated, but the overall NFR01 task
 is not yet fully accepted. These measurements do not represent production
 performance.
+
+## 14. Final concurrent verification – 11 November 2026
+
+### Backend validation
+
+- Backend tests: 33 suites, 430 tests passed.
+- Checkout validation: 26 ms.
+- Order creation: 66 ms.
+- Simulator payment confirmation: 55 ms.
+- Total measured checkout flow: 147 ms.
+- Checkout target: PASS (under 5 seconds).
+
+### Sustained 200-virtual-user benchmark
+
+The test used 200 persistent virtual users over approximately 15 seconds,
+with 100 users requesting catalog pages and 100 users requesting search.
+
+| Metric | Catalog | Search | Overall |
+|---|---:|---:|---:|
+| Successful responses | 1,839 | 1,825 | 3,664 |
+| Failed requests | 0 | 11 | 11 |
+| Median | 757.01 ms | 556.24 ms | — |
+| P95 | 1,596.38 ms | 1,511.86 ms | 1,512.82 ms |
+| P99 | 2,005.38 ms | 6,535.92 ms | — |
+| Successful responses under 800 ms | 65.6% | 84.8% | 75.2% |
+
+Overall throughput was 232.10 requests/second.
+
+The NFR01 criterion of 95% of read requests under 800 ms was NOT MET.
+
+### HTTP baseline diagnostic
+
+A separate sustained test of 200 virtual users against the health endpoint
+completed 30,281 successful requests with no failures.
+
+| Metric | Result |
+|---|---:|
+| Throughput | 2,005.13 requests/second |
+| Median | 91.20 ms |
+| P95 | 143.85 ms |
+| P99 | 207.51 ms |
+| Under 800 ms | 99.95% |
+
+This indicates that the basic HTTP health path is responsive under load.
+The catalog and search workload remains the performance bottleneck.
+
+### Database and response diagnostics
+
+- Catalog query plan examined 20 documents and 20 index keys.
+- Search used IXSCAN with searchNgrams_1.
+- Search initial cursor stage examined 500 documents and 500 keys.
+- Ten complete search aggregation executions had a median of 10.32 ms
+  and a maximum of 19.85 ms.
+- Average sequential response sizes were 11,053 bytes for catalog
+  and 9,332 bytes for search.
+
+These database diagnostics do not establish concurrent HTTP performance.
+Further investigation is required to isolate the difference under load.
+
+### Final acceptance assessment
+
+Checkout confirmation meets its measured local development target.
+The backend regression suite passes.
+Catalog and search database indexes are being used.
+However, the sustained concurrent-read acceptance target remains unmet.
+
+All results are local WSL development measurements, not production capacity
+guarantees. Issue #83 should remain open until the concurrent-read target
+is demonstrated or its acceptance criteria are formally revised.

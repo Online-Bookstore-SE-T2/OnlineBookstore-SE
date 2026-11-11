@@ -8,6 +8,10 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 5000,
   mongoUri: process.env.MONGODB_URI,
+  mongoMaxPoolSize: Math.max(
+    1,
+    Number.parseInt(process.env.MONGODB_MAX_POOL_SIZE || '100', 10) || 100
+  ),
   jwtSecret: process.env.JWT_SECRET,
   // REQ-2 / SRS 3.3: tokens expire 24 hours after issue
   jwtExpiresInSeconds: 24 * 60 * 60,

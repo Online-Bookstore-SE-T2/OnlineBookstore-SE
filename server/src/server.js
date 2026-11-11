@@ -7,7 +7,9 @@ const { sendOperationalAlert } = require('./services/emailService');
 
 async function start() {
   assertServerConfig();
-  const connection = await connectDatabase(config.mongoUri);
+  const connection = await connectDatabase(config.mongoUri, {
+    maxPoolSize: config.mongoMaxPoolSize,
+  });
   // SASD 4.4.3: watch the connection pool and check the alert thresholds every 30 seconds.
   monitor.instrumentPool(connection.getClient());
   monitor.start({
