@@ -1,6 +1,8 @@
 const { Book, Category } = require('../models');
 const { getSearchTrigrams } = require('../utils/bookSearchIndex');
+const { createInFlightCoalescer } = require('../utils/inFlight');
 
+const coalesceSearch = createInFlightCoalescer();
 const PAGE_SIZE = 20;
 
 function escapeRegex(text) {
@@ -36,7 +38,7 @@ function transformBook(book) {
     id: _id.toString(),
   };
 }
-async function searchBooks(query = {}) {
+async function executeSearchBooks(query = {}) {
   const page = pageNumber(query.page);
 
   const searchText =
@@ -140,6 +142,21 @@ async function searchBooks(query = {}) {
     total,
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   };
+}
+
+function searchQueryKey(query = {}) {
+  return JSON.stringify(
+    Object.entries(query || {}).sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
+// Share only an identical search while its database operation is pending.
+// No completed response is retained, so later requests always read fresh data.
+function searchBooks(query = {}) {
+  return coalesceSearch(
+    searchQueryKey(query),
+    () => executeSearchBooks(query),
+  );
 }
 
 module.exports = {

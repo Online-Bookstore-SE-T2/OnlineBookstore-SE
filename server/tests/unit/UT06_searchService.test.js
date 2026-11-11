@@ -127,6 +127,25 @@ describe('UT06 - Book search service', () => {
     expect(result.items[0].title).toBe('ಕನ್ನಡ ಪುಸ್ತಕ');
   });
 
+  test('coalesces simultaneous identical searches but does not cache completed results', async () => {
+    const aggregateSpy = jest.spyOn(Book, 'aggregate');
+
+    try {
+      const [first, second] = await Promise.all([
+        searchBooks({ q: 'JavaScript', page: '1' }),
+        searchBooks({ page: '1', q: 'JavaScript' }),
+      ]);
+
+      expect(aggregateSpy).toHaveBeenCalledTimes(1);
+      expect(first).toEqual(second);
+
+      await searchBooks({ q: 'JavaScript', page: '1' });
+      expect(aggregateSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      aggregateSpy.mockRestore();
+    }
+  });
+
   test('does not return soft-deleted books', async () => {
     await Book.findOneAndUpdate(
       { isbn: '9789380000107' },

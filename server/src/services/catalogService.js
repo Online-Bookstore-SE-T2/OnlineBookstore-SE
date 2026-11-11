@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const { Book, Listing, Category } = require('../models');
 const { LISTING_STATUS } = require('../constants');
 const { ValidationError } = require('../utils/errors');
+const { createInFlightCoalescer } = require('../utils/inFlight');
 
+const coalesceCatalog = createInFlightCoalescer();
 const PAGE_SIZE = 20;
 
 const SORT_OPTIONS = {
@@ -43,7 +45,7 @@ function parsePage(value) {
   return page;
 }
 
-async function getCatalogBooks(query = {}) {
+async function executeGetCatalogBooks(query = {}) {
   const {
     category,
     minPrice,
@@ -169,6 +171,20 @@ async function getCatalogBooks(query = {}) {
     total,
     totalPages: Math.ceil(total / PAGE_SIZE),
   };
+}
+
+function catalogQueryKey(query = {}) {
+  return JSON.stringify(
+    Object.entries(query || {}).sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
+// Coalesce identical catalog reads only while the database query is pending.
+function getCatalogBooks(query = {}) {
+  return coalesceCatalog(
+    catalogQueryKey(query),
+    () => executeGetCatalogBooks(query),
+  );
 }
 
 // Fetch active categories for the catalog dropdown

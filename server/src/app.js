@@ -31,7 +31,11 @@ const {
 // Builds the Express application. Tests can configure the authentication rate limiter.
 function createApp({
   authRateLimit,
-  logRequests = config.env !== 'test',
+  // Avoid per-request console I/O in development.
+  // Production logging remains enabled by default; LOG_REQUESTS can override it.
+  logRequests =
+    process.env.LOG_REQUESTS === 'true'
+    || (process.env.LOG_REQUESTS !== 'false' && config.env === 'production'),
 } = {}) {
   const app = express();
 
