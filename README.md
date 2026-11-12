@@ -126,7 +126,20 @@ npm run test:coverage        # with coverage reports
 
 Server tests use the MongoDB instance at `MONGODB_TEST_URI` (default `mongodb://127.0.0.1:27017`), with a throwaway database per Jest worker. It must be a replica set too, or the cart, checkout, payment and order tests fail with 500s. Give the base URI without a database name or query string.
 
-Every pull request to `main` runs lint, both test suites against MongoDB started as a single-member replica set, the client production build, both Docker image builds and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`). The workflow also runs on pushes to `main`; the Render Blueprint is configured to deploy only after GitHub checks pass.
+To run both suites through pytest, as CI does (needs Python 3.10 or later):
+
+```bash
+python -m pip install -r ci/pytest_suite/requirements.txt
+python -m pytest                                  # both suites; each JS test case is one pytest test
+python -m pytest --suite server                   # or --suite client
+python -m pytest --results-md results.md          # also write the Markdown results summary
+```
+
+pytest starts `npm test -w server` (Jest) and `npm test -w client` (Vitest), so the same MongoDB requirements apply. Their raw JSON reports and console logs go to `test-results/` (not committed).
+
+After every push to `main`, CI commits the latest results to [`docs/test-reports/ci-latest-results.md`](docs/test-reports/ci-latest-results.md), overwriting the previous run's file, so it always describes the newest commit on `main` (earlier runs are in its git history). The summary is also shown on each workflow run's page, and the JUnit XML, JSON reports and logs are attached to the run as the `test-results` artifact.
+
+Every pull request to `main` runs lint, both test suites (through pytest) against MongoDB started as a single-member replica set, the client production build, both Docker image builds and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`). The workflow also runs on pushes to `main`; the Render Blueprint is configured to deploy only after GitHub checks pass.
 
 ## Behaviour notes
 

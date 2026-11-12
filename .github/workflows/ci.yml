@@ -1,5 +1,6 @@
-# Lint and run both test suites for pull requests and pushes to main; Render deploys only
-# after these GitHub checks pass (NFR07, C-5, Test Plan section 5: regression testing).
+# Lint and run both test suites (through pytest) for pull requests and pushes to main; Render
+# deploys only after these GitHub checks pass (NFR07, C-5, Test Plan section 5: regression
+# testing). Pushes to main also commit the results to docs/test-reports/ci-latest-results.md.
 name: CI
 
 on:
@@ -32,6 +33,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # pytest drives both JavaScript suites and writes the results summary (ci/pytest_suite).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: ci/pytest_suite/requirements.txt
+
+      - name: Install pytest
+        run: python -m pip install -r ci/pytest_suite/requirements.txt
+
       - name: Lint
         run: npm run lint
 
@@ -55,10 +66,28 @@ jobs:
           docker logs mongo
           exit 1
 
+      # Runs `npm test -w server` (Jest) and `npm test -w client` (Vitest) through pytest, which
+      # reports every test case and writes the Markdown summary committed to main below.
       - name: Test
-        run: npm test
+        run: >-
+          python -m pytest
+          --junitxml=test-results/junit.xml
+          --results-md=test-results/ci-latest-results.md
         env:
           MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+
+      - name: Show the results on the run page
+        if: always() && hashFiles('test-results/ci-latest-results.md') != ''
+        run: cat test-results/ci-latest-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Build client
         run: npm run build -w client
@@ -108,3 +137,56 @@ jobs:
             echo "Restore drill exceeded the four-hour recovery objective" >&2
             exit 1
           fi
+
+  # After every push to main, commit the latest test results to
+  # docs/test-reports/ci-latest-results.md, overwriting the previous run's file. It runs even
+  # when tests fail, so the file always shows the latest outcome. Pushes made with
+  # GITHUB_TOKEN do not start another workflow run, and [skip render] stops Render from
+  # redeploying for a results-only commit.
+  publish-test-results:
+    needs: lint-and-test
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.lint-and-test.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download the test results
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: ${{ runner.temp }}/test-results
+
+      - name: Commit the results to main
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/test-results/ci-latest-results.md"
+          if [ ! -f "$results" ]; then
+            echo "::warning::No test results were produced (the tests did not run); the results file is unchanged."
+            exit 0
+          fi
+          # A newer push to main has its own run, which will publish its own results.
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "main has moved past $GITHUB_SHA; leaving the results file to the newer run."
+            exit 0
+          fi
+          target=docs/test-reports/ci-latest-results.md
+          cp "$results" "$target"
+          git add "$target"
+          if git diff --cached --quiet; then
+            echo "The results file is unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898315+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: CI test results for ${GITHUB_SHA::7} [skip ci] [skip render]"
+          git push origin HEAD:main
