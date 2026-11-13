@@ -121,4 +121,39 @@ describe('ST08 Payment Simulation', () => {
 
     expect(response.status).toBe(401);
   });
+
+  describe('in production', () => {
+    const { config } = require('../../src/config/env');
+    let saved;
+
+    beforeEach(() => {
+      saved = { env: config.env, allowPaymentSimulator: config.allowPaymentSimulator };
+      config.env = 'production';
+    });
+
+    afterEach(() => {
+      Object.assign(config, saved);
+    });
+
+    test('TC-PAY-09: the simulator is not found unless ALLOW_PAYMENT_SIMULATOR is set', async () => {
+      config.allowPaymentSimulator = false;
+      const orderId = data.orders['ORD-S05']._id.toString();
+
+      const response = await pay(orderId, 'success');
+
+      expect(response.status).toBe(404);
+      expect((await Order.findById(orderId)).status).toBe('Placed');
+    });
+
+    test('TC-PAY-10: ALLOW_PAYMENT_SIMULATOR=true lets the hosted demo pay with the simulator', async () => {
+      config.allowPaymentSimulator = true;
+      const orderId = data.orders['ORD-S05']._id.toString();
+
+      const response = await pay(orderId, 'success');
+
+      expect(response.status).toBe(200);
+      expect(response.body.order.status).toBe('Paid');
+      expect(response.body.order.payment.provider).toBe('simulator');
+    });
+  });
 });

@@ -34,6 +34,9 @@ const config = {
     password: process.env.ADMIN_PASSWORD,
   },
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
+  // Deviation from the SRS (see the SRS deviations document): lets a production deployment use the
+  // built-in payment simulator when no Razorpay account is available. Must be exactly "true".
+  allowPaymentSimulator: process.env.ALLOW_PAYMENT_SIMULATOR === 'true',
   // Razorpay test-mode keys (Dashboard → Test Mode → API Keys). The key id is public; the secret stays on the server.
   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
@@ -53,8 +56,8 @@ function assertServerConfig() {
   if (!['simulator', 'razorpay'].includes(config.paymentProvider)) {
     missing.push('PAYMENT_PROVIDER must be simulator or razorpay');
   }
-  if (config.env === 'production' && config.paymentProvider !== 'razorpay') {
-    missing.push('PAYMENT_PROVIDER=razorpay');
+  if (config.env === 'production' && config.paymentProvider !== 'razorpay' && !config.allowPaymentSimulator) {
+    missing.push('PAYMENT_PROVIDER=razorpay (or ALLOW_PAYMENT_SIMULATOR=true)');
   }
   if (config.paymentProvider === 'razorpay') {
     if (!config.razorpayKeyId) missing.push('RAZORPAY_KEY_ID');

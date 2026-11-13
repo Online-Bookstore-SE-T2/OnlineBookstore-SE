@@ -202,7 +202,8 @@ async function completeGatewayPayment(userId, orderId, details = {}) {
 }
 
 async function simulatePayment(userId, orderId, outcome) {
-  if (config.env === 'production' || config.paymentProvider !== 'simulator') {
+  const simulatorAllowed = config.env !== 'production' || config.allowPaymentSimulator;
+  if (!simulatorAllowed || config.paymentProvider !== 'simulator') {
     throw new AppError(404, strings.payment.simulatorNotFound);
   }
   if (!mongoose.isValidObjectId(orderId)) throw new AppError(400, strings.order.invalidId);
