@@ -12,8 +12,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # The hosted demo runs on the built-in payment simulator (no Razorpay account needed).
+      # To take Razorpay test payments instead, set PAYMENT_PROVIDER=razorpay and the two keys below.
       - key: PAYMENT_PROVIDER
-        value: razorpay
+        value: simulator
+      - key: ALLOW_PAYMENT_SIMULATOR
+        value: "true"
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET

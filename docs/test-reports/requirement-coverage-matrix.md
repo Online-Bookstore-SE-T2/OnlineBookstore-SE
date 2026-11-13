@@ -50,6 +50,7 @@ filenames.
 | `server/tests/unit/backupDatabase.test.js` | Database backup archive creation, retention and failure handling. |
 | `server/tests/unit/emailService.test.js` | Order e-mail delivery, STARTTLS and delivery failure handling. |
 | `server/tests/unit/paymentGateway.test.js` | Razorpay order creation, order and payment retrieval, capture, refund, signature verification and gateway errors. |
+| `server/tests/unit/envConfig.test.js` | Startup configuration check: production requires Razorpay unless `ALLOW_PAYMENT_SIMULATOR=true` (hosted-demo deviation from the SRS). |
 | `server/tests/system/ST08_razorpay_payment.test.js` | Razorpay payment through the API: one order per checkout, signed confirmation, capture, amount and owner checks, failure releasing stock, refund after cancellation. |
 | `server/tests/system/NFR_security_privacy.test.js` | Security, privacy, transport/request limits and secret handling. |
 | `server/tests/system/app.test.js` | Application shell and integration-level application behaviour. |
