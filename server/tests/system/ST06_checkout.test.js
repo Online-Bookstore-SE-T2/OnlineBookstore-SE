@@ -57,6 +57,21 @@ describe('ST06 Checkout Validation', () => {
     expect(res.body.checkout.currency).toBe('INR');
   });
 
+  test('a suspended seller cannot receive a new order from a saved cart', async () => {
+    await addCartItem(data.listings.L04._id, 1);
+    const existingOrders = await Order.countDocuments({ buyer: data.users['U-B01']._id });
+    const adminAuth = bearer(await tokenFor(app, data.users.A01));
+    await request(app).post(`/api/admin/users/${data.users['U-S01'].id}/suspend`).set(adminAuth);
+
+    const preview = await request(app).post('/api/checkout/validate').set(buyerAuth).send({ addressId });
+    expect(preview.status).toBe(200);
+    expect(preview.body.checkout.items[0].available).toBe(false);
+
+    const placed = await request(app).post('/api/checkout/orders').set(buyerAuth).send({ addressId });
+    expect(placed.status).toBe(409);
+    expect(await Order.countDocuments({ buyer: data.users['U-B01']._id })).toBe(existingOrders);
+  });
+
   test('TC-CHECKOUT-02: rejects an empty cart', async () => {
     const res = await request(app)
       .post('/api/checkout/validate')

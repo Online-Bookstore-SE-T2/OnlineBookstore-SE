@@ -188,8 +188,6 @@ async function seedBooks() {
           coverImageUrl:
             `https://placehold.co/400x600?text=${encodeURIComponent(title)}`,
           markedUnavailable: false,
-          averageRating: Number((3.5 + (number % 15) / 10).toFixed(1)),
-          reviewCount: number % 25,
         });
 
         inserted++;

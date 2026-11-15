@@ -427,3 +427,44 @@ However, the sustained concurrent-read acceptance target remains unmet.
 All results are local WSL development measurements, not production capacity
 guarantees. Issue #83 should remain open until the concurrent-read target
 is demonstrated or its acceptance criteria are formally revised.
+
+## 15. Production-image local repeat – 15 November 2026
+
+The production Docker image and Caddy proxy were run with MongoDB 7 as a
+single-member replica set on the same WSL 2 machine. The catalog contained
+5,100 books (100 demo books plus 5,000 synthetic performance books). API
+responses confirmed a total of 5,100 catalog books and 500 matches for
+`technology` before the load test.
+
+The repeat used `scripts/qa-load-benchmark.js`: 200 persistent client workers
+for 15 seconds, split evenly between `GET /api/books` and
+`GET /api/books/search?q=technology`. Each worker waited for its response body
+to finish before sending the next request. Request logging stayed enabled in
+the production API image. The client ran in a separate Node container on the
+same Docker network. Latency includes the HTTP response body, but there was
+no public internet or Atlas network hop.
+
+The harness can be repeated against a public HTTPS host with
+`QA_HOST=your-host.example QA_PORT=443 QA_PROTOCOL=https node scripts/qa-load-benchmark.js`.
+The public run must leave `QA_TRUST_LOCAL_CERT` unset so TLS certificates are
+verified normally.
+
+| Path | Successful responses | Failed responses | Median | P95 | Below 800 ms |
+|---|---:|---:|---:|---:|---:|
+| Direct API, catalog | 7,300 | 0 | 202.45 ms | 262.44 ms | 100% |
+| Direct API, search | 14,100 | 0 | 108.86 ms | 148.97 ms | 100% |
+| Direct API, combined | 21,400 | 0 | — | 227.16 ms | 100% |
+| Local HTTPS via Caddy, catalog | 8,285 | 0 | 184.12 ms | 236.66 ms | 99.28% |
+| Local HTTPS via Caddy, search | 11,496 | 0 | 101.10 ms | 165.72 ms | 99.23% |
+| Local HTTPS via Caddy, combined | 19,781 | 0 | — | 225.50 ms | 99.25% |
+| Local HTTPS via Caddy, combined repeat | 19,625 | 0 | — | 227.14 ms | 99.37% |
+
+The HTTPS client accepted Caddy's localhost test certificate for this local
+run only. These results pass the 95%-below-800-ms target **in this local
+production-mode environment**. No application performance code changed
+between the November 11 report and this repeat. The earlier development-mode
+failure remains valid evidence for that environment. Issue #83 remains open
+until a public Render + Atlas run on the intended service plan meets the
+target, with the dataset and network conditions recorded.
+The repeat's raw JSON summary is saved at
+`test-results/deployment-qa/load-https.json` (ignored by Git).

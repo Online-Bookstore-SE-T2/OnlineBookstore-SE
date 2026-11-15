@@ -17,11 +17,19 @@ module.exports = [
     },
   },
   {
-    files: ['eslint.config.js', 'server/**/*.js'],
+    files: ['eslint.config.js', 'server/**/*.js', 'scripts/**/*.js'],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'commonjs',
       globals: { ...globals.node },
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'module',
+      globals: { ...globals.node, fetch: 'readonly' },
     },
   },
   {

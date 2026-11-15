@@ -4,6 +4,7 @@ const { Cart, Listing } = require('../models');
 const { LISTING_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
+const { activeSellerPopulate } = require('./sellerAvailability');
 
 function validateId(id) {
   return mongoose.isValidObjectId(id);
@@ -50,10 +51,10 @@ async function getActiveListing(listingId) {
       select: 'title author coverImageUrl markedUnavailable deletedAt',
       match: { deletedAt: null },
     })
-    .populate('seller', 'name')
+    .populate(activeSellerPopulate())
     .lean();
 
-  if (!listing || !listing.book || listing.book.markedUnavailable) {
+  if (!listing || !listing.book || !listing.seller || listing.book.markedUnavailable) {
     throw new AppError(404, strings.cart.listingNotFound);
   }
 
@@ -119,7 +120,7 @@ async function getCart(buyerId) {
       select: 'title author coverImageUrl markedUnavailable deletedAt',
       match: { deletedAt: null },
     })
-    .populate('seller', 'name')
+    .populate(activeSellerPopulate())
     .lean();
 
   const listingMap = new Map(
@@ -133,6 +134,7 @@ async function getCart(buyerId) {
       Boolean(listing) &&
       listing.status === LISTING_STATUS.ACTIVE &&
       listing.quantity >= 1 &&
+      Boolean(listing.seller) &&
       Boolean(listing.book) &&
       !listing.book.markedUnavailable;
 

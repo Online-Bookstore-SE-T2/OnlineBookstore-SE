@@ -43,7 +43,7 @@ A single-member replica set is enough. The connection strings in `server/.env` s
 
 ### Sample data
 
-`seed:books` creates any missing categories and 100 sample books with valid ISBN-13s. It never deletes data and skips books whose ISBN already exists, including soft-deleted ones. The sample ratings and review counts are placeholders; a book's rating is recalculated from real reviews as soon as the first one is posted. The SRS performance targets (NFR01) are defined on at least 5,000 books, so load extra data before measuring them.
+`seed:books` creates any missing categories and 100 sample books with valid ISBN-13s. It never deletes data and skips books whose ISBN already exists, including soft-deleted ones. New sample books start with no ratings; ratings are derived from actual reviews. The SRS performance targets (NFR01) are defined on at least 5,000 books, so load extra data before measuring them.
 
 `seed:demo` adds two demo buyers, two demo sellers and a demo administrator, each with a usable development login. It also creates three demo books and active seller listings, buyer delivery addresses, orders in every order status, and verified-purchase reviews tied to a delivered order. It is safe to re-run without overwriting existing accounts or deleting data, and is disabled in production.
 
@@ -87,18 +87,18 @@ npm run dev:client                   # the SPA still runs from Node and proxies 
 - Data lives in the `mongo-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
 - `server/Dockerfile` builds the production API and client image from the repository root: `docker build -f server/Dockerfile -t online-bookstore-demo .`.
 
+For a self-hosted HTTPS deployment with Caddy and MongoDB Atlas, follow the [deployment runbook](docs/deployment-runbook.md). It covers DNS, secrets, smoke checks, backups and rollback. The prepared Render + Atlas path is documented below.
+
 ### HTTPS demonstration deployment (Render + MongoDB Atlas)
 
-`render.yaml` defines one Render web service that serves the production React client and API from the same origin. Render terminates TLS and redirects plain HTTP; the service uses two paid instances in Singapore and only auto-deploys after GitHub checks pass. The service URL is assigned by Render after its first successful deployment and should be recorded here for the evaluation.
+The [free public preview](https://online-bookstore-preview-free.onrender.com) serves the production React client and API from the same origin, backed by an Atlas Free cluster. It currently runs committed `main` at `85ec534`; the changes in this working tree are still uncommitted. Render is configured to deploy future `main` commits only after GitHub checks pass. The preview was created directly as a Render Node service, so it does not read `render.yaml`. That file is a reproducible Docker Blueprint for a new service.
 
-1. Connect the repository to Render and create a Blueprint from `render.yaml`.
-2. Create a MongoDB Atlas replica-set cluster in a nearby region on a tier that supports cloud backups. Enable daily snapshots with seven-day retention. Allow the Render service's outbound IPs in the Atlas network access list.
-3. In the Render service's environment settings, provide the Atlas `MONGODB_URI`, Razorpay test-mode key id and key secret, SMTP host/user/password/from address, and initial `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. These values are prompted as unsynchronized secrets; never put them in the repository or a chat. Render generates `JWT_SECRET`.
-4. After the service starts, use its shell to run `npm run seed:admin` and, if desired, `npm run seed:books`. The demo seed is intentionally disabled in production.
-5. Record the assigned HTTPS URL, then verify `https://<service-url>/api/health`, a Razorpay test-mode checkout, and receipt of the SMTP order e-mail.
-6. For monitoring (SASD 4.4.3), optionally set `ALERT_EMAIL` to receive alert e-mails, and set the GitHub repository variable `DEMO_URL` to the service URL to turn on the scheduled uptime check (`.github/workflows/uptime.yml`). See [docs/monitoring.md](docs/monitoring.md).
+1. The existing Atlas M0 cluster, restricted `online_bookstore` database user, and Render Free service are configured. Atlas allows only the service's two Singapore outbound ranges; the temporary local seed address was removed.
+2. The existing service builds with `npm ci --include=dev && npm run build -w client` and starts with `npm start -w server`. Its administrator, 100 sample books, and 100 offers from **Demo Sample Store** are seeded. Each offer starts with five sample copies; no physical books are shipped. Keep the Render and Atlas credentials private.
+3. Review the uncommitted changes before any commit. A future push to `main` will make Render build that committed version after GitHub checks pass. `render.yaml` is an alternative for creating a separate Docker service; do not create a second service for this preview.
+4. Optionally set the GitHub repository variable `DEMO_URL` to activate the scheduled uptime check (`.github/workflows/uptime.yml`). Hand the preview URL to the test owner. See the [deployment runbook](docs/deployment-runbook.md) for limits and recovery.
 
-To restore the hosted database, use Atlas Backup to restore one of the daily snapshots from the previous seven days to a new cluster. Update the Render service's `MONGODB_URI` to that restored cluster, redeploy, and verify the health check plus catalog and order flows. Time the restore and validation; the recovery objective is four hours. Keep the existing local Docker backup procedure below for non-hosted environments.
+The free Atlas cluster has no included managed backup policy. Use `mongodump`/`mongorestore` from an authorized machine for manual copies until a zero-cost scheduled backup is configured and verified. The seven-day backup and four-hour recovery objectives are **not guaranteed** by this free deployment. See the [runbook](docs/deployment-runbook.md) for the free-tier limits and recovery steps.
 
 ### Database backups and restore
 

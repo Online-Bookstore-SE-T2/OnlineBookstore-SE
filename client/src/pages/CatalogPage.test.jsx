@@ -183,4 +183,23 @@ describe('Catalog URL state (OSP-80)', () => {
     expect(screen.getByLabelText('Minimum price')).toHaveValue(null);
     expect(screen.getByLabelText('Sort by')).toHaveValue('title_asc');
   });
+
+  it('does not report zero books when the catalog request fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (String(url).includes('/books/categories')) return response(categories);
+      return new Response(JSON.stringify({
+        error: { message: 'Catalog service unavailable' },
+      }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    renderCatalog();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Catalog service unavailable');
+    expect(screen.getByRole('heading', { name: 'Catalog unavailable' })).toBeInTheDocument();
+    expect(screen.queryByText('0 books found')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'No books found' })).not.toBeInTheDocument();
+  });
 });

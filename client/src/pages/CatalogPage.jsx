@@ -277,7 +277,11 @@ export default function CatalogPage() {
         <section className="results" aria-labelledby="results-title" aria-busy={loading}>
           <div className="results-bar">
             <h2 id="results-title" className="results-count" aria-live="polite">
-              {loading ? 'Loading books...' : `${total} book${total === 1 ? '' : 's'} found`}
+              {loading
+                ? 'Loading books...'
+                : error
+                  ? 'Catalog unavailable'
+                  : `${total} book${total === 1 ? '' : 's'} found`}
             </h2>
 
             <label className="sort-control">

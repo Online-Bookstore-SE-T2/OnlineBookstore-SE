@@ -142,6 +142,10 @@ describe('transport and request limits (SRS 3.3)', () => {
         expect(res.headers['x-content-type-options']).toBe('nosniff');
         expect(res.headers['strict-transport-security']).toMatch(/max-age=\d+/);
         expect(res.headers['content-security-policy']).toBeDefined();
+        const imageSources = res.headers['content-security-policy'].split(';')
+            .find((directive) => directive.startsWith('img-src '));
+        expect(imageSources.split(' ')).toContain('https:');
+        expect(imageSources.split(' ')).not.toContain('http:');
     });
 
     test('TC-NFR-SEC-17: plain HTTP is redirected (GET) or refused (other methods) when HTTPS is enforced', async() => {

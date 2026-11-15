@@ -59,7 +59,9 @@ function createApp({
         scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
         frameSrc: ["'self'", 'https://api.razorpay.com'],
         connectSrc: ["'self'", 'https://api.razorpay.com', 'https://lumberjack.razorpay.com'],
-        imgSrc: ["'self'", 'data:', 'https://cdn.razorpay.com'],
+        // Book covers are administrator-supplied HTTPS URLs, including the
+        // placeholder covers used by the seeded catalog.
+        imgSrc: ["'self'", 'data:', 'https:'],
       },
     },
     crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
