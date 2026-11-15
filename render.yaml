@@ -18,6 +18,10 @@ services:
         value: simulator
       - key: ALLOW_PAYMENT_SIMULATOR
         value: "true"
+      # Marks a paid order Delivered 10 s after payment so the review flow can be shown without a
+      # seller fulfilling it. Remove to leave fulfilment to sellers.
+      - key: DEMO_AUTO_DELIVER_SECONDS
+        value: "10"
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET

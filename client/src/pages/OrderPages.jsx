@@ -90,6 +90,28 @@ export function OrderDetailPage({ confirmation = false }) {
     return () => { active = false; };
   }, [orderId]);
 
+  // Hosted demo: the server delivers a paid order automatically at autoDeliverAt. Check every
+  // two seconds until the status changes so Delivered and the review links appear on their own.
+  const autoDeliverAt = order?.status === 'Paid' ? order.autoDeliverAt : null;
+  useEffect(() => {
+    if (!autoDeliverAt) return undefined;
+    let active = true;
+    const timer = setInterval(async () => {
+      try {
+        const current = await getOrder(orderId);
+        if (!active || current.status === 'Paid') return;
+        setOrder(current);
+        if (current.status === 'Delivered') {
+          setNotice('Your order has been delivered. You can now review the books below.');
+          window.dispatchEvent(new Event('notifications-updated'));
+        }
+      } catch {
+        // Try again on the next tick.
+      }
+    }, 2000);
+    return () => { active = false; clearInterval(timer); };
+  }, [autoDeliverAt, orderId]);
+
   async function onCancel() {
     setBusy(true);
     setError('');
@@ -132,6 +154,9 @@ export function OrderDetailPage({ confirmation = false }) {
         <span className="badge">{order.status}</span>
       </div>
       {confirmation && order.status === 'Paid' && <Alert>Payment confirmed. Your order is being prepared.</Alert>}
+      {autoDeliverAt && (
+        <Alert>Demo mode: this order will be marked delivered automatically at {new Date(autoDeliverAt).toLocaleTimeString()}, after which you can review the books.</Alert>
+      )}
       {notice && <Alert>{notice}</Alert>}
       {error && <Alert type="error">{error}</Alert>}
       <article className="card stack">

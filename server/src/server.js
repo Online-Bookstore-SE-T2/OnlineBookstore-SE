@@ -1,4 +1,5 @@
-const { config, assertServerConfig } = require('./config/env');
+const { config, assertServerConfig, demoAutoDeliverDelayMs } = require('./config/env');
+const { startDemoAutoDelivery } = require('./services/orderService');
 const { connectDatabase } = require('./config/db');
 require('./models');
 const { createApp } = require('./app');
@@ -15,6 +16,12 @@ async function start() {
   monitor.start({
     notify: (result, summary) => sendOperationalAlert(`[Online Bookstore] Alert: ${result.id}`, summary),
   });
+  // Hosted demo only (DEMO_AUTO_DELIVER_SECONDS): deliver paid orders without a seller.
+  const delayMs = demoAutoDeliverDelayMs();
+  if (delayMs) {
+    startDemoAutoDelivery();
+    console.log(`Demo auto-delivery is on: paid orders are marked Delivered ${delayMs / 1000} s after payment.`);
+  }
   const app = createApp();
   app.listen(config.port, () => {
     console.log(`API listening on port ${config.port} (${config.env})`);

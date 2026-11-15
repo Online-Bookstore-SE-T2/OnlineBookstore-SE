@@ -16,7 +16,11 @@ async function getOrder(req, res) {
     req.params.orderId
   );
 
-  res.status(200).json({ order });
+  // Hosted demo only: tell the order page when the order will be delivered automatically.
+  const autoDeliverAt = orderService.demoAutoDeliverAt(order);
+  res.status(200).json({
+    order: autoDeliverAt ? { ...order.toJSON(), autoDeliverAt: autoDeliverAt.toISOString() } : order,
+  });
 }
 
 async function cancelOrder(req, res) {
