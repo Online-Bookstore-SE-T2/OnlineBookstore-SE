@@ -83,9 +83,11 @@ function createApp({
     app.use(requestLogger);
   }
 
-  // Health check.
+  // Health check. On Render it also names the deployed commit (RENDER_GIT_COMMIT), which the
+  // CD job in .github/workflows/ci.yml waits for to confirm that a deploy went live.
   app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok' });
+    const commit = process.env.RENDER_GIT_COMMIT;
+    res.json(commit ? { status: 'ok', commit } : { status: 'ok' });
   });
   app.get('/api/health/ready', readiness);
   app.use('/api/metrics', createMetricsRouter());

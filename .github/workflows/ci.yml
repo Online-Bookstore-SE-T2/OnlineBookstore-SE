@@ -1,6 +1,8 @@
-# Lint and run both test suites (through pytest) for pull requests and pushes to main; Render
-# deploys only after these GitHub checks pass (NFR07, C-5, Test Plan section 5: regression
-# testing). Pushes to main also commit the results to docs/test-reports/ci-latest-results.md.
+# CI/CD (NFR07, C-5, Test Plan section 5: regression testing).
+# CI: lint and run both test suites (through pytest) for pull requests and pushes to main.
+# CD: after a push to main passes CI, the deploy job deploys that exact commit to the Render demo
+# and waits until the live site runs it. Pull requests are tested but never deployed.
+# Pushes to main also commit the results to docs/test-reports/ci-latest-results.md.
 name: CI
 
 on:
@@ -200,3 +202,88 @@ jobs:
           git config user.email "41898315+github-actions[bot]@users.noreply.github.com"
           git commit -m "docs: CI test results for ${GITHUB_SHA::7} [skip ci] [skip render]"
           git push origin HEAD:main
+
+  # CD: deploys the commit that just passed lint-and-test to the Render demo, then waits until
+  # the live site reports that commit (GET /api/health returns Render's RENDER_GIT_COMMIT) and
+  # its database check (/api/health/ready) passes. Runs for pushes to main and for a manual
+  # "Run workflow" on main; never for pull requests. The run page links the live site under the
+  # "production" environment, and the repository's Deployments list keeps the history.
+  # Setup (once): repository secret RENDER_DEPLOY_HOOK_URL (Render service → Settings → Deploy
+  # Hook) and repository variable DEMO_URL (the site's https:// address, no trailing slash).
+  # Deploying a commit through the hook turns off Render's own auto-deploy, so each commit is
+  # deployed once, by this job.
+  deploy:
+    needs: lint-and-test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ vars.DEMO_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Check the deployment settings
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          DEMO_URL: ${{ vars.DEMO_URL }}
+        run: |
+          missing=0
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "::error::Repository secret RENDER_DEPLOY_HOOK_URL is not set (Render service → Settings → Deploy Hook)."
+            missing=1
+          fi
+          if [ -z "$DEMO_URL" ]; then
+            echo "::error::Repository variable DEMO_URL is not set (the demo's https:// address)."
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Ask Render to deploy this commit
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          case "$DEPLOY_HOOK_URL" in *\?*) separator='&' ;; *) separator='?' ;; esac
+          curl --fail-with-body --silent --show-error --max-time 60 --retry 3 --retry-all-errors \
+            --request POST "${DEPLOY_HOOK_URL}${separator}ref=${GITHUB_SHA}" --output /dev/null
+          echo "Render accepted a deploy of ${GITHUB_SHA::7}."
+
+      # Builds on Render Free take a few minutes, and a sleeping instance needs up to a minute
+      # to wake, so this checks every 15 seconds for up to 20 minutes.
+      - name: Wait until the live site runs this commit
+        env:
+          DEMO_URL: ${{ vars.DEMO_URL }}
+        run: |
+          set -uo pipefail
+          deadline=$(( $(date +%s) + 20 * 60 ))
+          live=''
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            live=$(curl --silent --max-time 30 "$DEMO_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)
+            if [ "$live" = "$GITHUB_SHA" ]; then
+              echo "The site runs ${GITHUB_SHA::7}."
+              break
+            fi
+            echo "Live commit: ${live:-unknown}; waiting for ${GITHUB_SHA::7}..."
+            sleep 15
+          done
+          if [ "$live" != "$GITHUB_SHA" ]; then
+            echo "::error::$DEMO_URL did not start running ${GITHUB_SHA::7} within 20 minutes. Check the deploy in the Render dashboard."
+            exit 1
+          fi
+
+      - name: Smoke-test the deployed site
+        env:
+          DEMO_URL: ${{ vars.DEMO_URL }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 --output /dev/null "$DEMO_URL/"
+          curl --fail --silent --show-error --max-time 30 "$DEMO_URL/api/health/ready"
+          echo
+          {
+            echo "### Deployed ${GITHUB_SHA::7}"
+            echo
+            echo "$DEMO_URL now runs commit \`$GITHUB_SHA\`; the site and its database check passed."
+          } >> "$GITHUB_STEP_SUMMARY"
