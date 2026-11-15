@@ -19,6 +19,18 @@ describe('application shell', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  test('health route names the deployed commit on Render, for the CD job', async () => {
+    const saved = process.env.RENDER_GIT_COMMIT;
+    process.env.RENDER_GIT_COMMIT = '7f0e7ded459ad8d1672dc1f687fc66bc640236ea';
+    try {
+      const res = await request(app).get('/api/health');
+      expect(res.body).toEqual({ status: 'ok', commit: '7f0e7ded459ad8d1672dc1f687fc66bc640236ea' });
+    } finally {
+      if (saved === undefined) delete process.env.RENDER_GIT_COMMIT;
+      else process.env.RENDER_GIT_COMMIT = saved;
+    }
+  });
+
   test('unknown routes return a JSON 404', async () => {
     const res = await request(app).get('/api/does-not-exist');
     expect(res.status).toBe(404);

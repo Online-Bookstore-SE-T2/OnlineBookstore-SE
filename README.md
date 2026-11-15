@@ -91,12 +91,12 @@ For a self-hosted HTTPS deployment with Caddy and MongoDB Atlas, follow the [dep
 
 ### HTTPS demonstration deployment (Render + MongoDB Atlas)
 
-The [free public preview](https://online-bookstore-preview-free.onrender.com) serves the production React client and API from the same origin, backed by an Atlas Free cluster. It currently runs committed `main` at `85ec534`; the changes in this working tree are still uncommitted. Render is configured to deploy future `main` commits only after GitHub checks pass. The preview was created directly as a Render Node service, so it does not read `render.yaml`. That file is a reproducible Docker Blueprint for a new service.
+The [free public preview](https://online-bookstore-preview-free.onrender.com) serves the production React client and API from the same origin, backed by an Atlas Free cluster. It is deployed by the CI/CD workflow (see [Continuous integration and deployment](#continuous-integration-and-deployment)): every push to `main` that passes CI is deployed automatically, so nobody deploys by hand. `GET /api/health` names the commit the site is running. The preview was created directly as a Render Node service, so it does not read `render.yaml`; its environment variables (for example `DEMO_AUTO_DELIVER_SECONDS=10`) are set in the Render dashboard, and a deploy does not change them. `render.yaml` is a reproducible Docker Blueprint for a new service.
 
 1. The existing Atlas M0 cluster, restricted `online_bookstore` database user, and Render Free service are configured. Atlas allows only the service's two Singapore outbound ranges; the temporary local seed address was removed.
 2. The existing service builds with `npm ci --include=dev && npm run build -w client` and starts with `npm start -w server`. Its administrator, 100 sample books, and 100 offers from **Demo Sample Store** are seeded. Each offer starts with five sample copies; no physical books are shipped. Keep the Render and Atlas credentials private.
-3. Review the uncommitted changes before any commit. A future push to `main` will make Render build that committed version after GitHub checks pass. `render.yaml` is an alternative for creating a separate Docker service; do not create a second service for this preview.
-4. Optionally set the GitHub repository variable `DEMO_URL` to activate the scheduled uptime check (`.github/workflows/uptime.yml`). Hand the preview URL to the test owner. See the [deployment runbook](docs/deployment-runbook.md) for limits and recovery.
+3. Turn on continuous deployment once: in the Render service, open **Settings → Deploy Hook** and save that URL as the GitHub repository secret `RENDER_DEPLOY_HOOK_URL`; set the repository variable `DEMO_URL` to `https://online-bookstore-preview-free.onrender.com`. From then on, CI deploys each passing push to `main`. `render.yaml` is an alternative for creating a separate Docker service; do not create a second service for this preview.
+4. `DEMO_URL` also turns on the scheduled uptime check (`.github/workflows/uptime.yml`). Hand the preview URL to the test owner. See the [deployment runbook](docs/deployment-runbook.md) for limits and recovery.
 
 The free Atlas cluster has no included managed backup policy. Use `mongodump`/`mongorestore` from an authorized machine for manual copies until a zero-cost scheduled backup is configured and verified. The seven-day backup and four-hour recovery objectives are **not guaranteed** by this free deployment. See the [runbook](docs/deployment-runbook.md) for the free-tier limits and recovery steps.
 
@@ -137,9 +137,16 @@ python -m pytest --results-md results.md          # also write the Markdown resu
 
 pytest starts `npm test -w server` (Jest) and `npm test -w client` (Vitest), so the same MongoDB requirements apply. Their raw JSON reports and console logs go to `test-results/` (not committed).
 
+### Continuous integration and deployment
+
 After every push to `main`, CI commits the latest results to [`docs/test-reports/ci-latest-results.md`](docs/test-reports/ci-latest-results.md), overwriting the previous run's file, so it always describes the newest commit on `main` (earlier runs are in its git history). The summary is also shown on each workflow run's page, and the JUnit XML, JSON reports and logs are attached to the run as the `test-results` artifact.
 
-Every pull request to `main` runs lint, both test suites (through pytest) against MongoDB started as a single-member replica set, the client production build, both Docker image builds and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`). The workflow also runs on pushes to `main`; the Render Blueprint is configured to deploy only after GitHub checks pass.
+Every pull request to `main` runs lint, both test suites (through pytest) against MongoDB started as a single-member replica set, the client production build, both Docker image builds and the timed backup/restore drill in GitHub Actions (`.github/workflows/ci.yml`). The workflow also runs on pushes to `main`, and there it continues into deployment:
+
+1. **CI** (`lint-and-test`) must pass. A failing check stops the pipeline, and nothing is deployed.
+2. **CD** (`deploy`) asks Render, through the service's deploy hook, to deploy exactly the commit that passed. It then waits (up to 20 minutes) until `GET /api/health` on the live site reports that commit, and smoke-tests the site and `/api/health/ready`. The job fails if the new version does not go live. Each deploy appears under the repository's **production** environment with a link to the site.
+
+Pull requests run CI only. They are deployed when they are merged into `main`. To redeploy `main` by hand, run the CI workflow on `main` from the Actions tab. Deploying a commit through the hook turns off Render's own auto-deploy, so each commit is deployed once, by the workflow.
 
 ## Behaviour notes
 

@@ -92,11 +92,10 @@ domain. Do not enable Atlas's optional paid backup subscription, switch to an
 Atlas Flex/Dedicated tier, or upgrade the Render instance. If a payment method
 is on the Render workspace, usage beyond included bandwidth or build minutes
 can still be billed; a workspace without a payment method stops service or
-builds at those limits instead. The uncommitted changes in this working tree
-have not been pushed. The public preview at
-`https://online-bookstore-preview-free.onrender.com` runs committed `main` at
-`85ec534` from a directly configured Render Node service. It does not read this
-working tree's `render.yaml`.
+builds at those limits instead. The public preview at
+`https://online-bookstore-preview-free.onrender.com` is a directly configured
+Render Node service; it does not read `render.yaml`. The CI/CD workflow deploys
+every push to `main` that passes CI (step 6).
 
 1. Create an Atlas Free cluster, preferably in a region near Singapore, and a
    database user with read/write access to `online_bookstore`. Form the driver
@@ -104,10 +103,10 @@ working tree's `render.yaml`.
    characters in the password. Keep the URI private.
 2. The existing Render Node service builds with
    `npm ci --include=dev && npm run build -w client`, starts with
-   `npm start -w server`, and has `autoDeployTrigger: checksPass` on `main`.
+   `npm start -w server`, and deploys `main` through the CI/CD workflow.
    Its plan is Free with one instance. The `render.yaml` Docker Blueprint is
    an alternative for a new service; do not create a duplicate for this
-   preview. Review the local changes before committing them.
+   preview.
 3. The Render service's two Singapore outbound ranges, `74.220.52.0/24` and
    `74.220.60.0/24`, are on the Atlas project access list. Recheck Render's
    outbound ranges after a networking change. Avoid a permanent `0.0.0.0/0`
@@ -129,10 +128,18 @@ working tree's `render.yaml`.
    skips offers already present for that seller. The sample inventory is
    fictional and must not be described as real stock.
 5. Give the [preview URL](https://online-bookstore-preview-free.onrender.com)
-   to the test owner. Set GitHub repository variable `DEMO_URL` only if the
-   scheduled uptime check is wanted. It checks the site and
+   to the test owner. The GitHub repository variable `DEMO_URL` (step 6) also
+   turns on the scheduled uptime check, which checks the site and
    `/api/health/ready` every 15 minutes; a cold start can cause an initial
    timeout and a retry.
+6. Continuous deployment: copy the Render service's **Settings → Deploy Hook**
+   URL into the GitHub repository secret `RENDER_DEPLOY_HOOK_URL`, and set the
+   repository variable `DEMO_URL` to the preview URL. The `deploy` job in
+   `.github/workflows/ci.yml` then deploys each push to `main` after
+   `lint-and-test` passes, waits until `GET /api/health` reports the new
+   commit, and smoke-tests `/` and `/api/health/ready`. Treat the hook URL as
+   a secret: anyone holding it can trigger a deploy. Environment variables are
+   still set in the Render dashboard; a deploy does not change them.
 
 The Blueprint uses the payment simulator, a documented SRS deviation; it
 does not charge customers. Render Free blocks SMTP ports 25, 465 and 587.
