@@ -5,6 +5,7 @@ const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
+const { demoAutoDeliverDelayMs } = require('../config/env');
 
 // Returns an order's quantities to its listings. Must run inside the caller's transaction.
 async function releaseOrderStock(order, session) {
@@ -259,7 +260,85 @@ async function adminSetOrderStatus(adminId, orderId, nextStatus) {
   return { order: updatedOrder, previousStatus };
 }
 
+// Hosted-demo auto-delivery (DEMO_AUTO_DELIVER_SECONDS, a recorded SRS deviation).
+
+// When a paid order will be delivered automatically, or null when that does not apply.
+function demoAutoDeliverAt(order) {
+  const delayMs = demoAutoDeliverDelayMs();
+  if (!delayMs || order.status !== ORDER_STATUS.PAID) return null;
+  const paid = [...(order.statusHistory || [])].reverse().find((entry) => entry.status === ORDER_STATUS.PAID);
+  return paid ? new Date(new Date(paid.changedAt).getTime() + delayMs) : null;
+}
+
+// Marks every order paid at least DEMO_AUTO_DELIVER_SECONDS ago as Shipped and then Delivered,
+// recording both steps under the seller of its first item. The update only applies to an order
+// that is still Paid, so a cancellation in the meantime wins, and several server instances can
+// run this at once without delivering an order twice.
+async function deliverDueDemoOrders(now = new Date()) {
+  const delayMs = demoAutoDeliverDelayMs();
+  if (!delayMs) return [];
+  const cutoff = new Date(now.getTime() - delayMs);
+  const due = await Order.find({
+    status: ORDER_STATUS.PAID,
+    deletedAt: null,
+    // Trusted: the filter is built here from server values, not from the request (sanitizeFilter).
+    statusHistory: mongoose.trusted({ $elemMatch: { status: ORDER_STATUS.PAID, changedAt: { $lte: cutoff } } }),
+  }).select('_id items.seller');
+
+  const delivered = [];
+  for (const candidate of due) {
+    const actor = candidate.items[0].seller;
+    const order = await Order.findOneAndUpdate(
+      { _id: candidate._id, status: ORDER_STATUS.PAID, deletedAt: null },
+      {
+        $set: { status: ORDER_STATUS.DELIVERED },
+        $push: {
+          statusHistory: {
+            $each: [
+              { status: ORDER_STATUS.SHIPPED, actor, changedAt: now },
+              { status: ORDER_STATUS.DELIVERED, actor, changedAt: now },
+            ],
+          },
+        },
+      },
+      { new: true },
+    );
+    if (!order) continue;
+    delivered.push(order);
+    await Promise.all([
+      notificationService.notifyOrderStatusChanged(order, ORDER_STATUS.PAID)
+        .catch((error) => console.error('Failed to create order status notification:', error.message)),
+      User.findById(order.buyer)
+        .then((buyer) => buyer && emailService.dispatchOrderEvent('status', order, buyer))
+        .catch((error) => console.error('Failed to load order email recipient:', error.message)),
+    ]);
+  }
+  return delivered;
+}
+
+// Runs deliverDueDemoOrders every intervalMs while demo auto-delivery is on. Returns a stop function.
+function startDemoAutoDelivery(intervalMs = 2000) {
+  if (!demoAutoDeliverDelayMs()) return () => {};
+  let running = false;
+  const timer = setInterval(async () => {
+    if (running) return;
+    running = true;
+    try {
+      await deliverDueDemoOrders();
+    } catch (error) {
+      console.error('Demo auto-delivery failed:', error.message);
+    } finally {
+      running = false;
+    }
+  }, intervalMs);
+  timer.unref();
+  return () => clearInterval(timer);
+}
+
 module.exports = {
+  demoAutoDeliverAt,
+  deliverDueDemoOrders,
+  startDemoAutoDelivery,
   getBuyerOrders,
   getBuyerOrder,
   getSellerOrders,

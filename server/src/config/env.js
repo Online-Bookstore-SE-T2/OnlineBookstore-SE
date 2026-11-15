@@ -37,6 +37,10 @@ const config = {
   // Deviation from the SRS (see the SRS deviations document): lets a production deployment use the
   // built-in payment simulator when no Razorpay account is available. Must be exactly "true".
   allowPaymentSimulator: process.env.ALLOW_PAYMENT_SIMULATOR === 'true',
+  // Deviation from the SRS for the hosted demo: when set to a whole number of seconds, a paid order
+  // is marked Shipped and then Delivered that long after payment, so the review flow can be shown
+  // without a seller fulfilling the order. Unset (the default) leaves fulfilment to sellers.
+  demoAutoDeliverSeconds: process.env.DEMO_AUTO_DELIVER_SECONDS,
   // Razorpay test-mode keys (Dashboard → Test Mode → API Keys). The key id is public; the secret stays on the server.
   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
@@ -51,6 +55,14 @@ const config = {
   },
 };
 
+// Milliseconds between payment and automatic delivery, or 0 when demo auto-delivery is off.
+function demoAutoDeliverDelayMs() {
+  const raw = String(config.demoAutoDeliverSeconds ?? '').trim();
+  if (!/^\d+$/.test(raw)) return 0;
+  const seconds = Number(raw);
+  return seconds >= 1 && seconds <= 3600 ? seconds * 1000 : 0;
+}
+
 function assertServerConfig() {
   const missing = ['mongoUri', 'jwtSecret'].filter((key) => !config[key]);
   if (!['simulator', 'razorpay'].includes(config.paymentProvider)) {
@@ -58,6 +70,9 @@ function assertServerConfig() {
   }
   if (config.env === 'production' && config.paymentProvider !== 'razorpay' && !config.allowPaymentSimulator) {
     missing.push('PAYMENT_PROVIDER=razorpay (or ALLOW_PAYMENT_SIMULATOR=true)');
+  }
+  if (config.demoAutoDeliverSeconds && demoAutoDeliverDelayMs() === 0) {
+    missing.push('DEMO_AUTO_DELIVER_SECONDS must be a whole number of seconds from 1 to 3600');
   }
   if (config.paymentProvider === 'razorpay') {
     if (!config.razorpayKeyId) missing.push('RAZORPAY_KEY_ID');
@@ -68,4 +83,4 @@ function assertServerConfig() {
   }
 }
 
-module.exports = { config, assertServerConfig, MIN_BCRYPT_ROUNDS };
+module.exports = { config, assertServerConfig, demoAutoDeliverDelayMs, MIN_BCRYPT_ROUNDS };
