@@ -134,6 +134,26 @@ describe('ST04 users and sellers', () => {
     expect((await User.findById(data.users['U-S03'].id)).status).toBe('Suspended');
   });
 
+  test('a suspended seller has no purchasable offers until reinstated', async () => {
+    const bookId = data.books.B02.id;
+    const listingId = data.listings.L04.id;
+    expect((await request(app).get(`/api/books/${bookId}`)).body.listings.map((item) => item.id))
+      .toContain(listingId);
+
+    await post(adminAuth, `/users/${data.users['U-S01'].id}/suspend`);
+    expect((await request(app).get(`/api/books/${bookId}`)).body.listings).toHaveLength(0);
+    expect((await request(app).get(`/api/books/${bookId}/listings`)).body.listings).toHaveLength(0);
+    const available = await request(app).get('/api/books?available=true');
+    expect(available.body.items.map((book) => book._id)).not.toContain(bookId);
+    const add = await request(app).post('/api/cart/items').set(buyerAuth)
+      .send({ listingId, quantity: 1 });
+    expect(add.status).toBe(404);
+
+    await post(adminAuth, `/users/${data.users['U-S01'].id}/reinstate`);
+    expect((await request(app).get(`/api/books/${bookId}`)).body.listings.map((item) => item.id))
+      .toContain(listingId);
+  });
+
   test('a suspended user can still log in but is read-only; reinstating restores write access', async () => {
     await post(adminAuth, `/users/${data.users['U-B04'].id}/suspend`);
     const res = await login(app, data.users['U-B04'].email);

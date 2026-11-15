@@ -88,25 +88,25 @@ describe('application shell (SRS 3.1)', () => {
   });
 
   it('home, help and privacy screens have no accessibility violations', async () => {
-    const { axe } = await import('vitest-axe');
+    const { default: axe } = await import('axe-core');
 
     const { container, unmount } = renderApp('/');
 
-    const homeResults = await axe(container);
+    const homeResults = await axe.run(container);
     expect(homeResults.violations).toHaveLength(0);
 
     unmount();
 
     const help = renderApp('/help');
 
-    const helpResults = await axe(help.container);
+    const helpResults = await axe.run(help.container);
     expect(helpResults.violations).toHaveLength(0);
 
     help.unmount();
 
     const privacy = renderApp('/privacy');
 
-    const privacyResults = await axe(privacy.container);
+    const privacyResults = await axe.run(privacy.container);
     expect(privacyResults.violations).toHaveLength(0);
     expect(screen.getByRole('banner')).toBeInTheDocument();
 

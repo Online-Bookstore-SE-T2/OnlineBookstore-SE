@@ -4,6 +4,7 @@ const { Book, Listing, Category } = require('../models');
 const { LISTING_STATUS } = require('../constants');
 const { ValidationError } = require('../utils/errors');
 const { createInFlightCoalescer } = require('../utils/inFlight');
+const { activeSellerIds } = require('./sellerAvailability');
 
 const coalesceCatalog = createInFlightCoalescer();
 const PAGE_SIZE = 20;
@@ -134,10 +135,12 @@ async function executeGetCatalogBooks(query = {}) {
 
   // Availability filter
   if (available !== undefined) {
+    const sellerIds = await activeSellerIds();
     const inStockBookIds = await Listing.distinct('book', {
       status: LISTING_STATUS.ACTIVE,
       deletedAt: null,
       quantity: mongoose.trusted({ $gt: 0 }),
+      seller: mongoose.trusted({ $in: sellerIds }),
     });
 
     if (available === 'true') {

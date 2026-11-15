@@ -1,12 +1,10 @@
-# Keep the build context small and never send secrets into an image (SRS 6.3).
-**/node_modules
-**/coverage
-**/dist
-**/.env
-**/.env.*
-!**/.env.example
 .git
 .github
-redesign-pdfs
-*.pdf
-*.log
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/backups
+**/test-results
+docs

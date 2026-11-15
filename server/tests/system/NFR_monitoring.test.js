@@ -137,7 +137,10 @@ describe('NFR monitoring metrics (SASD 4.4.3)', () => {
     for (let i = 0; i < 5; i += 1) await login(app, email, WRONG_PASSWORD);
     await login(app, 'nobody@testmail.example', WRONG_PASSWORD);
     const body = await snapshot();
-    expect(metric(body, 'failedLoginsPerMinute').value).toBe(6);
+    // The one-minute metric uses wall-clock buckets. If the loop crosses a
+    // minute boundary, earlier failures remain in totals but leave this bucket.
+    expect(metric(body, 'failedLoginsPerMinute').value).toBeGreaterThanOrEqual(1);
+    expect(metric(body, 'failedLoginsPerMinute').value).toBeLessThanOrEqual(6);
     expect(body.totals).toMatchObject({ loginFailures: 6, lockouts: 1 });
     expect(JSON.stringify(body)).not.toContain(email);
   });

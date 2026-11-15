@@ -14,6 +14,7 @@ const {
 } = require('../validation/validators');
 const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
+const { activeSellerPopulate } = require('./sellerAvailability');
 
 function validate(body, partial = false) {
   const values = {};
@@ -169,10 +170,10 @@ async function publicListings(bookId) {
     quantity: mongoose.trusted({ $gt: 0 }),
     deletedAt: null,
   })
-    .populate('seller', 'name')
+    .populate(activeSellerPopulate())
     .sort({ price: 1, createdAt: 1 });
 
-  return { listings };
+  return { listings: listings.filter((listing) => listing.seller) };
 }
 
 async function ownedListing(sellerId, id) {

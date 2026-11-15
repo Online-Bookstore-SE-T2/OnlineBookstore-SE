@@ -3,6 +3,7 @@ const { Book, Review, Listing } = require('../models');
 const { LISTING_STATUS } = require('../constants');
 const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
+const { activeSellerPopulate } = require('./sellerAvailability');
 
 async function getBookDetails(bookId) {
   if (!mongoose.isValidObjectId(bookId)) {
@@ -36,7 +37,7 @@ async function getBookDetails(bookId) {
       quantity: mongoose.trusted({ $gt: 0 }),
     })
       .select('_id price quantity condition seller')
-      .populate('seller', 'name')
+      .populate(activeSellerPopulate())
       .sort({ price: 1, _id: 1 })
       .lean(),
   ]);
@@ -59,7 +60,7 @@ async function getBookDetails(bookId) {
 
     listings: book.markedUnavailable
       ? []
-      : listings.map((listing) => ({
+      : listings.filter((listing) => listing.seller).map((listing) => ({
           id: String(listing._id),
           price: listing.price,
           quantity: listing.quantity,

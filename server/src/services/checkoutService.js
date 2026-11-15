@@ -10,6 +10,7 @@ const {
 const { AppError } = require('../utils/errors');
 const strings = require('../resources/strings');
 const { monitor } = require('../monitoring/monitor');
+const { activeSellerMatch } = require('./sellerAvailability');
 
 // SASD 4.4.3: order commitment is measured, so aborted transactions (risks R-1, R-2) show up
 // before a buyer reports them. Refusals that write nothing (bad address, empty cart) are not aborts.
@@ -80,7 +81,7 @@ async function validateCheckout(userId, addressId) {
     for (const cartItem of cart.items) {
         const listing = await Listing.findById(cartItem.listing)
             .populate('book')
-            .populate('seller');
+            .populate({ path: 'seller', match: activeSellerMatch() });
 
         if (!listing || listing.status !== LISTING_STATUS.ACTIVE || !listing.book || !listing.seller) {
             items.push({
@@ -183,6 +184,7 @@ async function createOrder(userId, addressId) {
                     .populate({
                         path: 'seller',
                         options: { session },
+                        match: activeSellerMatch(),
                     });
 
                 if (!listing ||
